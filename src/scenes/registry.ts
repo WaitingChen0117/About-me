@@ -21,14 +21,14 @@ export const scenes: SceneModule[] = [
   {
     id: 'ops-deck',
     label: 'Agent 指挥台',
-    description: '运行中的 Agent 指挥室：会话、工具、审批、Trace 的空间隐喻。',
+    description: 'Agent 指挥台：会话、工具、审批与 Trace 的空间化控制台。',
     Component: OpsDeckScene,
     hotspots: opsDeckHotspots,
   },
   {
     id: 'craft-lab',
     label: '交互产品工坊',
-    description: '半开放工作台：时间轴、画布、样机灯箱同场——强调会做产品界面的人。',
+    description: '交互产品工坊：时间轴、画布与样机同场，强调产品界面交付力。',
     Component: CraftLabScene,
     hotspots: craftLabHotspots,
   },

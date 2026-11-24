@@ -1,7 +1,7 @@
 import type { ThemeMode } from '../types'
 import type { DeckPalette } from '../ops-deck/themeColors'
 
-/** Studio / craft palette — warm neutrals + tool-metal accents (distinct from Ops Deck cyan HUD). */
+/** Studio palette — graphite + amber tool-metal (aligned with shell tokens). */
 export type LabPalette = DeckPalette & {
   wood: string
   canvas: string
@@ -11,46 +11,45 @@ export type LabPalette = DeckPalette & {
 export function labPalette(theme: ThemeMode): LabPalette {
   if (theme === 'bright') {
     return {
-      bg: '#d8d2c6',
-      floor: '#cfc6b6',
-      desk: '#e8e1d4',
-      metal: '#8a8f96',
-      panel: '#f2ebe0',
-      accent: '#b86a2b',
-      accent2: '#4a6b7a',
-      glow: '#c9925a',
-      ok: '#5f8a4e',
-      screen: '#efe6d6',
-      screenDim: '#d4cbb8',
-      operatorSkin: '#e4d0ba',
-      operatorSuit: '#5a6e78',
-      operatorLeg: '#3d4550',
-      rim: '#b8aea0',
-      wood: '#a88968',
-      canvas: '#f7f1e6',
-      tape: '#c45a3a',
+      bg: '#c6c8ce',
+      floor: '#bbbdc4',
+      desk: '#e4e5e8',
+      metal: '#7a8088',
+      panel: '#f0f0ee',
+      accent: '#9a6b3a',
+      accent2: '#5a6674',
+      glow: '#c4a078',
+      ok: '#5a8a58',
+      screen: '#e8e6e0',
+      screenDim: '#cbc9c2',
+      operatorSkin: '#c4beb4',
+      operatorSuit: '#4a5560',
+      operatorLeg: '#2e353e',
+      rim: '#a8a9ae',
+      wood: '#8a7a68',
+      canvas: '#f2f1ed',
+      tape: '#a06040',
     }
   }
 
-  // Dim studio / evening workshop
   return {
-    bg: '#1a1814',
-    floor: '#221e18',
-    desk: '#2c261e',
-    metal: '#6e737a',
-    panel: '#353028',
-    accent: '#d0894a',
-    accent2: '#7a9aaa',
-    glow: '#d0894a',
-    ok: '#7aaa68',
-    screen: '#1e221c',
-    screenDim: '#2a2e28',
-    operatorSkin: '#dcc8b0',
-    operatorSuit: '#4a5c66',
-    operatorLeg: '#2a3038',
-    rim: '#4a4034',
-    wood: '#6b5340',
-    canvas: '#3a342c',
-    tape: '#c45a3a',
+    bg: '#0c0d10',
+    floor: '#12141a',
+    desk: '#1a1e26',
+    metal: '#5a616c',
+    panel: '#22262e',
+    accent: '#d4a574',
+    accent2: '#7d8b99',
+    glow: '#d4a574',
+    ok: '#6a9a68',
+    screen: '#14181c',
+    screenDim: '#1c2228',
+    operatorSkin: '#b8b2a8',
+    operatorSuit: '#3e4854',
+    operatorLeg: '#1e242c',
+    rim: '#2a3038',
+    wood: '#4a4238',
+    canvas: '#2a2e34',
+    tape: '#a06040',
   }
 }

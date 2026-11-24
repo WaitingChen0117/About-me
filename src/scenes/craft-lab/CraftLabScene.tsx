@@ -53,7 +53,7 @@ export function CraftLabScene({
     >
       <div className="craft-hud-rail" aria-hidden="true">
         <div>
-          Scene <strong>B · Craft Lab · 3D</strong>
+          Scene <strong>B · Craft Lab</strong>
         </div>
         <div className="craft-status-marks">
           <span />
@@ -61,8 +61,8 @@ export function CraftLabScene({
           <span />
         </div>
         <div>
-          Light <strong>{theme === 'duty' ? '工作室' : '日间'}</strong>
-          {lowPower ? ' · Lite' : ''}
+          Light <strong>{theme === 'duty' ? 'Studio' : 'Day'}</strong>
+          {lowPower ? ' · Lite' : ' · Full'}
         </div>
       </div>
 

@@ -1,85 +1,89 @@
 :root {
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Source Sans 3', sans-serif;
+  /* Console-grade type stack — restrained, product-like */
+  --font-display: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
+  --font-body: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  /* Duty mode (default night / ops) */
-  --bg-deep: #070b14;
-  --bg-deck: #0d1524;
-  --bg-panel: rgba(14, 24, 40, 0.92);
-  --bg-panel-solid: #101c2e;
-  --bg-elevated: #162338;
-  --line: rgba(94, 168, 255, 0.22);
-  --line-strong: rgba(62, 224, 213, 0.45);
-  --text: #e8eef8;
-  --text-muted: #93a4bd;
-  --text-dim: #6b7c96;
-  --accent: #3ee0d5;
-  --accent-2: #4b8bff;
-  --accent-warm: #7ad0ff;
-  --danger: #ff6b7a;
-  --ok: #5ddea0;
-  --glow: rgba(62, 224, 213, 0.18);
-  --scan: rgba(75, 139, 255, 0.04);
-  --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-  --radius: 12px;
-  --radius-sm: 8px;
+  /* Duty / night — cold graphite + electro-cyan */
+  --bg-deep: #0a0c10;
+  --bg-deck: #11151c;
+  --bg-panel: rgba(18, 22, 30, 0.94);
+  --bg-panel-solid: #141922;
+  --bg-elevated: #1a2030;
+  --line: rgba(148, 163, 184, 0.16);
+  --line-strong: rgba(45, 212, 191, 0.38);
+  --text: #e6eaf0;
+  --text-muted: #8b95a8;
+  --text-dim: #5c6678;
+  --accent: #2dd4bf;
+  --accent-2: #94a3b8;
+  --accent-warm: #d4a574;
+  --danger: #e07878;
+  --ok: #5cb88a;
+  --glow: rgba(45, 212, 191, 0.1);
+  --scan: rgba(148, 163, 184, 0.025);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.55);
+  --radius: 6px;
+  --radius-sm: 4px;
 }
 
 [data-theme='bright'] {
-  --bg-deep: #d8e4f2;
-  --bg-deck: #eef4fb;
-  --bg-panel: rgba(255, 255, 255, 0.92);
-  --bg-panel-solid: #ffffff;
-  --bg-elevated: #f7fafc;
-  --line: rgba(35, 70, 120, 0.16);
-  --line-strong: rgba(20, 140, 130, 0.4);
-  --text: #122033;
-  --text-muted: #4a5d78;
-  --text-dim: #6a7d97;
-  --accent: #0f9e93;
-  --accent-2: #2a62d9;
-  --accent-warm: #1a6fb5;
-  --glow: rgba(15, 158, 147, 0.12);
-  --scan: rgba(42, 98, 217, 0.03);
-  --shadow: 0 20px 50px rgba(40, 70, 110, 0.18);
+  --bg-deep: #c8ced8;
+  --bg-deck: #e4e8ef;
+  --bg-panel: rgba(248, 250, 252, 0.94);
+  --bg-panel-solid: #f8fafc;
+  --bg-elevated: #eef1f6;
+  --line: rgba(55, 65, 85, 0.14);
+  --line-strong: rgba(13, 148, 136, 0.36);
+  --text: #141a24;
+  --text-muted: #5a6578;
+  --text-dim: #7a8496;
+  --accent: #0f766e;
+  --accent-2: #475569;
+  --accent-warm: #b45309;
+  --glow: rgba(15, 118, 110, 0.08);
+  --scan: rgba(71, 85, 105, 0.02);
+  --shadow: 0 16px 40px rgba(30, 40, 55, 0.14);
 }
 
-/* Craft Lab shell overrides — warm studio neutrals (not Ops Deck cyan HUD) */
+/*
+ * Craft Lab — still distinct from Ops Deck, but same maturity language:
+ * cool graphite studio + amber tool-metal (not cream / terracotta candy).
+ */
 [data-scene='craft-lab'] {
-  --bg-deep: #1a1814;
-  --bg-deck: #242018;
-  --bg-panel: rgba(42, 38, 32, 0.92);
-  --bg-panel-solid: #2c2820;
-  --bg-elevated: #353028;
-  --line: rgba(208, 160, 100, 0.22);
-  --line-strong: rgba(208, 137, 74, 0.45);
-  --text: #f0e8dc;
-  --text-muted: #b0a494;
-  --text-dim: #8a8072;
-  --accent: #d0894a;
-  --accent-2: #7a9aaa;
-  --accent-warm: #e0a060;
-  --glow: rgba(208, 137, 74, 0.16);
-  --scan: rgba(180, 140, 90, 0.035);
-  --shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  --bg-deep: #0e0f12;
+  --bg-deck: #16181d;
+  --bg-panel: rgba(22, 24, 30, 0.94);
+  --bg-panel-solid: #1a1d24;
+  --bg-elevated: #22262f;
+  --line: rgba(148, 163, 184, 0.14);
+  --line-strong: rgba(212, 165, 116, 0.4);
+  --text: #e8e6e1;
+  --text-muted: #9a958c;
+  --text-dim: #6a6660;
+  --accent: #d4a574;
+  --accent-2: #7d8b99;
+  --accent-warm: #e0b48a;
+  --glow: rgba(212, 165, 116, 0.1);
+  --scan: rgba(148, 163, 184, 0.02);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.52);
 }
 
 [data-scene='craft-lab'][data-theme='bright'] {
-  --bg-deep: #d8d2c6;
-  --bg-deck: #e8e1d4;
-  --bg-panel: rgba(247, 241, 230, 0.92);
-  --bg-panel-solid: #f7f1e6;
-  --bg-elevated: #efe8da;
-  --line: rgba(90, 70, 45, 0.18);
-  --line-strong: rgba(184, 106, 43, 0.42);
-  --text: #2a241c;
-  --text-muted: #6a5e50;
-  --text-dim: #8a7e70;
-  --accent: #b86a2b;
-  --accent-2: #4a6b7a;
-  --accent-warm: #c47a38;
-  --glow: rgba(184, 106, 43, 0.12);
-  --scan: rgba(120, 90, 50, 0.03);
-  --shadow: 0 20px 50px rgba(60, 45, 30, 0.16);
+  --bg-deep: #c5c8ce;
+  --bg-deck: #e2e4e8;
+  --bg-panel: rgba(247, 247, 245, 0.94);
+  --bg-panel-solid: #f7f7f5;
+  --bg-elevated: #ecece8;
+  --line: rgba(60, 55, 48, 0.14);
+  --line-strong: rgba(180, 120, 60, 0.38);
+  --text: #1c1e22;
+  --text-muted: #5e5c58;
+  --text-dim: #7e7c76;
+  --accent: #9a6b3a;
+  --accent-2: #556070;
+  --accent-warm: #b07a42;
+  --glow: rgba(154, 107, 58, 0.08);
+  --scan: rgba(90, 85, 75, 0.02);
+  --shadow: 0 16px 40px rgba(40, 40, 45, 0.12);
 }

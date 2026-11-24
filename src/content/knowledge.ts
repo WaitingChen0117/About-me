@@ -92,7 +92,7 @@ export const knowledgeSnippets: KnowledgeSnippet[] = [
     sectionId: 'about',
     citation: sectionById.about.title,
     answer:
-      '我是 Waiting Chen 的站内分身，回答只基于本站公开文案（离线知识层，默认不调联网模型）。本人多年前端，现于某大厂做云计算 / 大模型公有云控制台；主线是复杂 B 端与产品交互，Agent 是第二曲线。细节在「关于我」。',
+      '我是 Waiting Chen 的站内分身，回答仅基于本站公开文案（离线知识层，默认不调联网模型）。本人资深前端，现于某大厂负责云计算 / 大模型公有云控制台；主线是复杂 B 端与产品交互，Agent 为第二曲线。详见「关于我」。',
     keywords: [
       '你是谁',
       '关于',
@@ -285,10 +285,10 @@ export const knowledgeById = Object.fromEntries(
 /** Suggestion chips — short questions that hit the knowledge matcher. */
 export const suggestionChips: { id: string; label: string }[] = [
   { id: 'who', label: '你是谁？' },
-  { id: 'experience', label: '做过什么？' },
-  { id: 'works', label: '有什么好看的作品？' },
-  { id: 'agent', label: 'Agent 相关做什么？' },
-  { id: 'stack', label: '技术栈是什么？' },
-  { id: 'notes', label: '有写文章吗？' },
-  { id: 'contact', label: '怎么联系？' },
+  { id: 'experience', label: '经历概览' },
+  { id: 'works', label: '代表作品' },
+  { id: 'agent', label: 'Agent 方向' },
+  { id: 'stack', label: '技术栈' },
+  { id: 'notes', label: '文章 / 笔记' },
+  { id: 'contact', label: '联系方式' },
 ]

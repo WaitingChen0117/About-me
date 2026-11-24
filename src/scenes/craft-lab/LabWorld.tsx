@@ -58,27 +58,27 @@ export function LabWorld({
     }
   })
 
-  const keyIntensity = theme === 'bright' ? 1.15 : 0.72
-  const fillIntensity = theme === 'bright' ? 0.35 : 0.32
+  const keyIntensity = theme === 'bright' ? 1.05 : 0.78
+  const fillIntensity = theme === 'bright' ? 0.3 : 0.3
 
   return (
     <>
       <color attach="background" args={[palette.bg]} />
-      <fog attach="fog" args={[palette.bg, lowPower ? 12 : 10, lowPower ? 26 : 22]} />
+      <fog attach="fog" args={[palette.bg, lowPower ? 12 : 10.5, lowPower ? 26 : 20]} />
 
       <hemisphereLight
-        color={theme === 'bright' ? '#f5efe4' : '#3a342c'}
-        groundColor={theme === 'bright' ? '#b8aea0' : '#12100c'}
-        intensity={theme === 'bright' ? 0.62 : lowPower ? 0.4 : 0.3}
+        color={theme === 'bright' ? '#eceef2' : '#303840'}
+        groundColor={theme === 'bright' ? '#a8acb4' : '#0a0c10'}
+        intensity={theme === 'bright' ? 0.54 : lowPower ? 0.38 : 0.28}
       />
-      <ambientLight intensity={theme === 'bright' ? 0.48 : lowPower ? 0.32 : 0.2} />
+      <ambientLight intensity={theme === 'bright' ? 0.42 : lowPower ? 0.3 : 0.18} />
 
-      {/* Soft studio top light — warmer, less HUD-cyan */}
+      {/* Cool studio key — graphite room, amber only as accent */}
       <directionalLight
-        position={[2.2, 9.2, 1.5]}
-        intensity={lowPower ? keyIntensity * 1.08 : keyIntensity}
+        position={[2.4, 9.4, 1.2]}
+        intensity={lowPower ? keyIntensity * 1.12 : keyIntensity}
         castShadow={!lowPower}
-        color={theme === 'bright' ? '#fff6e8' : '#ffd8a8'}
+        color={theme === 'bright' ? '#f4f5f7' : '#e8e0d4'}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
         shadow-bias={-0.00025}
@@ -88,25 +88,35 @@ export function LabWorld({
         shadow-camera-top={9}
         shadow-camera-bottom={-9}
       />
-      <directionalLight position={[-5, 4, -1]} intensity={fillIntensity} color={palette.rim} />
+      <directionalLight position={[-5.2, 3.6, -1.2]} intensity={fillIntensity} color={palette.rim} />
       <pointLight
         position={[0, 2.6, 0]}
-        intensity={theme === 'bright' ? 0.35 : 0.55}
+        intensity={theme === 'bright' ? 0.22 : 0.36}
         color={palette.accent}
-        distance={10}
+        distance={9}
         decay={2}
       />
       <pointLight
         position={[3.2, 1.8, -1]}
-        intensity={0.28}
+        intensity={0.2}
         color={palette.accent2}
         distance={7}
+        decay={2}
+      />
+      <spotLight
+        position={[-1.5, 5, 2]}
+        angle={0.48}
+        penumbra={0.7}
+        intensity={theme === 'bright' ? 0.22 : 0.38}
+        color="#d8d4cc"
+        castShadow={false}
+        distance={12}
         decay={2}
       />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[18, 14]} />
-        <meshStandardMaterial color={palette.floor} roughness={0.92} metalness={0.03} />
+        <meshStandardMaterial color={palette.floor} roughness={0.88} metalness={0.06} />
       </mesh>
 
       {/* Subtle floor tape marks instead of tech grid */}
@@ -140,11 +150,11 @@ export function LabWorld({
         {/* Central workbench base */}
         <mesh position={[0.2, 0.18, 0.2]} receiveShadow castShadow>
           <boxGeometry args={[4.4, 0.36, 2.6]} />
-          <meshStandardMaterial color={palette.wood} roughness={0.75} metalness={0.05} />
+          <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.08} />
         </mesh>
         <mesh position={[0.2, 0.38, 0.2]} receiveShadow>
           <boxGeometry args={[4.5, 0.05, 2.7]} />
-          <meshStandardMaterial color={palette.desk} roughness={0.7} metalness={0.06} />
+          <meshStandardMaterial color={palette.desk} roughness={0.62} metalness={0.12} />
         </mesh>
 
         {/* Tool rail on wall */}
@@ -274,7 +284,7 @@ function AssistMonitor({
         <meshStandardMaterial
           color={palette.screen}
           emissive={palette.accent2}
-          emissiveIntensity={open || hovered ? 0.45 : 0.18}
+          emissiveIntensity={open || hovered ? 0.28 : 0.1}
           roughness={0.22}
         />
       </mesh>
@@ -292,7 +302,7 @@ function AssistMonitor({
         <meshStandardMaterial
           color={palette.accent}
           emissive={palette.accent}
-          emissiveIntensity={open ? 0.4 : 0.15}
+          emissiveIntensity={open ? 0.22 : 0.08}
         />
       </mesh>
       {(open || hovered) && (

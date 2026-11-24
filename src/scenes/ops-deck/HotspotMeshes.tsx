@@ -30,14 +30,14 @@ export function HotspotMesh({
   const scaleCurrent = useRef(1)
 
   const highlight = active || targeted || hovered
-  const emissive = active ? 0.72 : targeted ? 0.55 : hovered ? 0.48 : 0.16
+  const emissive = active ? 0.42 : targeted ? 0.3 : hovered ? 0.26 : 0.1
 
   useFrame((_, dt) => {
     const g = root.current
     if (!g) return
 
     pulse.current += dt
-    const scaleTarget = hovered || active ? 1.045 : targeted ? 1.025 : 1
+    const scaleTarget = hovered || active ? 1.02 : targeted ? 1.012 : 1
     scaleCurrent.current = THREE.MathUtils.damp(scaleCurrent.current, scaleTarget, 10, dt)
 
     const intro = introRef.current
@@ -120,8 +120,8 @@ function HotspotShape({
   emissive: number
   highlight: boolean
 }) {
-  const metalRough = highlight ? 0.42 : 0.55
-  const panelRough = highlight ? 0.32 : 0.42
+  const metalRough = highlight ? 0.36 : 0.48
+  const panelRough = highlight ? 0.38 : 0.52
 
   switch (id) {
     case 'about':
