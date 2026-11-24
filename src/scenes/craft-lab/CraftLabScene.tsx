@@ -2,6 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { SECTION_ORDER, type SectionId } from '../../content/sections'
 import { useDeviceProfile } from '../../lib/device-profile'
+import { getPalette } from '../../themes/palettes'
 import type { SceneProps } from '../types'
 import { LabWorld } from './LabWorld'
 import { CRAFT_HOME_VIEW, CRAFT_HOME_VIEW_NARROW, craftLabHotspots } from './hotspots'
@@ -84,7 +85,7 @@ export function CraftLabScene({
           <span />
         </div>
         <div>
-          Light <strong>{theme === 'duty' ? 'Studio' : 'Day'}</strong>
+          Palette <strong>{getPalette(theme).label}</strong>
           {lowPower ? ' · Lite' : ' · Full'}
         </div>
       </div>

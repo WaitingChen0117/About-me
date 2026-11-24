@@ -1,9 +1,12 @@
 import type { ComponentType } from 'react'
 import type { SectionId } from '../content/sections'
 
+import type { PaletteId } from '../themes/palettes'
+
 export type SceneId = 'ops-deck' | 'craft-lab' | 'skyline-terminal'
 
-export type ThemeMode = 'duty' | 'bright'
+/** Active named palette preset (replaces binary day/night). */
+export type ThemeMode = PaletteId
 
 /** Programmatic camera goal — spherical offset around `target`. */
 export type CameraView = {

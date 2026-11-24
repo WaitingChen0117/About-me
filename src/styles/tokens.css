@@ -5,9 +5,8 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /*
-   * Named palette (programmer studio) — hex → short design tokens.
-   * Night: ink-teal / void-black + silver-mist + sparse acid-lime.
-   * Day: warm-paper / paper-ash + charcoal-ink, restrained accents.
+   * Named palette tokens (programmer studio) — hex → short design names.
+   * Presets compose these; see data-theme=* below.
    */
   --ink-teal: #042529;
   --void-black: #0f0f0f;
@@ -34,7 +33,7 @@
   --warn-amber: #f76b1c;
   --tip-yellow: #ffdd44;
 
-  /* Default / night (duty) — ink-teal room, silver chrome, acid-lime accent */
+  /* Default = Ink Monitor (dark) */
   --bg-deep: var(--ink-teal);
   --bg-deck: var(--void-black);
   --bg-panel: color-mix(in srgb, var(--charcoal-panel) 92%, transparent);
@@ -59,8 +58,66 @@
   --radius-sm: 4px;
 }
 
-/* Day / bright — warm-paper studio, charcoal-ink type, restrained accent */
-[data-theme='bright'] {
+/* —— Named presets (UI chrome) —— */
+
+[data-theme='ink-monitor'] {
+  --bg-deep: var(--ink-teal);
+  --bg-deck: var(--void-black);
+  --bg-panel: color-mix(in srgb, var(--charcoal-panel) 92%, transparent);
+  --bg-panel-solid: var(--charcoal-panel);
+  --bg-elevated: #1c2226;
+  --line: color-mix(in srgb, var(--silver-mist) 22%, transparent);
+  --line-strong: color-mix(in srgb, var(--acid-lime) 42%, transparent);
+  --text: var(--frost-white);
+  --text-muted: var(--silver-mist);
+  --text-dim: var(--muted-steel);
+  --accent: var(--acid-lime);
+  --accent-2: var(--silver-mist);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--acid-lime) 12%, transparent);
+  --scan: color-mix(in srgb, var(--silver-mist) 3%, transparent);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.62);
+}
+
+[data-theme='harbor-console'] {
+  --bg-deep: #1a242c;
+  --bg-deck: var(--void-black);
+  --bg-panel: color-mix(in srgb, var(--harbor-slate) 90%, transparent);
+  --bg-panel-solid: var(--harbor-slate);
+  --bg-elevated: #2a343c;
+  --line: color-mix(in srgb, var(--silver-mist) 20%, transparent);
+  --line-strong: color-mix(in srgb, var(--silver-mist) 48%, transparent);
+  --text: var(--frost-white);
+  --text-muted: var(--silver-mist);
+  --text-dim: var(--muted-steel);
+  --accent: var(--silver-mist);
+  --accent-2: var(--frost-white);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--silver-mist) 14%, transparent);
+  --scan: color-mix(in srgb, var(--silver-mist) 4%, transparent);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.58);
+}
+
+[data-theme='void-signal'] {
+  --bg-deep: var(--void-black);
+  --bg-deck: #0a0a0a;
+  --bg-panel: color-mix(in srgb, var(--charcoal-panel) 92%, transparent);
+  --bg-panel-solid: var(--charcoal-panel);
+  --bg-elevated: #1a1a1c;
+  --line: color-mix(in srgb, var(--muted-steel) 20%, transparent);
+  --line-strong: color-mix(in srgb, var(--signal-green) 40%, transparent);
+  --text: var(--frost-white);
+  --text-muted: var(--muted-steel);
+  --text-dim: #6a6a72;
+  --accent: var(--signal-green);
+  --accent-2: var(--muted-steel);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--signal-green) 12%, transparent);
+  --scan: color-mix(in srgb, var(--signal-green) 3%, transparent);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.68);
+}
+
+[data-theme='warm-paper'] {
   --bg-deep: var(--paper-ash);
   --bg-deck: var(--warm-paper);
   --bg-panel: color-mix(in srgb, var(--warm-paper) 94%, transparent);
@@ -79,11 +136,51 @@
   --shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
 }
 
+[data-theme='ash-daylight'] {
+  --bg-deep: var(--cool-ash);
+  --bg-deck: var(--paper-ash);
+  --bg-panel: color-mix(in srgb, var(--sky-mist) 94%, transparent);
+  --bg-panel-solid: var(--sky-mist);
+  --bg-elevated: var(--soft-cloud);
+  --line: color-mix(in srgb, var(--charcoal-ink) 11%, transparent);
+  --line-strong: color-mix(in srgb, var(--harbor-slate) 36%, transparent);
+  --text: var(--charcoal-ink);
+  --text-muted: #3a3a3e;
+  --text-dim: #6a6a70;
+  --accent: var(--harbor-slate);
+  --accent-2: var(--muted-steel);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--harbor-slate) 8%, transparent);
+  --scan: color-mix(in srgb, var(--cool-ash) 40%, transparent);
+  --shadow: 0 16px 40px rgba(20, 24, 32, 0.12);
+}
+
+[data-theme='sage-atelier'] {
+  --bg-deep: var(--sage-wash);
+  --bg-deck: var(--paper-ash);
+  --bg-panel: color-mix(in srgb, var(--warm-paper) 94%, transparent);
+  --bg-panel-solid: var(--warm-paper);
+  --bg-elevated: #e8eee8;
+  --line: color-mix(in srgb, var(--forest-ink) 14%, transparent);
+  --line-strong: color-mix(in srgb, var(--forest-ink) 38%, transparent);
+  --text: var(--charcoal-ink);
+  --text-muted: #3e4640;
+  --text-dim: #6a726c;
+  --accent: var(--forest-ink);
+  --accent-2: var(--muted-steel);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--forest-ink) 9%, transparent);
+  --scan: color-mix(in srgb, var(--sage-wash) 45%, transparent);
+  --shadow: 0 16px 40px rgba(24, 40, 28, 0.12);
+}
+
 /*
- * Craft Lab — still distinct from programmer studio, same maturity language:
- * harbor-slate + warm wood metal (not cream / terracotta candy).
+ * Craft Lab — workshop chrome tint on top of the active preset.
+ * Dark families lean harbor/warn; light families lean sky-mist / forest.
  */
-[data-scene='craft-lab'] {
+[data-scene='craft-lab'][data-theme='ink-monitor'],
+[data-scene='craft-lab'][data-theme='harbor-console'],
+[data-scene='craft-lab'][data-theme='void-signal'] {
   --bg-deep: var(--void-black);
   --bg-deck: #16181d;
   --bg-panel: color-mix(in srgb, var(--harbor-slate) 88%, transparent);
@@ -102,7 +199,9 @@
   --shadow: 0 18px 56px rgba(0, 0, 0, 0.52);
 }
 
-[data-scene='craft-lab'][data-theme='bright'] {
+[data-scene='craft-lab'][data-theme='warm-paper'],
+[data-scene='craft-lab'][data-theme='ash-daylight'],
+[data-scene='craft-lab'][data-theme='sage-atelier'] {
   --bg-deep: var(--cool-ash);
   --bg-deck: var(--soft-cloud);
   --bg-panel: color-mix(in srgb, var(--sky-mist) 94%, transparent);
@@ -119,4 +218,41 @@
   --glow: color-mix(in srgb, var(--forest-ink) 8%, transparent);
   --scan: color-mix(in srgb, var(--cool-ash) 40%, transparent);
   --shadow: 0 16px 40px rgba(40, 40, 45, 0.12);
+}
+
+/* Legacy aliases (if anything still sets duty/bright) */
+[data-theme='duty'] {
+  --bg-deep: var(--ink-teal);
+  --bg-deck: var(--void-black);
+  --bg-panel: color-mix(in srgb, var(--charcoal-panel) 92%, transparent);
+  --bg-panel-solid: var(--charcoal-panel);
+  --bg-elevated: #1c2226;
+  --line: color-mix(in srgb, var(--silver-mist) 22%, transparent);
+  --line-strong: color-mix(in srgb, var(--acid-lime) 42%, transparent);
+  --text: var(--frost-white);
+  --text-muted: var(--silver-mist);
+  --text-dim: var(--muted-steel);
+  --accent: var(--acid-lime);
+  --accent-2: var(--silver-mist);
+  --glow: color-mix(in srgb, var(--acid-lime) 12%, transparent);
+  --scan: color-mix(in srgb, var(--silver-mist) 3%, transparent);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.62);
+}
+
+[data-theme='bright'] {
+  --bg-deep: var(--paper-ash);
+  --bg-deck: var(--warm-paper);
+  --bg-panel: color-mix(in srgb, var(--warm-paper) 94%, transparent);
+  --bg-panel-solid: var(--warm-paper);
+  --bg-elevated: var(--soft-cloud);
+  --line: color-mix(in srgb, var(--charcoal-ink) 12%, transparent);
+  --line-strong: color-mix(in srgb, var(--forest-ink) 35%, transparent);
+  --text: var(--charcoal-ink);
+  --text-muted: #3a3a3e;
+  --text-dim: #6a6a70;
+  --accent: var(--forest-ink);
+  --accent-2: var(--muted-steel);
+  --glow: color-mix(in srgb, var(--forest-ink) 8%, transparent);
+  --scan: color-mix(in srgb, var(--cool-ash) 35%, transparent);
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
 }

@@ -1,9 +1,16 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { AvatarChat } from './components/AvatarChat'
+import { PaletteSwitcher } from './components/PaletteSwitcher'
 import { SectionPanel } from './components/SectionPanel'
 import type { SectionId } from './content/sections'
 import { defaultSceneId, getScene, switchableScenes } from './scenes/registry'
 import type { CameraCommand, SceneId, ThemeMode } from './scenes/types'
+import {
+  DEFAULT_PALETTE_ID,
+  getPalette,
+  readStoredPaletteId,
+  storePaletteId,
+} from './themes/palettes'
 import './styles/global.css'
 
 function usePrefersReducedMotion(): boolean {
@@ -25,7 +32,9 @@ function usePrefersReducedMotion(): boolean {
 
 export default function App() {
   const [sceneId, setSceneId] = useState<SceneId>(defaultSceneId)
-  const [theme, setTheme] = useState<ThemeMode>('duty')
+  const [theme, setTheme] = useState<ThemeMode>(
+    () => readStoredPaletteId() ?? DEFAULT_PALETTE_ID,
+  )
   const [activeSection, setActiveSection] = useState<SectionId | null>(null)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [operatorTarget, setOperatorTarget] = useState<SectionId | null>(null)
@@ -41,13 +50,17 @@ export default function App() {
   const reducedMotion = usePrefersReducedMotion()
 
   useEffect(() => {
+    const preset = getPalette(theme)
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-family', preset.family)
     document.documentElement.setAttribute('data-scene', sceneId)
+    storePaletteId(theme)
   }, [theme, sceneId])
 
   const scene = getScene(sceneId)
   const Scene = scene.Component
   const isCraft = sceneId === 'craft-lab'
+  const palette = getPalette(theme)
 
   const issueCamera = useCallback((nextFocus: SectionId | null) => {
     setCameraCommand((c) => ({ ticket: c.ticket + 1, focusId: nextFocus }))
@@ -153,7 +166,7 @@ export default function App() {
   )
 
   return (
-    <div className="app-shell" data-scene={sceneId}>
+    <div className="app-shell" data-scene={sceneId} data-theme={theme} data-family={palette.family}>
       <header className="top-bar">
         <div className="brand-block">
           <div className="brand-name">Waiting Chen</div>
@@ -174,21 +187,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="chip-btn"
-            aria-pressed={theme === 'bright'}
-            onClick={() => setTheme((t) => (t === 'duty' ? 'bright' : 'duty'))}
-          >
-            <span className="chip-dot" aria-hidden="true" />
-            {isCraft
-              ? theme === 'duty'
-                ? '工作室灯'
-                : '日间顶光'
-              : theme === 'duty'
-                ? '夜间模式'
-                : '日间暖光'}
-          </button>
+          <PaletteSwitcher value={theme} onChange={setTheme} />
           <button
             type="button"
             className="chip-btn"

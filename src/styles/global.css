@@ -65,7 +65,7 @@ button {
   z-index: 1;
 }
 
-.app-shell[data-theme='duty']::before {
+.app-shell[data-family='dark']::before {
   background:
     radial-gradient(ellipse 80% 70% at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.42) 100%),
     radial-gradient(700px 380px at 80% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 55%);

@@ -1,10 +1,11 @@
 import { ContactShadows, Html } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
+import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import { AVATAR_POD_POSITION, opsDeckHotspots } from './hotspots'
 import { HotspotMesh } from './HotspotMeshes'
@@ -63,10 +64,17 @@ export function DeckWorld({
   homeView,
 }: Props) {
   const palette = useMemo(() => deckPalette(theme), [theme])
+  const lights = useMemo(() => getPalette(theme).lights, [theme])
+  const dark = getPalette(theme).family === 'dark'
+  const { gl } = useThree()
   const hotspots = opsDeckHotspots as HotspotDef[]
   const introRef = useRef(0)
   const roomGroup = useRef<THREE.Group>(null)
   const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
+
+  useEffect(() => {
+    gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
+  }, [gl, lights, lowPower])
 
   const onOperatorTap = () => {
     const pool = hotspots.map((h) => h.id)
@@ -85,35 +93,50 @@ export function DeckWorld({
     }
   })
 
-  const night = theme === 'duty'
-  // Day: warm work light · Night: dark but legible room + cool screen glow
-  const keyIntensity = night ? 0.85 : 0.95
-  const fillIntensity = night ? 0.55 : 0.32
-  const lampIntensity = night ? 0.95 : 1.35
-  const screenFill = night ? 1.45 : 0.22
-  const windowGlow = night ? 0.4 : 0.55
+  const {
+    keyIntensity,
+    fillIntensity,
+    lampIntensity,
+    screenFill,
+    windowGlow,
+    hemiSky,
+    hemiGround,
+    hemiIntensity,
+    hemiIntensityLite,
+    ambient,
+    ambientLite,
+    keyColor,
+    keyPosition,
+    fillColor,
+    windowColor,
+    ceilingColor,
+    ceilingIntensity,
+    fogNear,
+    fogNearLite,
+    fogFar,
+    fogFarLite,
+  } = lights
 
   return (
     <>
       <color attach="background" args={[palette.bg]} />
-      {/* Push fog out at night so mid-room furniture doesn't crush to black */}
+      {/* Push fog out on dark presets so mid-room furniture doesn't crush to black */}
       <fog
         attach="fog"
-        args={[palette.bg, night ? (lowPower ? 18 : 16) : lowPower ? 15 : 13, night ? 40 : lowPower ? 32 : 28]}
+        args={[palette.bg, lowPower ? fogNearLite : fogNear, lowPower ? fogFarLite : fogFar]}
       />
 
       <hemisphereLight
-        color={night ? '#98a9b4' : '#fffff2'} /* silver-mist / warm-paper */
-        groundColor={night ? '#0f0f0f' : '#d8d8df'} /* void-black / cool-ash */
-        intensity={night ? (lowPower ? 0.72 : 0.62) : 0.62}
+        color={hemiSky}
+        groundColor={hemiGround}
+        intensity={lowPower ? hemiIntensityLite : hemiIntensity}
       />
-      <ambientLight intensity={night ? (lowPower ? 0.55 : 0.48) : 0.38} />
+      <ambientLight intensity={lowPower ? ambientLite : ambient} />
 
-      {/* Key: day = warm-paper sun; night = silver-mist bounce for silhouette */}
       <directionalLight
-        position={night ? [3.2, 9.0, 4.0] : [-5.5, 9.5, 2.5]}
+        position={keyPosition}
         intensity={lowPower ? keyIntensity * 1.1 : keyIntensity}
-        color={night ? '#c8d4dc' : '#fff8e8'}
+        color={keyColor}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
@@ -124,27 +147,23 @@ export function DeckWorld({
         shadow-camera-top={12}
         shadow-camera-bottom={-12}
       />
-      <directionalLight
-        position={[-4.5, 2.8, 3.5]}
-        intensity={fillIntensity}
-        color={night ? '#243844' : '#f2f7f9'} /* harbor-slate / sky-mist */
-      />
+      <directionalLight position={[-4.5, 2.8, 3.5]} intensity={fillIntensity} color={fillColor} />
 
-      {/* Practical desk lamp — tip-yellow day, silver-mist night */}
+      {/* Practical desk lamp */}
       <pointLight
         position={[2.95, 1.35, 2.55]}
         intensity={lampIntensity}
         color={palette.lamp}
-        distance={night ? 8 : 9}
+        distance={dark ? 8 : 9}
         decay={2}
       />
 
-      {/* Screen spill — acid-lime night / forest-ink day, sparse */}
+      {/* Screen spill — accent from active preset */}
       <pointLight
         position={[0, 1.4, -1.0]}
         intensity={screenFill}
         color={palette.accent}
-        distance={night ? 11 : 6}
+        distance={dark ? 11 : 6}
         decay={2}
       />
       <pointLight
@@ -155,20 +174,20 @@ export function DeckWorld({
         decay={2}
       />
 
-      {/* Window daylight (day) / faint city glow (night) */}
+      {/* Window daylight / city glow */}
       <pointLight
         position={[-5.0, 2.0, -1.0]}
         intensity={windowGlow}
-        color={night ? '#98a9b4' : '#fff4d8'} /* silver-mist / warm bounce */
+        color={windowColor}
         distance={12}
         decay={2}
       />
 
-      {/* Soft ceiling wash — warm-paper day, silver-mist night */}
+      {/* Soft ceiling wash */}
       <pointLight
         position={[0, 3.1, 0.2]}
-        intensity={night ? 0.75 : 0.55}
-        color={night ? '#8a8a9a' : '#fffff2'} /* muted-steel / warm-paper */
+        intensity={ceilingIntensity}
+        color={ceilingColor}
         distance={14}
         decay={2}
       />
@@ -187,7 +206,7 @@ export function DeckWorld({
           roughness={0.95}
           metalness={0.02}
           transparent
-          opacity={night ? 0.55 : 0.72}
+          opacity={dark ? 0.55 : 0.72}
         />
       </mesh>
 
@@ -275,7 +294,7 @@ export function DeckWorld({
       {!lowPower && (
         <ContactShadows
           position={[0, 0.011, 0]}
-          opacity={night ? 0.62 : 0.28}
+          opacity={dark ? 0.62 : 0.28}
           scale={16}
           blur={2.8}
           far={5}
@@ -323,11 +342,9 @@ function StudioShell({
   theme: ThemeMode
   lowPower: boolean
 }) {
-  const night = theme === 'duty'
-  const wallEmissive = night ? 0.03 : 0.01
-  const windowEmissive = night ? 0.22 : 0.35
-  // Soft fixture wash — night stays dim so screens carry the glow
-  const coveEmissive = night ? 0.1 : 0.08
+  const preset = getPalette(theme)
+  const dark = preset.family === 'dark'
+  const { wallEmissive, windowEmissive, coveEmissive } = preset.lights
 
   return (
     <group>
@@ -338,7 +355,7 @@ function StudioShell({
           color={palette.wall}
           roughness={0.92}
           metalness={0.03}
-          emissive={night ? palette.accent2 : palette.lamp}
+          emissive={dark ? palette.accent2 : palette.lamp}
           emissiveIntensity={wallEmissive}
         />
       </mesh>
@@ -361,13 +378,13 @@ function StudioShell({
       <mesh position={[-5.36, 1.9, -1.0]}>
         <boxGeometry args={[0.06, 1.4, 2.8]} />
         <meshStandardMaterial
-          color={night ? palette.screen : '#f2f7f9'} /* sky-mist day glass */
-          emissive={night ? '#243844' : '#fff4d8'} /* harbor-slate / warm bounce */
+          color={dark ? palette.screen : '#f2f7f9'}
+          emissive={dark ? '#243844' : '#fff4d8'}
           emissiveIntensity={windowEmissive}
           roughness={0.2}
           metalness={0.12}
           transparent
-          opacity={night ? 0.85 : 0.55}
+          opacity={dark ? 0.85 : 0.55}
         />
       </mesh>
       {/* Window frame */}
@@ -399,7 +416,7 @@ function StudioShell({
         <meshStandardMaterial color={palette.metal} metalness={0.35} roughness={0.45} />
       </mesh>
 
-      {/* Ceiling strip lights — warm day, cool night */}
+      {/* Ceiling strip lights */}
       {[
         [0, 3.25, -2.6],
         [0, 3.25, 0.1],
@@ -409,7 +426,7 @@ function StudioShell({
           <boxGeometry args={[8.5, 0.05, 0.18]} />
           <meshStandardMaterial
             color={palette.metal}
-            emissive={night ? palette.accent : palette.lamp}
+            emissive={dark ? palette.accent : palette.lamp}
             emissiveIntensity={coveEmissive * (i === 1 ? 1.2 : 0.8)}
             roughness={0.4}
             metalness={0.35}
@@ -423,18 +440,18 @@ function StudioShell({
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.4]}>
             <planeGeometry args={[9.5, 1.2]} />
             <meshBasicMaterial
-              color={night ? palette.accent2 : palette.lamp}
+              color={dark ? palette.accent2 : palette.lamp}
               transparent
-              opacity={night ? 0.06 : 0.05}
+              opacity={dark ? 0.06 : 0.05}
               depthWrite={false}
             />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.003, 0.2]}>
             <planeGeometry args={[5.2, 3.6]} />
             <meshBasicMaterial
-              color={night ? palette.accent : palette.wood}
+              color={dark ? palette.accent : palette.wood}
               transparent
-              opacity={night ? 0.05 : 0.04}
+              opacity={dark ? 0.05 : 0.04}
               depthWrite={false}
             />
           </mesh>
@@ -470,7 +487,7 @@ function AvatarDock({
 }) {
   const [hovered, setHovered] = useState(false)
   const root = useRef<THREE.Group>(null)
-  const night = theme === 'duty'
+  const lights = getPalette(theme).lights
 
   useFrame(() => {
     if (!root.current) return
@@ -506,7 +523,7 @@ function AvatarDock({
           roughness={0.4}
           metalness={0.18}
           emissive={palette.accent}
-          emissiveIntensity={open || hovered ? (night ? 0.38 : 0.18) : night ? 0.12 : 0.05}
+          emissiveIntensity={open || hovered ? lights.dockHot : lights.dockIdle}
         />
       </mesh>
       <mesh position={[0, 0.8, 0]}>
@@ -516,7 +533,9 @@ function AvatarDock({
           roughness={0.35}
           metalness={0.3}
           emissive={palette.glow}
-          emissiveIntensity={open ? (night ? 0.45 : 0.2) : hovered ? 0.28 : night ? 0.14 : 0.06}
+          emissiveIntensity={
+            open ? lights.dockHot * 1.15 : hovered ? lights.dockHot * 0.75 : lights.dockIdle * 1.1
+          }
         />
       </mesh>
       {(open || hovered) && (
