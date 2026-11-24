@@ -5,14 +5,18 @@ import type { SectionId } from '../../content/sections'
 import type { HotspotDef } from '../types'
 import type { DeckPalette } from './themeColors'
 
+const HOVER_LIFT = 0.14
+
 type Props = {
   spot: HotspotDef
   palette: DeckPalette
   active: boolean
   targeted: boolean
+  externallyHovered?: boolean
   index?: number
   introRef: MutableRefObject<number>
   onOpen: (id: SectionId) => void
+  onHoverChange?: (id: SectionId | null) => void
 }
 
 export function HotspotMesh({
@@ -20,34 +24,44 @@ export function HotspotMesh({
   palette,
   active,
   targeted,
+  externallyHovered = false,
   index = 0,
   introRef,
   onOpen,
+  onHoverChange,
 }: Props) {
   const [hovered, setHovered] = useState(false)
   const root = useRef<THREE.Group>(null)
   const pulse = useRef(0)
   const scaleCurrent = useRef(1)
+  const liftCurrent = useRef(0)
 
-  const highlight = active || targeted || hovered
-  const emissive = active ? 0.42 : targeted ? 0.3 : hovered ? 0.26 : 0.1
+  const isHovered = hovered || externallyHovered
+  const highlight = active || targeted || isHovered
+  const emissive = active ? 0.42 : targeted ? 0.3 : isHovered ? 0.26 : 0.1
 
   useFrame((_, dt) => {
     const g = root.current
     if (!g) return
 
     pulse.current += dt
-    const scaleTarget = hovered || active ? 1.02 : targeted ? 1.012 : 1
+    const scaleTarget = isHovered || active ? 1.02 : targeted ? 1.012 : 1
     scaleCurrent.current = THREE.MathUtils.damp(scaleCurrent.current, scaleTarget, 10, dt)
+    const liftTarget = isHovered && !active ? HOVER_LIFT : 0
+    liftCurrent.current = THREE.MathUtils.damp(liftCurrent.current, liftTarget, 12, dt)
 
     const intro = introRef.current
     const stagger = Math.min(1, Math.max(0, (intro - index * 0.06) / 0.35))
     const eased = 1 - Math.pow(1 - stagger, 3)
-    const lift = (1 - eased) * 0.35
+    const introLift = (1 - eased) * 0.35
     const s = scaleCurrent.current * (0.82 + 0.18 * eased)
 
     g.scale.setScalar(s)
-    g.position.set(spot.position[0], spot.position[1] + lift, spot.position[2])
+    g.position.set(
+      spot.position[0],
+      spot.position[1] + introLift + liftCurrent.current,
+      spot.position[2],
+    )
     g.visible = eased > 0.02
 
     if (targeted) {
@@ -79,10 +93,12 @@ export function HotspotMesh({
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)
+        onHoverChange?.(spot.id)
         document.body.style.cursor = 'pointer'
       }}
       onPointerOut={() => {
         setHovered(false)
+        onHoverChange?.(null)
         document.body.style.cursor = 'auto'
       }}
     >
@@ -99,7 +115,7 @@ export function HotspotMesh({
           <meshBasicMaterial color={palette.accent2} transparent opacity={0.45} depthWrite={false} />
         </mesh>
       )}
-      {hovered && !active && (
+      {isHovered && !active && (
         <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.42, 0.5, 28]} />
           <meshBasicMaterial color={palette.accent} transparent opacity={0.28} depthWrite={false} />

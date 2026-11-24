@@ -11,6 +11,13 @@
   z-index: 1;
 }
 
+.ops-canvas-wrap .world-labels-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
 .ops-canvas-wrap canvas {
   display: block;
   width: 100% !important;

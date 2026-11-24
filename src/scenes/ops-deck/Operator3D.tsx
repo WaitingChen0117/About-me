@@ -19,6 +19,8 @@ type Props = {
   home?: [number, number, number]
   /** Optional CSS class for the hover tip bubble. */
   tipClassName?: string
+  /** Camera / panel focus — turn to face this hotspot while idle */
+  lookAtId?: SectionId | null
 }
 
 const WALK_SPEED = 2.55
@@ -33,6 +35,7 @@ export function Operator3D({
   introRef,
   home = OPERATOR_HOME,
   tipClassName = 'ops-html-tip',
+  lookAtId = null,
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
@@ -141,6 +144,19 @@ export function Operator3D({
         if (legR.current) legR.current.rotation.x = THREE.MathUtils.damp(legR.current.rotation.x, 0, 10, delta)
         if (armL.current) armL.current.rotation.x = THREE.MathUtils.damp(armL.current.rotation.x, 0, 10, delta)
         if (armR.current) armR.current.rotation.x = THREE.MathUtils.damp(armR.current.rotation.x, 0, 10, delta)
+
+        // Idle: face the focused hotspot (atan2 look-at)
+        if (lookAtId) {
+          const spot = hotspots.find((h) => h.id === lookAtId)
+          if (spot) {
+            const dx = spot.position[0] - pos.current.x
+            const dz = spot.position[2] - pos.current.z
+            if (dx * dx + dz * dz > 1e-4) {
+              const angle = Math.atan2(dx, dz)
+              g.rotation.y = THREE.MathUtils.damp(g.rotation.y, angle, 6, delta)
+            }
+          }
+        }
       }
     }
 

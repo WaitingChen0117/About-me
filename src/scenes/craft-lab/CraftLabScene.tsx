@@ -1,10 +1,10 @@
 import { Canvas } from '@react-three/fiber'
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { SECTION_ORDER, type SectionId } from '../../content/sections'
 import { useDeviceProfile } from '../../lib/device-profile'
 import type { SceneProps } from '../types'
 import { LabWorld } from './LabWorld'
-import { craftLabHotspots } from './hotspots'
+import { CRAFT_HOME_VIEW, CRAFT_HOME_VIEW_NARROW, craftLabHotspots } from './hotspots'
 import './CraftLab.css'
 
 const SECTION_TITLES: Record<SectionId, string> = {
@@ -17,24 +17,47 @@ const SECTION_TITLES: Record<SectionId, string> = {
   contact: '联系',
 }
 
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const sync = () => setReduced(mq.matches)
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+  return reduced
+}
+
 export function CraftLabScene({
   theme,
   activeSection,
-  onOpenSection,
+  onFocusThenOpen,
   onSendOperator,
   avatarOpen,
   onToggleAvatar,
   operatorTarget,
   operatorTicket,
   onOperatorArrive,
+  focusId,
+  cameraCommand,
+  onCameraArrive,
+  labelsAway,
 }: SceneProps) {
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
+  const reducedMotion = usePrefersReducedMotion()
+  const labelPortal = useRef<HTMLDivElement>(null)
 
   const dpr = useMemo<[number, number]>(() => {
     if (lowPower && isNarrow) return [1, 1]
     if (lowPower) return [1, 1.15]
     return [1, 1.7]
   }, [lowPower, isNarrow])
+
+  const homeView = isNarrow ? CRAFT_HOME_VIEW_NARROW : CRAFT_HOME_VIEW
 
   const camera = useMemo(
     () =>
@@ -67,6 +90,7 @@ export function CraftLabScene({
       </div>
 
       <div className="craft-canvas-wrap">
+        <div className="world-labels-mount" ref={labelPortal} />
         <Canvas
           shadows={!lowPower}
           dpr={dpr}
@@ -86,15 +110,22 @@ export function CraftLabScene({
             <LabWorld
               theme={theme}
               activeSection={activeSection}
-              onOpenSection={onOpenSection}
+              onFocusThenOpen={onFocusThenOpen}
               onSendOperator={onSendOperator}
               avatarOpen={avatarOpen}
               onToggleAvatar={onToggleAvatar}
               operatorTarget={operatorTarget}
               operatorTicket={operatorTicket}
               onOperatorArrive={onOperatorArrive}
+              focusId={focusId}
+              cameraCommand={cameraCommand}
+              onCameraArrive={onCameraArrive}
+              labelsAway={labelsAway}
+              labelPortal={labelPortal}
               lowPower={lowPower}
               isTouch={isTouch}
+              reducedMotion={reducedMotion}
+              homeView={homeView}
             />
           </Suspense>
         </Canvas>
@@ -112,7 +143,7 @@ export function CraftLabScene({
             ]
               .filter(Boolean)
               .join(' ')}
-            onClick={() => onOpenSection(spot.id)}
+            onClick={() => onFocusThenOpen(spot.id)}
           >
             <span className="craft-legend-kicker">{spot.label}</span>
             <span className="craft-legend-title">{SECTION_TITLES[spot.id]}</span>
@@ -126,7 +157,7 @@ export function CraftLabScene({
             key={id}
             type="button"
             className={activeSection === id ? 'is-active' : undefined}
-            onClick={() => onOpenSection(id)}
+            onClick={() => onFocusThenOpen(id)}
           >
             {SECTION_TITLES[id]}
           </button>

@@ -1,45 +1,72 @@
-import { ContactShadows, Html, OrbitControls } from '@react-three/drei'
+import { ContactShadows, Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, useState, type MutableRefObject } from 'react'
+import { useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
-import type { HotspotDef, ThemeMode } from '../types'
+import { SceneCameraRig } from '../camera/SceneCameraRig'
+import { WorldLabels } from '../labels/WorldLabels'
 import { Operator3D } from '../ops-deck/Operator3D'
+import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import { CraftHotspotMesh } from './CraftHotspotMeshes'
 import { ASSIST_MONITOR_POSITION, OPERATOR_HOME, craftLabHotspots } from './hotspots'
 import { labPalette, type LabPalette } from './themeColors'
 
+const SECTION_TITLES: Record<SectionId, string> = {
+  about: '关于我',
+  experience: '经历',
+  works: '作品',
+  projects: '项目',
+  articles: '文章',
+  hobbies: '爱好',
+  contact: '联系',
+}
+
 type Props = {
   theme: ThemeMode
   activeSection: SectionId | null
-  onOpenSection: (id: SectionId) => void
+  onFocusThenOpen: (id: SectionId) => void
   onSendOperator: (id: SectionId) => void
   avatarOpen: boolean
   onToggleAvatar: () => void
   operatorTarget: SectionId | null
   operatorTicket: number
   onOperatorArrive: (id: SectionId) => void
+  focusId: SectionId | null
+  cameraCommand: CameraCommand
+  onCameraArrive: () => void
+  labelsAway: boolean
+  labelPortal: RefObject<HTMLElement | null>
   lowPower: boolean
   isTouch: boolean
+  reducedMotion: boolean
+  homeView: CameraView
 }
 
 export function LabWorld({
   theme,
   activeSection,
-  onOpenSection,
+  onFocusThenOpen,
   onSendOperator,
   avatarOpen,
   onToggleAvatar,
   operatorTarget,
   operatorTicket,
   onOperatorArrive,
+  focusId,
+  cameraCommand,
+  onCameraArrive,
+  labelsAway,
+  labelPortal,
   lowPower,
   isTouch,
+  reducedMotion,
+  homeView,
 }: Props) {
   const palette = useMemo(() => labPalette(theme), [theme])
   const hotspots = craftLabHotspots as HotspotDef[]
   const introRef = useRef(0)
   const labGroup = useRef<THREE.Group>(null)
+  const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
 
   const onOperatorTap = () => {
     const pool = hotspots.map((h) => h.id)
@@ -73,7 +100,6 @@ export function LabWorld({
       />
       <ambientLight intensity={theme === 'bright' ? 0.42 : lowPower ? 0.3 : 0.18} />
 
-      {/* Cool studio key — graphite room, amber only as accent */}
       <directionalLight
         position={[2.4, 9.4, 1.2]}
         intensity={lowPower ? keyIntensity * 1.12 : keyIntensity}
@@ -119,7 +145,6 @@ export function LabWorld({
         <meshStandardMaterial color={palette.floor} roughness={0.88} metalness={0.06} />
       </mesh>
 
-      {/* Subtle floor tape marks instead of tech grid */}
       {!lowPower && (
         <group>
           {[-3, -1, 1, 3].map((x) => (
@@ -136,18 +161,15 @@ export function LabWorld({
       )}
 
       <group ref={labGroup}>
-        {/* Back wall */}
         <mesh position={[0, 1.6, -3.05]} receiveShadow castShadow>
           <boxGeometry args={[9.2, 3.2, 0.12]} />
           <meshStandardMaterial color={palette.panel} roughness={0.88} metalness={0.04} />
         </mesh>
-        {/* Side wall hint */}
         <mesh position={[-4.4, 1.4, -0.4]} receiveShadow>
           <boxGeometry args={[0.1, 2.8, 5.2]} />
           <meshStandardMaterial color={palette.desk} roughness={0.9} metalness={0.03} />
         </mesh>
 
-        {/* Central workbench base */}
         <mesh position={[0.2, 0.18, 0.2]} receiveShadow castShadow>
           <boxGeometry args={[4.4, 0.36, 2.6]} />
           <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.08} />
@@ -157,7 +179,6 @@ export function LabWorld({
           <meshStandardMaterial color={palette.desk} roughness={0.62} metalness={0.12} />
         </mesh>
 
-        {/* Tool rail on wall */}
         <mesh position={[1.8, 1.85, -2.95]} castShadow>
           <boxGeometry args={[2.4, 0.08, 0.08]} />
           <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.5} />
@@ -180,9 +201,11 @@ export function LabWorld({
             palette={palette}
             active={activeSection === spot.id}
             targeted={operatorTarget === spot.id}
+            externallyHovered={hoveredId === spot.id}
             index={i}
             introRef={introRef}
-            onOpen={onOpenSection}
+            onOpen={onFocusThenOpen}
+            onHoverChange={setHoveredId}
           />
         ))}
 
@@ -203,6 +226,7 @@ export function LabWorld({
           introRef={introRef}
           home={OPERATOR_HOME}
           tipClassName="craft-html-tip"
+          lookAtId={focusId}
         />
       </group>
 
@@ -216,19 +240,33 @@ export function LabWorld({
         />
       )}
 
-      <OrbitControls
-        makeDefault
-        enablePan={false}
-        minPolarAngle={0.4}
-        maxPolarAngle={Math.PI / 2.15}
-        minDistance={isTouch ? 5.4 : 4.6}
-        maxDistance={isTouch ? 11.5 : 12.5}
-        target={[0.1, 0.7, -0.2]}
-        enableDamping={!lowPower}
-        dampingFactor={isTouch ? 0.12 : 0.08}
-        rotateSpeed={isTouch ? 0.55 : 0.72}
-        zoomSpeed={isTouch ? 0.65 : 0.9}
-        touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+      <WorldLabels
+        hotspots={hotspots}
+        sectionTitles={SECTION_TITLES}
+        hoveredId={hoveredId}
+        onHover={setHoveredId}
+        onSelect={onFocusThenOpen}
+        away={labelsAway}
+        portal={labelPortal}
+      />
+
+      <SceneCameraRig
+        home={homeView}
+        hotspots={hotspots}
+        cameraCommand={cameraCommand}
+        lockOrbit={Boolean(activeSection || focusId)}
+        onArrive={onCameraArrive}
+        reducedMotion={reducedMotion}
+        limits={{
+          minPolarAngle: 0.4,
+          maxPolarAngle: Math.PI / 2.15,
+          minDistance: isTouch ? 5.4 : 4.6,
+          maxDistance: isTouch ? 11.5 : 12.5,
+          enableDamping: !lowPower,
+          dampingFactor: isTouch ? 0.12 : 0.08,
+          rotateSpeed: isTouch ? 0.55 : 0.72,
+          zoomSpeed: isTouch ? 0.65 : 0.9,
+        }}
       />
     </>
   )
@@ -274,7 +312,6 @@ function AssistMonitor({
         document.body.style.cursor = 'auto'
       }}
     >
-      {/* Desk secondary monitor */}
       <mesh position={[0, 0.55, 0]} castShadow>
         <boxGeometry args={[0.95, 0.72, 0.08]} />
         <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
@@ -292,7 +329,6 @@ function AssistMonitor({
         <boxGeometry args={[0.35, 0.12, 0.25]} />
         <meshStandardMaterial color={palette.panel} roughness={0.55} />
       </mesh>
-      {/* Assist arm stub */}
       <mesh position={[-0.55, 0.7, -0.05]} castShadow>
         <cylinderGeometry args={[0.04, 0.04, 0.7, 8]} />
         <meshStandardMaterial color={palette.metal} metalness={0.5} roughness={0.35} />
