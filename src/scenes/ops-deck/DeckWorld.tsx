@@ -103,17 +103,17 @@ export function DeckWorld({
       />
 
       <hemisphereLight
-        color={night ? '#3a5570' : '#fff2dc'}
-        groundColor={night ? '#101418' : '#c4a882'}
+        color={night ? '#98a9b4' : '#fffff2'} /* silver-mist / warm-paper */
+        groundColor={night ? '#0f0f0f' : '#d8d8df'} /* void-black / cool-ash */
         intensity={night ? (lowPower ? 0.72 : 0.62) : 0.62}
       />
       <ambientLight intensity={night ? (lowPower ? 0.55 : 0.48) : 0.38} />
 
-      {/* Key: day = warm window sun; night = cool bounce so desk/chair silhouette */}
+      {/* Key: day = warm-paper sun; night = silver-mist bounce for silhouette */}
       <directionalLight
         position={night ? [3.2, 9.0, 4.0] : [-5.5, 9.5, 2.5]}
         intensity={lowPower ? keyIntensity * 1.1 : keyIntensity}
-        color={night ? '#b8d0e4' : '#ffe0b8'}
+        color={night ? '#c8d4dc' : '#fff8e8'}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
@@ -127,10 +127,10 @@ export function DeckWorld({
       <directionalLight
         position={[-4.5, 2.8, 3.5]}
         intensity={fillIntensity}
-        color={night ? '#2a4860' : '#f5dcc0'}
+        color={night ? '#243844' : '#f2f7f9'} /* harbor-slate / sky-mist */
       />
 
-      {/* Practical desk lamp — warm day, cool accent night */}
+      {/* Practical desk lamp — tip-yellow day, silver-mist night */}
       <pointLight
         position={[2.95, 1.35, 2.55]}
         intensity={lampIntensity}
@@ -139,7 +139,7 @@ export function DeckWorld({
         decay={2}
       />
 
-      {/* Screen spill — sci-fi accent, not the only light */}
+      {/* Screen spill — acid-lime night / forest-ink day, sparse */}
       <pointLight
         position={[0, 1.4, -1.0]}
         intensity={screenFill}
@@ -159,16 +159,16 @@ export function DeckWorld({
       <pointLight
         position={[-5.0, 2.0, -1.0]}
         intensity={windowGlow}
-        color={night ? '#5a7a98' : '#ffd8a8'}
+        color={night ? '#98a9b4' : '#fff4d8'} /* silver-mist / warm bounce */
         distance={12}
         decay={2}
       />
 
-      {/* Soft ceiling wash — day warm, night cool graphite */}
+      {/* Soft ceiling wash — warm-paper day, silver-mist night */}
       <pointLight
         position={[0, 3.1, 0.2]}
         intensity={night ? 0.75 : 0.55}
-        color={night ? '#6a7a8c' : '#ffe8c8'}
+        color={night ? '#8a8a9a' : '#fffff2'} /* muted-steel / warm-paper */
         distance={14}
         decay={2}
       />
@@ -361,8 +361,8 @@ function StudioShell({
       <mesh position={[-5.36, 1.9, -1.0]}>
         <boxGeometry args={[0.06, 1.4, 2.8]} />
         <meshStandardMaterial
-          color={night ? palette.screen : '#d8ecf8'}
-          emissive={night ? '#3a5570' : '#ffe8c0'}
+          color={night ? palette.screen : '#f2f7f9'} /* sky-mist day glass */
+          emissive={night ? '#243844' : '#fff4d8'} /* harbor-slate / warm bounce */
           emissiveIntensity={windowEmissive}
           roughness={0.2}
           metalness={0.12}
