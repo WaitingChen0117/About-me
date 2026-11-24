@@ -58,9 +58,9 @@ export function DeckWorld({
     }
   })
 
-  const keyIntensity = theme === 'bright' ? 0.95 : 0.7
-  const fillIntensity = theme === 'bright' ? 0.22 : 0.32
-  const rimIntensity = theme === 'bright' ? 0.16 : 0.26
+  const keyIntensity = theme === 'bright' ? 0.98 : 0.82
+  const fillIntensity = theme === 'bright' ? 0.24 : 0.36
+  const rimIntensity = theme === 'bright' ? 0.16 : 0.28
 
   return (
     <>
@@ -68,15 +68,15 @@ export function DeckWorld({
       <fog attach="fog" args={[palette.bg, lowPower ? 12 : 10.5, lowPower ? 24 : 19]} />
 
       <hemisphereLight
-        color={theme === 'bright' ? '#e4e8ef' : '#1a2230'}
+        color={theme === 'bright' ? '#e4e8ef' : '#1e2838'}
         groundColor={theme === 'bright' ? '#a8b0bc' : '#05070a'}
-        intensity={theme === 'bright' ? 0.48 : lowPower ? 0.32 : 0.22}
+        intensity={theme === 'bright' ? 0.5 : lowPower ? 0.38 : 0.28}
       />
-      <ambientLight intensity={theme === 'bright' ? 0.36 : lowPower ? 0.22 : 0.12} />
+      <ambientLight intensity={theme === 'bright' ? 0.38 : lowPower ? 0.28 : 0.18} />
 
       <directionalLight
         position={[4.8, 9.2, 2.4]}
-        intensity={lowPower ? keyIntensity * 1.1 : keyIntensity}
+        intensity={lowPower ? keyIntensity * 1.15 : keyIntensity}
         castShadow={!lowPower}
         color={theme === 'bright' ? '#f2f4f8' : '#d8e4f0'}
         shadow-mapSize-width={lowPower ? 512 : 1024}

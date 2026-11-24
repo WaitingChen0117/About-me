@@ -58,8 +58,8 @@ export function LabWorld({
     }
   })
 
-  const keyIntensity = theme === 'bright' ? 1.0 : 0.68
-  const fillIntensity = theme === 'bright' ? 0.28 : 0.26
+  const keyIntensity = theme === 'bright' ? 1.05 : 0.78
+  const fillIntensity = theme === 'bright' ? 0.3 : 0.3
 
   return (
     <>
@@ -67,16 +67,16 @@ export function LabWorld({
       <fog attach="fog" args={[palette.bg, lowPower ? 12 : 10.5, lowPower ? 26 : 20]} />
 
       <hemisphereLight
-        color={theme === 'bright' ? '#eceef2' : '#2a3038'}
+        color={theme === 'bright' ? '#eceef2' : '#303840'}
         groundColor={theme === 'bright' ? '#a8acb4' : '#0a0c10'}
-        intensity={theme === 'bright' ? 0.52 : lowPower ? 0.34 : 0.24}
+        intensity={theme === 'bright' ? 0.54 : lowPower ? 0.38 : 0.28}
       />
-      <ambientLight intensity={theme === 'bright' ? 0.4 : lowPower ? 0.26 : 0.14} />
+      <ambientLight intensity={theme === 'bright' ? 0.42 : lowPower ? 0.3 : 0.18} />
 
       {/* Cool studio key — graphite room, amber only as accent */}
       <directionalLight
         position={[2.4, 9.4, 1.2]}
-        intensity={lowPower ? keyIntensity * 1.08 : keyIntensity}
+        intensity={lowPower ? keyIntensity * 1.12 : keyIntensity}
         castShadow={!lowPower}
         color={theme === 'bright' ? '#f4f5f7' : '#e8e0d4'}
         shadow-mapSize-width={lowPower ? 512 : 1024}
