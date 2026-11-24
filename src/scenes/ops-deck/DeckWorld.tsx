@@ -86,11 +86,11 @@ export function DeckWorld({
   })
 
   const duty = theme === 'duty'
-  const keyIntensity = duty ? 0.72 : 1.08
-  const fillIntensity = duty ? 0.42 : 0.26
-  const coveIntensity = duty ? 0.85 : 0.22
-  const windowGlow = duty ? 0.55 : 0.12
-  const fixturePoint = duty ? 0.78 : 0.24
+  const keyIntensity = duty ? 0.88 : 1.08
+  const fillIntensity = duty ? 0.48 : 0.26
+  const coveIntensity = duty ? 0.95 : 0.22
+  const windowGlow = duty ? 0.62 : 0.12
+  const fixturePoint = duty ? 0.88 : 0.24
 
   return (
     <>
@@ -100,9 +100,9 @@ export function DeckWorld({
       <hemisphereLight
         color={duty ? '#1a2a44' : '#e8eef8'}
         groundColor={duty ? '#05080f' : '#b8c4d4'}
-        intensity={duty ? (lowPower ? 0.36 : 0.26) : 0.55}
+        intensity={duty ? (lowPower ? 0.42 : 0.34) : 0.55}
       />
-      <ambientLight intensity={duty ? (lowPower ? 0.26 : 0.16) : 0.44} />
+      <ambientLight intensity={duty ? (lowPower ? 0.32 : 0.24) : 0.44} />
 
       <directionalLight
         position={[6.2, 10.5, 4.2]}
@@ -383,15 +383,15 @@ function CommandRoomShell({
         <>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.5]}>
             <planeGeometry args={[10.2, 1.6]} />
-            <meshBasicMaterial color={palette.accent2} transparent opacity={duty ? 0.1 : 0.06} depthWrite={false} />
+            <meshBasicMaterial color={palette.accent2} transparent opacity={duty ? 0.16 : 0.08} depthWrite={false} />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.15, 0.003, 0.15]}>
             <planeGeometry args={[6.2, 4.0]} />
-            <meshBasicMaterial color={palette.accent} transparent opacity={duty ? 0.07 : 0.04} depthWrite={false} />
+            <meshBasicMaterial color={palette.accent} transparent opacity={duty ? 0.12 : 0.05} depthWrite={false} />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 2.9]}>
             <planeGeometry args={[10.4, 1.4]} />
-            <meshBasicMaterial color={palette.metal} transparent opacity={duty ? 0.12 : 0.07} depthWrite={false} />
+            <meshBasicMaterial color={palette.metal} transparent opacity={duty ? 0.18 : 0.09} depthWrite={false} />
           </mesh>
         </>
       )}

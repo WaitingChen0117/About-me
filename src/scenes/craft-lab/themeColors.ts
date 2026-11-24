@@ -34,10 +34,10 @@ export function labPalette(theme: ThemeMode): LabPalette {
 
   return {
     bg: '#0c0d10',
-    floor: '#12141a',
-    desk: '#1a1e26',
-    metal: '#5a616c',
-    panel: '#22262e',
+    floor: '#181b22',
+    desk: '#222830',
+    metal: '#646b76',
+    panel: '#2a3038',
     accent: '#d4a574',
     accent2: '#7d8b99',
     glow: '#d4a574',

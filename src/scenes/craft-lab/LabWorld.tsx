@@ -86,10 +86,10 @@ export function LabWorld({
   })
 
   const duty = theme === 'duty'
-  const keyIntensity = duty ? 0.7 : 1.08
-  const fillIntensity = duty ? 0.32 : 0.28
-  const pendantIntensity = duty ? 0.72 : 0.2
-  const windowFill = duty ? 0.42 : 0.14
+  const keyIntensity = duty ? 0.86 : 1.08
+  const fillIntensity = duty ? 0.38 : 0.28
+  const pendantIntensity = duty ? 0.82 : 0.2
+  const windowFill = duty ? 0.5 : 0.14
 
   return (
     <>
@@ -99,9 +99,9 @@ export function LabWorld({
       <hemisphereLight
         color={duty ? '#303840' : '#eceef2'}
         groundColor={duty ? '#0a0c10' : '#a8acb4'}
-        intensity={duty ? (lowPower ? 0.36 : 0.26) : 0.54}
+        intensity={duty ? (lowPower ? 0.42 : 0.34) : 0.54}
       />
-      <ambientLight intensity={duty ? (lowPower ? 0.28 : 0.16) : 0.44} />
+      <ambientLight intensity={duty ? (lowPower ? 0.34 : 0.24) : 0.44} />
 
       <directionalLight
         position={[3.2, 10.2, 2.0]}
@@ -424,7 +424,7 @@ function WorkshopShell({
             <meshBasicMaterial
               color={palette.accent2}
               transparent
-              opacity={duty ? 0.09 : 0.05}
+              opacity={duty ? 0.15 : 0.07}
               depthWrite={false}
             />
           </mesh>
@@ -433,7 +433,7 @@ function WorkshopShell({
             <meshBasicMaterial
               color={palette.accent}
               transparent
-              opacity={duty ? 0.07 : 0.04}
+              opacity={duty ? 0.12 : 0.05}
               depthWrite={false}
             />
           </mesh>
@@ -442,7 +442,7 @@ function WorkshopShell({
             <meshBasicMaterial
               color={palette.metal}
               transparent
-              opacity={duty ? 0.1 : 0.06}
+              opacity={duty ? 0.16 : 0.08}
               depthWrite={false}
             />
           </mesh>
