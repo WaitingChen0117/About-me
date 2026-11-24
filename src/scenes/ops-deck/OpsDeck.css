@@ -20,7 +20,7 @@
 
 .ops-hud-rail {
   position: absolute;
-  top: 0.85rem;
+  top: 0.75rem;
   left: 1rem;
   right: 1rem;
   display: flex;
@@ -98,7 +98,7 @@
 
 .ops-html-label.is-hot {
   border-color: var(--line-strong);
-  box-shadow: 0 0 18px var(--glow);
+  box-shadow: 0 0 14px var(--glow);
 }
 
 .ops-html-kicker {
@@ -155,6 +155,18 @@
   overflow-y: auto;
   padding: 0.15rem;
   pointer-events: auto;
+  animation: legendIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes legendIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .ops-legend-item {
@@ -171,13 +183,15 @@
   text-align: left;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
 .ops-legend-item:hover,
 .ops-legend-item.is-active {
   border-color: var(--line-strong);
-  box-shadow: 0 0 14px var(--glow);
+  box-shadow: 0 0 12px var(--glow);
+  transform: translateX(2px);
 }
 
 .ops-legend-item.is-target {
@@ -201,29 +215,42 @@
 .mobile-section-rail {
   display: none;
   position: absolute;
-  left: 0.5rem;
-  right: 0.5rem;
-  bottom: 0.6rem;
+  left: 0.45rem;
+  right: 0.45rem;
+  bottom: 0.45rem;
   z-index: 8;
-  gap: 0.35rem;
+  gap: 0.3rem;
   overflow-x: auto;
-  padding: 0.25rem;
+  padding: 0.28rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-panel-solid) 72%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  max-height: 2.6rem;
+}
+
+.mobile-section-rail::-webkit-scrollbar {
+  display: none;
 }
 
 .mobile-section-rail button {
   flex: 0 0 auto;
-  padding: 0.4rem 0.65rem;
+  padding: 0.32rem 0.58rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--bg-panel);
+  border: 1px solid transparent;
+  background: transparent;
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .mobile-section-rail button.is-active {
   border-color: var(--accent);
   color: var(--text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 @media (max-width: 900px) {
@@ -234,16 +261,28 @@
 
 @media (max-width: 560px) {
   .ops-hud-rail {
-    font-size: 0.58rem;
+    top: 0.45rem;
+    left: 0.55rem;
+    right: 0.55rem;
+    font-size: 0.55rem;
+    gap: 0.35rem;
+  }
+
+  .ops-status-lights {
+    display: none;
   }
 
   .ops-html-label {
-    min-width: 3.6rem;
-    padding: 0.25rem 0.4rem;
+    min-width: 3.4rem;
+    padding: 0.2rem 0.35rem;
   }
 
   .ops-html-title {
-    font-size: 0.68rem;
+    font-size: 0.64rem;
+  }
+
+  .ops-html-pod {
+    display: none;
   }
 
   .mobile-section-rail {
@@ -251,6 +290,21 @@
   }
 }
 
+/* Keep scene readable when lite mode strips glass / grid */
 .ops-deck[data-low-power='true'] .ops-html-label {
   backdrop-filter: none;
+}
+
+.ops-deck[data-low-power='true'] .ops-legend-item {
+  backdrop-filter: none;
+}
+
+.ops-deck[data-low-power='true'] .mobile-section-rail {
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--bg-panel-solid) 88%, transparent);
+}
+
+.ops-deck[data-touch='true'] .ops-canvas-wrap {
+  /* Prefer orbit gestures over accidental page scroll */
+  touch-action: none;
 }
