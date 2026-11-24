@@ -38,7 +38,7 @@ export function CraftHotspotMesh({
 
   const isHovered = hovered || externallyHovered
   const highlight = active || targeted || isHovered
-  const emissive = active ? 0.36 : targeted ? 0.26 : isHovered ? 0.2 : 0.08
+  const emissive = active ? 0.42 : targeted ? 0.3 : isHovered ? 0.24 : 0.12
 
   useFrame((_, dt) => {
     const g = root.current

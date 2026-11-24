@@ -62,8 +62,8 @@ export function CraftLabScene({
   const camera = useMemo(
     () =>
       isNarrow
-        ? { position: [3.6, 5.8, 8.2] as [number, number, number], fov: 44, near: 0.1, far: 60 }
-        : { position: [3.0, 5.0, 7.4] as [number, number, number], fov: 40, near: 0.1, far: 60 },
+        ? { position: [4.4, 6.8, 10.0] as [number, number, number], fov: 44, near: 0.1, far: 80 }
+        : { position: [3.8, 6.0, 9.2] as [number, number, number], fov: 40, near: 0.1, far: 80 },
     [isNarrow],
   )
 
