@@ -41,19 +41,19 @@ export const sections: Section[] = [
   {
     id: 'about',
     title: '关于我',
-    subtitle: '前端工程师 · 复杂 B 端与 AI 产品界面',
+    subtitle: '资深前端 · 复杂 B 端与 Agent 产品界面',
     blocks: [
       {
         type: 'paragraph',
-        text: 'Waiting Chen —— 多年前端，现于某大厂做云计算 / 大模型公有云控制台。主战场是 React + TypeScript 的复杂 B 端：订阅与计费、推理与体验、微前端子应用与组件体系。',
+        text: 'Waiting Chen。资深前端，现于某大厂负责云计算 / 大模型公有云控制台。主栈 React + TypeScript，覆盖订阅与计费、推理与体验、微前端子应用与企业级组件体系。',
       },
       {
         type: 'paragraph',
-        text: '叙事顺序很明确：先把产品交互与工程交付做扎实，再把 Agent 跑进真实工作流——人机审批、工具调用、Workflow 与可观测 Trace，最终都要落成可操作的界面。',
+        text: '路径清晰：先把产品交互与工程交付做扎实，再把 Agent 接入真实工作流——人机审批、工具调用、Workflow 与可观测 Trace，最终都落成可操作的界面。',
       },
       {
         type: 'paragraph',
-        text: '对外只谈角色、领域与公开作品；真名、雇主全称、学校与具体量化指标默认不出现在本站。',
+        text: '本站只谈角色、领域与公开作品；真名、雇主全称、学校与具体量化指标默认不出现。',
       },
       {
         type: 'tags',

@@ -30,14 +30,14 @@ export function CraftHotspotMesh({
   const scaleCurrent = useRef(1)
 
   const highlight = active || targeted || hovered
-  const emissive = active ? 0.55 : targeted ? 0.4 : hovered ? 0.32 : 0.1
+  const emissive = active ? 0.36 : targeted ? 0.26 : hovered ? 0.2 : 0.08
 
   useFrame((_, dt) => {
     const g = root.current
     if (!g) return
 
     pulse.current += dt
-    const scaleTarget = hovered || active ? 1.04 : targeted ? 1.02 : 1
+    const scaleTarget = hovered || active ? 1.018 : targeted ? 1.01 : 1
     scaleCurrent.current = THREE.MathUtils.damp(scaleCurrent.current, scaleTarget, 10, dt)
 
     const intro = introRef.current

@@ -56,26 +56,32 @@ export function Operator3D({
     () => ({
       skin: new THREE.MeshStandardMaterial({
         color: palette.operatorSkin,
-        roughness: 0.62,
-        metalness: 0.02,
+        roughness: 0.78,
+        metalness: 0.04,
       }),
       suit: new THREE.MeshStandardMaterial({
         color: palette.operatorSuit,
-        roughness: 0.4,
-        metalness: 0.18,
+        roughness: 0.55,
+        metalness: 0.22,
         emissive: palette.accent2,
-        emissiveIntensity: 0.12,
+        emissiveIntensity: 0.04,
       }),
       leg: new THREE.MeshStandardMaterial({
         color: palette.operatorLeg,
-        roughness: 0.72,
-        metalness: 0.05,
+        roughness: 0.8,
+        metalness: 0.08,
       }),
       accent: new THREE.MeshStandardMaterial({
         color: palette.accent,
         emissive: palette.accent,
-        emissiveIntensity: 0.35,
-        roughness: 0.35,
+        emissiveIntensity: 0.18,
+        roughness: 0.42,
+        metalness: 0.35,
+      }),
+      helm: new THREE.MeshStandardMaterial({
+        color: palette.operatorLeg,
+        roughness: 0.4,
+        metalness: 0.45,
       }),
     }),
     [palette],
@@ -154,7 +160,7 @@ export function Operator3D({
 
     if (torso.current) {
       const mat = torso.current.material as THREE.MeshStandardMaterial
-      mat.emissiveIntensity = hovered || walking ? 0.22 : 0.1
+      mat.emissiveIntensity = hovered || walking ? 0.1 : 0.04
     }
   })
 
@@ -176,52 +182,65 @@ export function Operator3D({
         document.body.style.cursor = 'auto'
       }}
     >
-      <mesh position={[0, 0.06, 0]} castShadow>
-        <cylinderGeometry args={[0.16, 0.18, 0.08, 12]} />
-        <meshStandardMaterial color={palette.operatorLeg} roughness={0.85} />
+      {/* Low-poly workwear operator — geometric, not chibi */}
+      <mesh position={[0, 0.05, 0]} castShadow>
+        <boxGeometry args={[0.28, 0.06, 0.2]} />
+        <meshStandardMaterial color={palette.operatorLeg} roughness={0.88} metalness={0.06} />
       </mesh>
 
-      <mesh position={[0, 1.02, 0]} castShadow material={materials.skin}>
-        <sphereGeometry args={[0.135, 14, 14]} />
+      <mesh position={[0, 1.0, 0]} castShadow material={materials.skin}>
+        <boxGeometry args={[0.2, 0.22, 0.18]} />
       </mesh>
-      <mesh position={[0, 1.02, 0.11]}>
-        <boxGeometry args={[0.16, 0.04, 0.04]} />
+      <mesh position={[0, 1.1, 0]} castShadow material={materials.helm}>
+        <boxGeometry args={[0.22, 0.08, 0.2]} />
+      </mesh>
+      <mesh position={[0, 1.02, 0.1]}>
+        <boxGeometry args={[0.16, 0.03, 0.02]} />
         <meshStandardMaterial
           color={palette.accent}
           emissive={palette.accent}
-          emissiveIntensity={hovered || walking ? 0.55 : 0.28}
+          emissiveIntensity={hovered || walking ? 0.32 : 0.12}
+          roughness={0.35}
+          metalness={0.4}
         />
       </mesh>
 
       <mesh ref={torso} position={[0, 0.68, 0]} castShadow material={materials.suit}>
-        <boxGeometry args={[0.32, 0.4, 0.2]} />
+        <boxGeometry args={[0.34, 0.42, 0.18]} />
       </mesh>
-      <mesh position={[0, 0.78, 0.11]} material={materials.accent}>
-        <boxGeometry args={[0.18, 0.05, 0.02]} />
+      <mesh position={[0, 0.82, 0.1]} material={materials.accent}>
+        <boxGeometry args={[0.14, 0.04, 0.015]} />
+      </mesh>
+      {/* Shoulder plates */}
+      <mesh position={[-0.2, 0.86, 0]} castShadow material={materials.helm}>
+        <boxGeometry args={[0.1, 0.08, 0.16]} />
+      </mesh>
+      <mesh position={[0.2, 0.86, 0]} castShadow material={materials.helm}>
+        <boxGeometry args={[0.1, 0.08, 0.16]} />
       </mesh>
 
-      <mesh ref={armL} position={[-0.22, 0.72, 0]} castShadow material={materials.suit}>
-        <boxGeometry args={[0.08, 0.28, 0.1]} />
+      <mesh ref={armL} position={[-0.24, 0.68, 0]} castShadow material={materials.suit}>
+        <boxGeometry args={[0.09, 0.3, 0.1]} />
       </mesh>
-      <mesh ref={armR} position={[0.22, 0.72, 0]} castShadow material={materials.suit}>
-        <boxGeometry args={[0.08, 0.28, 0.1]} />
+      <mesh ref={armR} position={[0.24, 0.68, 0]} castShadow material={materials.suit}>
+        <boxGeometry args={[0.09, 0.3, 0.1]} />
       </mesh>
 
-      <mesh ref={legL} position={[-0.08, 0.3, 0]} castShadow material={materials.leg}>
-        <boxGeometry args={[0.1, 0.36, 0.12]} />
+      <mesh ref={legL} position={[-0.09, 0.28, 0]} castShadow material={materials.leg}>
+        <boxGeometry args={[0.11, 0.38, 0.12]} />
       </mesh>
-      <mesh ref={legR} position={[0.08, 0.3, 0]} castShadow material={materials.leg}>
-        <boxGeometry args={[0.1, 0.36, 0.12]} />
+      <mesh ref={legR} position={[0.09, 0.28, 0]} castShadow material={materials.leg}>
+        <boxGeometry args={[0.11, 0.38, 0.12]} />
       </mesh>
 
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
-        <ringGeometry args={[0.18, 0.28, 24]} />
-        <meshBasicMaterial color={palette.accent} transparent opacity={0.2} depthWrite={false} />
+        <ringGeometry args={[0.16, 0.24, 20]} />
+        <meshBasicMaterial color={palette.accent} transparent opacity={0.14} depthWrite={false} />
       </mesh>
 
       {(hovered || walking) && (
-        <Html position={[0, 1.4, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
-          <div className={tipClassName}>{walking ? '巡视中…' : '点我逛逛'}</div>
+        <Html position={[0, 1.38, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+          <div className={tipClassName}>{walking ? '巡航中' : '派遣巡视'}</div>
         </Html>
       )}
     </group>

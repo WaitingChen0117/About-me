@@ -58,26 +58,27 @@ export function DeckWorld({
     }
   })
 
-  const keyIntensity = theme === 'bright' ? 1.05 : 0.82
-  const fillIntensity = theme === 'bright' ? 0.28 : 0.45
-  const rimIntensity = theme === 'bright' ? 0.22 : 0.38
+  const keyIntensity = theme === 'bright' ? 0.95 : 0.7
+  const fillIntensity = theme === 'bright' ? 0.22 : 0.32
+  const rimIntensity = theme === 'bright' ? 0.16 : 0.26
 
   return (
     <>
       <color attach="background" args={[palette.bg]} />
-      <fog attach="fog" args={[palette.bg, lowPower ? 11 : 9.5, lowPower ? 24 : 20]} />
+      <fog attach="fog" args={[palette.bg, lowPower ? 12 : 10.5, lowPower ? 24 : 19]} />
 
       <hemisphereLight
-        color={theme === 'bright' ? '#e8eef8' : '#1a2a44'}
-        groundColor={theme === 'bright' ? '#b8c4d4' : '#05080f'}
-        intensity={theme === 'bright' ? 0.55 : lowPower ? 0.38 : 0.28}
+        color={theme === 'bright' ? '#e4e8ef' : '#1a2230'}
+        groundColor={theme === 'bright' ? '#a8b0bc' : '#05070a'}
+        intensity={theme === 'bright' ? 0.48 : lowPower ? 0.32 : 0.22}
       />
-      <ambientLight intensity={theme === 'bright' ? 0.42 : lowPower ? 0.28 : 0.18} />
+      <ambientLight intensity={theme === 'bright' ? 0.36 : lowPower ? 0.22 : 0.12} />
 
       <directionalLight
-        position={[5.2, 8.5, 3.2]}
-        intensity={lowPower ? keyIntensity * 1.12 : keyIntensity}
+        position={[4.8, 9.2, 2.4]}
+        intensity={lowPower ? keyIntensity * 1.1 : keyIntensity}
         castShadow={!lowPower}
+        color={theme === 'bright' ? '#f2f4f8' : '#d8e4f0'}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
         shadow-bias={-0.00025}
@@ -87,32 +88,35 @@ export function DeckWorld({
         shadow-camera-top={9}
         shadow-camera-bottom={-9}
       />
-      <directionalLight position={[-4, 3.5, -2]} intensity={fillIntensity} color={palette.rim} />
+      <directionalLight position={[-5.2, 2.8, -2.4]} intensity={fillIntensity} color={palette.rim} />
       <pointLight
-        position={[0, 2.2, 0]}
-        intensity={theme === 'bright' ? 0.28 : 0.72}
+        position={[0, 2.4, 0.4]}
+        intensity={theme === 'bright' ? 0.18 : 0.42}
         color={palette.accent}
-        distance={9}
+        distance={8}
         decay={2}
       />
       <pointLight
-        position={[-3.2, 1.6, 1.8]}
+        position={[-3.4, 1.8, 1.6]}
         intensity={rimIntensity}
         color={palette.accent2}
-        distance={7}
+        distance={6.5}
         decay={2}
       />
-      <pointLight
-        position={[3, 1.4, -1.2]}
-        intensity={rimIntensity * 0.7}
-        color={palette.ok}
-        distance={6}
+      <spotLight
+        position={[2.8, 4.2, 3.2]}
+        angle={0.42}
+        penumbra={0.65}
+        intensity={theme === 'bright' ? 0.28 : 0.48}
+        color="#c8d4e4"
+        castShadow={false}
+        distance={14}
         decay={2}
       />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[18, 14]} />
-        <meshStandardMaterial color={palette.floor} roughness={0.94} metalness={0.04} />
+        <meshStandardMaterial color={palette.floor} roughness={0.9} metalness={0.08} />
       </mesh>
 
       {!lowPower && (
@@ -120,13 +124,13 @@ export function DeckWorld({
           position={[0, 0.001, 0]}
           args={[18, 14]}
           cellSize={0.5}
-          cellThickness={0.45}
+          cellThickness={0.3}
           cellColor={palette.accent2}
           sectionSize={2}
-          sectionThickness={0.9}
-          sectionColor={palette.accent}
-          fadeDistance={13}
-          fadeStrength={1.5}
+          sectionThickness={0.55}
+          sectionColor={palette.metal}
+          fadeDistance={12}
+          fadeStrength={1.6}
           infiniteGrid={false}
         />
       )}
@@ -134,26 +138,27 @@ export function DeckWorld({
       <group ref={deskGroup}>
         <mesh position={[0, 0.04, 0]} receiveShadow castShadow>
           <boxGeometry args={[8.2, 0.1, 5.6]} />
-          <meshStandardMaterial color={palette.desk} roughness={0.78} metalness={0.08} />
+          <meshStandardMaterial color={palette.desk} roughness={0.72} metalness={0.14} />
         </mesh>
         <mesh position={[0, 0.1, 0]} receiveShadow>
           <boxGeometry args={[8.28, 0.02, 5.68]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
+          <meshStandardMaterial color={palette.metal} roughness={0.38} metalness={0.52} />
         </mesh>
         <mesh position={[0, -0.35, 0]} castShadow>
           <boxGeometry args={[7.6, 0.7, 5]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.58} metalness={0.32} />
+          <meshStandardMaterial color={palette.metal} roughness={0.48} metalness={0.42} />
         </mesh>
 
         <group position={[0, 0.12, 2.55]}>
           {[-0.35, 0, 0.35].map((x, i) => (
             <mesh key={x} position={[x, 0, 0]}>
-              <sphereGeometry args={[0.055, 12, 12]} />
+              <boxGeometry args={[0.08, 0.06, 0.08]} />
               <meshStandardMaterial
                 color={i === 0 ? palette.ok : i === 1 ? palette.accent : palette.accent2}
                 emissive={i === 0 ? palette.ok : i === 1 ? palette.accent : palette.accent2}
-                emissiveIntensity={theme === 'duty' ? 0.7 : 0.32}
-                roughness={0.3}
+                emissiveIntensity={theme === 'duty' ? 0.35 : 0.16}
+                roughness={0.4}
+                metalness={0.35}
               />
             </mesh>
           ))}
@@ -262,36 +267,36 @@ function AvatarPod({
       }}
     >
       <mesh position={[0, 0.35, 0]} castShadow>
-        <cylinderGeometry args={[0.55, 0.65, 0.7, 24]} />
+        <cylinderGeometry args={[0.52, 0.62, 0.7, 16]} />
         <meshStandardMaterial
-          color={palette.panel}
-          roughness={0.32}
-          metalness={0.28}
+          color={palette.metal}
+          roughness={0.36}
+          metalness={0.48}
           emissive={palette.accent}
-          emissiveIntensity={open || hovered ? 0.32 : 0.1}
+          emissiveIntensity={open || hovered ? 0.16 : 0.04}
         />
       </mesh>
-      <mesh position={[0, 0.85, 0]}>
-        <sphereGeometry args={[0.42, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <mesh position={[0, 0.82, 0]}>
+        <cylinderGeometry args={[0.38, 0.42, 0.28, 16]} />
         <meshStandardMaterial
-          color={palette.accent}
+          color={palette.screen}
           transparent
-          opacity={theme === 'duty' ? 0.32 : 0.22}
-          roughness={0.18}
-          metalness={0.35}
+          opacity={theme === 'duty' ? 0.55 : 0.42}
+          roughness={0.22}
+          metalness={0.28}
           emissive={palette.accent}
-          emissiveIntensity={open ? 0.5 : hovered ? 0.35 : 0.18}
+          emissiveIntensity={open ? 0.28 : hovered ? 0.18 : 0.08}
         />
       </mesh>
       {(open || hovered) && (
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.7, 0.82, 32]} />
-          <meshBasicMaterial color={palette.accent} transparent opacity={0.35} depthWrite={false} />
+          <ringGeometry args={[0.68, 0.78, 28]} />
+          <meshBasicMaterial color={palette.accent} transparent opacity={0.22} depthWrite={false} />
         </mesh>
       )}
-      <Html position={[0, 1.35, 0]} center distanceFactor={9} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, 1.28, 0]} center distanceFactor={9} style={{ pointerEvents: 'none' }}>
         <div className={`ops-html-label ops-html-pod${open || hovered ? ' is-hot' : ''}`}>
-          <span className="ops-html-kicker">中央对话舱</span>
+          <span className="ops-html-kicker">对话舱</span>
           <span className="ops-html-title">AI 分身</span>
         </div>
       </Html>

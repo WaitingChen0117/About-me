@@ -52,7 +52,7 @@ export default function App() {
       <header className="top-bar">
         <div className="brand-block">
           <div className="brand-name">Waiting Chen</div>
-          <div className="brand-tag">Frontend · Interactive products · Agent systems</div>
+          <div className="brand-tag">Senior Frontend · Product UI · Agent systems</div>
         </div>
         <div className="top-actions">
           <div className="scene-switch" role="group" aria-label="场景切换">
@@ -118,8 +118,8 @@ export default function App() {
         {hintVisible ? (
           <div className="hint-toast">
             {isCraft
-              ? '拖拽环视 · 点工作台物件或图例开板块 · 点助手逛逛 · 副屏提问'
-              : '拖拽环视 · 点物件或左侧图例开板块 · 点小人巡视 · 对话舱提问'}
+              ? '拖拽环视 · 点击工作台物件或图例打开板块 · 派遣助手 · 副屏提问'
+              : '拖拽环视 · 点击物件或图例打开板块 · 派遣操作员 · 对话舱提问'}
           </div>
         ) : null}
       </main>

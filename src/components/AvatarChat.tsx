@@ -20,7 +20,7 @@ type Props = {
 
 const INTRO: Msg = {
   role: 'bot',
-  text: '你好。我是站内 AI 分身——基于本站板块的离线知识层（关键词 + 意图匹配）。点建议问题，或自己输入；命中后可跳到对应板块。',
+  text: '我是站内 AI 分身，检索本站离线知识层（关键词与意图匹配）。可点建议问题或自行提问；命中后可跳转对应板块。',
 }
 
 export function AvatarChat({ open, onClose, onOpenSection }: Props) {
