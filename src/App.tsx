@@ -2,12 +2,12 @@ import { Suspense, useCallback, useEffect, useState } from 'react'
 import { AvatarChat } from './components/AvatarChat'
 import { SectionPanel } from './components/SectionPanel'
 import type { SectionId } from './content/sections'
-import { defaultSceneId, getScene } from './scenes/registry'
+import { defaultSceneId, getScene, switchableScenes } from './scenes/registry'
 import type { SceneId, ThemeMode } from './scenes/types'
 import './styles/global.css'
 
 export default function App() {
-  const [sceneId] = useState<SceneId>(defaultSceneId)
+  const [sceneId, setSceneId] = useState<SceneId>(defaultSceneId)
   const [theme, setTheme] = useState<ThemeMode>('duty')
   const [activeSection, setActiveSection] = useState<SectionId | null>(null)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -17,10 +17,12 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
+    document.documentElement.setAttribute('data-scene', sceneId)
+  }, [theme, sceneId])
 
   const scene = getScene(sceneId)
   const Scene = scene.Component
+  const isCraft = sceneId === 'craft-lab'
 
   const openSection = useCallback((id: SectionId) => {
     setHintVisible(false)
@@ -37,14 +39,36 @@ export default function App() {
     setActiveSection(id)
   }, [])
 
+  const switchScene = useCallback((id: SceneId) => {
+    if (id === sceneId) return
+    setSceneId(id)
+    setOperatorTarget(null)
+    setOperatorTicket(0)
+    setHintVisible(true)
+  }, [sceneId])
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-scene={sceneId}>
       <header className="top-bar">
         <div className="brand-block">
           <div className="brand-name">Waiting Chen</div>
           <div className="brand-tag">Frontend · Interactive products · Agent systems</div>
         </div>
         <div className="top-actions">
+          <div className="scene-switch" role="group" aria-label="场景切换">
+            {switchableScenes.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="chip-btn scene-chip"
+                aria-pressed={sceneId === s.id}
+                title={s.description}
+                onClick={() => switchScene(s.id)}
+              >
+                {s.id === 'ops-deck' ? 'A · 指挥台' : 'B · 工坊'}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="chip-btn"
@@ -52,7 +76,13 @@ export default function App() {
             onClick={() => setTheme((t) => (t === 'duty' ? 'bright' : 'duty'))}
           >
             <span className="chip-dot" aria-hidden="true" />
-            {theme === 'duty' ? '值班灯' : '全亮模式'}
+            {isCraft
+              ? theme === 'duty'
+                ? '工作室灯'
+                : '日间顶光'
+              : theme === 'duty'
+                ? '值班灯'
+                : '全亮模式'}
           </button>
           <button
             type="button"
@@ -66,7 +96,13 @@ export default function App() {
       </header>
 
       <main className="scene-stage">
-        <Suspense fallback={<div className="scene-loading">加载指挥台…</div>}>
+        <Suspense
+          fallback={
+            <div className="scene-loading">
+              {isCraft ? '加载工坊…' : '加载指挥台…'}
+            </div>
+          }
+        >
           <Scene
             theme={theme}
             activeSection={activeSection}
@@ -80,7 +116,11 @@ export default function App() {
           />
         </Suspense>
         {hintVisible ? (
-          <div className="hint-toast">拖拽环视 · 点物件或左侧图例开板块 · 点小人巡视 · 对话舱提问</div>
+          <div className="hint-toast">
+            {isCraft
+              ? '拖拽环视 · 点工作台物件或图例开板块 · 点助手逛逛 · 副屏提问'
+              : '拖拽环视 · 点物件或左侧图例开板块 · 点小人巡视 · 对话舱提问'}
+          </div>
         ) : null}
       </main>
 

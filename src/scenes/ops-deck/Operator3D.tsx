@@ -15,6 +15,10 @@ type Props = {
   onTap: () => void
   palette: DeckPalette
   introRef: MutableRefObject<number>
+  /** Override spawn / idle position (defaults to Ops Deck home). */
+  home?: [number, number, number]
+  /** Optional CSS class for the hover tip bubble. */
+  tipClassName?: string
 }
 
 const WALK_SPEED = 2.55
@@ -27,10 +31,12 @@ export function Operator3D({
   onTap,
   palette,
   introRef,
+  home = OPERATOR_HOME,
+  tipClassName = 'ops-html-tip',
 }: Props) {
   const group = useRef<THREE.Group>(null)
-  const pos = useRef(new THREE.Vector3(...OPERATOR_HOME))
-  const goal = useRef(new THREE.Vector3(...OPERATOR_HOME))
+  const pos = useRef(new THREE.Vector3(...home))
+  const goal = useRef(new THREE.Vector3(...home))
   const pending = useRef<SectionId | null>(null)
   const arriveRef = useRef(onArrive)
 
@@ -155,7 +161,7 @@ export function Operator3D({
   return (
     <group
       ref={group}
-      position={OPERATOR_HOME}
+      position={home}
       onClick={(e) => {
         e.stopPropagation()
         onTap()
@@ -215,7 +221,7 @@ export function Operator3D({
 
       {(hovered || walking) && (
         <Html position={[0, 1.4, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
-          <div className="ops-html-tip">{walking ? '巡视中…' : '点我逛逛'}</div>
+          <div className={tipClassName}>{walking ? '巡视中…' : '点我逛逛'}</div>
         </Html>
       )}
     </group>

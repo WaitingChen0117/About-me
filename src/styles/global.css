@@ -70,6 +70,15 @@ button {
   animation: scanDrift 12s linear infinite;
 }
 
+/* Craft Lab: softer atmosphere, less HUD scan */
+.app-shell[data-scene='craft-lab']::before {
+  opacity: 0.28;
+  animation: none;
+  background:
+    radial-gradient(900px 480px at 70% 0%, var(--glow), transparent 55%),
+    radial-gradient(700px 400px at 15% 100%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 50%);
+}
+
 @keyframes scanDrift {
   from {
     background-position: 0 0;
@@ -120,6 +129,30 @@ button {
   align-items: center;
   gap: 0.6rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.scene-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+}
+
+.scene-chip {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.scene-chip[aria-pressed='true'] {
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .chip-btn {
