@@ -170,7 +170,7 @@ export default function App() {
                 title={s.description}
                 onClick={() => switchScene(s.id)}
               >
-                {s.id === 'ops-deck' ? 'A · 指挥台' : 'B · 工坊'}
+                {s.id === 'ops-deck' ? 'A · 工作室' : 'B · 工坊'}
               </button>
             ))}
           </div>
@@ -186,8 +186,8 @@ export default function App() {
                 ? '工作室灯'
                 : '日间顶光'
               : theme === 'duty'
-                ? '值班灯'
-                : '全亮模式'}
+                ? '夜间模式'
+                : '日间暖光'}
           </button>
           <button
             type="button"
@@ -204,7 +204,7 @@ export default function App() {
         <Suspense
           fallback={
             <div className="scene-loading">
-              {isCraft ? '加载工坊…' : '加载指挥台…'}
+              {isCraft ? '加载工坊…' : '加载工作室…'}
             </div>
           }
         >
@@ -229,7 +229,7 @@ export default function App() {
           <div className="hint-toast">
             {isCraft
               ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 副屏提问'
-              : '拖拽环视 · 点物件或铭牌开板块 · 派遣操作员 · 对话舱提问'}
+              : '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 桌面分身提问'}
           </div>
         ) : null}
       </main>

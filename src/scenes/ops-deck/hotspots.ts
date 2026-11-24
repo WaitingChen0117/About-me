@@ -1,131 +1,134 @@
 import type { HotspotDef } from '../types'
 
 /**
- * Ops Deck room-scale layout (command room floor units).
+ * Programmer studio layout (floor units).
  * Back wall ≈ z=-4.2 · left wall ≈ x=-5.2 · open front toward camera.
+ * Desk faces back wall; chair / walk space toward +z.
  */
 export const opsDeckHotspots: HotspotDef[] = [
   {
     id: 'about',
-    label: '主控屏',
+    label: '主显示器',
     hint: '身份与定位',
     x: 50,
     y: 22,
-    position: [0, 0, -3.55],
-    labelY: 2.15,
+    position: [0, 0, -1.05],
+    labelY: 2.05,
     view: {
-      target: [0, 1.15, -3.45],
-      radius: 3.55,
-      theta: 0.14,
-      phi: 0.96,
+      target: [0, 1.1, -0.95],
+      radius: 3.45,
+      theta: 0.12,
+      phi: 0.98,
     },
   },
   {
     id: 'experience',
-    label: '时间轴',
+    label: '墙面时间线',
     hint: '脱敏经历',
     x: 14,
     y: 36,
-    position: [-4.05, 0, -1.85],
-    labelY: 0.95,
+    position: [-4.15, 0, -1.65],
+    labelY: 1.55,
     view: {
-      target: [-3.9, 0.6, -1.75],
-      radius: 3.25,
-      theta: -0.88,
+      target: [-3.95, 0.85, -1.55],
+      radius: 3.2,
+      theta: -0.92,
       phi: 1.02,
     },
   },
   {
     id: 'works',
-    label: '预览监视器',
+    label: '侧屏预览',
     hint: '作品精选',
     x: 78,
     y: 30,
-    position: [3.55, 0, -2.65],
-    labelY: 1.25,
+    position: [2.45, 0, -1.0],
+    labelY: 1.55,
     view: {
-      target: [3.4, 0.7, -2.55],
-      radius: 3.3,
-      theta: 0.82,
+      target: [2.3, 0.9, -0.9],
+      radius: 3.25,
+      theta: 0.78,
       phi: 0.98,
     },
   },
   {
     id: 'projects',
-    label: '节点机架',
+    label: '书架机位',
     hint: '系统项目',
     x: 88,
     y: 54,
-    position: [4.35, 0, 0.35],
-    labelY: 1.95,
+    position: [4.2, 0, 0.45],
+    labelY: 1.85,
     view: {
-      target: [4.15, 0.95, 0.3],
-      radius: 3.35,
-      theta: 1.12,
+      target: [4.0, 0.95, 0.4],
+      radius: 3.3,
+      theta: 1.08,
       phi: 0.94,
     },
   },
   {
     id: 'articles',
-    label: '资料抽屉',
+    label: '笔记抽屉',
     hint: '文章入口',
     x: 12,
     y: 58,
-    position: [-4.25, 0, 0.55],
+    position: [-4.05, 0, 0.75],
     labelY: 1.05,
     view: {
-      target: [-4.05, 0.55, 0.55],
-      radius: 3.15,
-      theta: -1.05,
+      target: [-3.85, 0.55, 0.7],
+      radius: 3.1,
+      theta: -1.02,
       phi: 1.05,
     },
   },
   {
     id: 'hobbies',
-    label: '侧柜小物',
+    label: '边桌小物',
     hint: '爱好侧面',
     x: 24,
     y: 78,
-    position: [-2.75, 0, 2.85],
+    position: [-2.55, 0, 2.75],
     labelY: 0.95,
     view: {
-      target: [-2.6, 0.5, 2.7],
-      radius: 3.15,
-      theta: -0.42,
+      target: [-2.4, 0.5, 2.6],
+      radius: 3.1,
+      theta: -0.4,
       phi: 1.08,
     },
   },
   {
     id: 'contact',
-    label: '信标天线',
+    label: '台灯信箱',
     hint: '公开联系',
     x: 74,
     y: 78,
-    position: [3.15, 0, 2.95],
-    labelY: 1.8,
+    position: [2.85, 0, 2.65],
+    labelY: 1.45,
     view: {
-      target: [3.0, 0.9, 2.8],
-      radius: 3.2,
-      theta: 0.58,
+      target: [2.7, 0.75, 2.5],
+      radius: 3.15,
+      theta: 0.55,
       phi: 1.02,
     },
   },
 ]
 
-export const AVATAR_POD_POSITION: [number, number, number] = [0.35, 0, 1.55]
-export const OPERATOR_HOME: [number, number, number] = [0.1, 0, 0.55]
+/** Desk-corner dock for AI companion / chibi figure. */
+export const AVATAR_POD_POSITION: [number, number, number] = [1.15, 0, 0.55]
+/** Idle walk home — in front of the desk chair. */
+export const OPERATOR_HOME: [number, number, number] = [0.05, 0, 1.85]
 
-/** Desktop HOME framing for room-scale Ops Deck. */
+/** Desktop HOME framing for room-scale studio. */
 export const OPS_HOME_VIEW = {
-  target: [0, 0.9, -0.55] as [number, number, number],
-  radius: 11.6,
-  theta: 0.42,
-  phi: 1.04,
+  target: [0, 0.85, -0.35] as [number, number, number],
+  radius: 11.4,
+  theta: 0.4,
+  phi: 1.05,
 }
 
 export const OPS_HOME_VIEW_NARROW = {
-  target: [0, 0.95, -0.45] as [number, number, number],
-  radius: 13.2,
-  theta: 0.46,
+  target: [0, 0.9, -0.25] as [number, number, number],
+  radius: 13.0,
+  theta: 0.44,
   phi: 1.08,
 }

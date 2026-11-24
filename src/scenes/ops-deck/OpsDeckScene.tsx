@@ -76,7 +76,7 @@ export function OpsDeckScene({
     >
       <div className="ops-hud-rail" aria-hidden="true">
         <div>
-          Scene <strong>A · Ops Deck</strong>
+          Scene <strong>A · Studio</strong>
         </div>
         <div className="ops-status-lights">
           <span />
@@ -84,7 +84,7 @@ export function OpsDeckScene({
           <span />
         </div>
         <div>
-          Mode <strong>{theme === 'duty' ? 'Duty' : 'Bright'}</strong>
+          Mode <strong>{theme === 'duty' ? 'Night' : 'Day'}</strong>
           {lowPower ? ' · Lite' : ' · Full'}
         </div>
       </div>

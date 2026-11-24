@@ -3,7 +3,6 @@ import type { DeckPalette } from '../ops-deck/themeColors'
 
 /** Studio palette — graphite + amber tool-metal (aligned with shell tokens). */
 export type LabPalette = DeckPalette & {
-  wood: string
   canvas: string
   tape: string
 }
@@ -27,6 +26,9 @@ export function labPalette(theme: ThemeMode): LabPalette {
       operatorLeg: '#2e353e',
       rim: '#a8a9ae',
       wood: '#8a7a68',
+      wall: '#e4e4e0',
+      fabric: '#6a6660',
+      lamp: '#e0b48a',
       canvas: '#f2f1ed',
       tape: '#a06040',
     }
@@ -49,6 +51,9 @@ export function labPalette(theme: ThemeMode): LabPalette {
     operatorLeg: '#1e242c',
     rim: '#2a3038',
     wood: '#4a4238',
+    wall: '#16181d',
+    fabric: '#2a2e34',
+    lamp: '#d4a574',
     canvas: '#2a2e34',
     tape: '#a06040',
   }

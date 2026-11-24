@@ -52,23 +52,24 @@ button {
     linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-deck) 48%, var(--bg-deep) 100%);
 }
 
-/* Soft vignette — console depth without scan-line toy HUD */
+/* Soft vignette — studio depth without scan-line toy HUD */
 .app-shell::before {
   content: '';
   pointer-events: none;
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.28) 100%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 4px,
-      var(--scan) 4px,
-      var(--scan) 5px
-    );
-  opacity: 0.55;
+    radial-gradient(ellipse 82% 72% at 50% 38%, transparent 42%, rgba(0, 0, 0, 0.26) 100%),
+    radial-gradient(640px 360px at 12% 0%, color-mix(in srgb, var(--accent-warm) 7%, transparent), transparent 55%);
+  opacity: 0.5;
   z-index: 1;
+}
+
+.app-shell[data-theme='duty']::before {
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.42) 100%),
+    radial-gradient(700px 380px at 80% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 55%);
+  opacity: 0.58;
 }
 
 .app-shell[data-scene='craft-lab']::before {

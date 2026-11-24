@@ -1,4 +1,4 @@
-import { ContactShadows, Grid, Html } from '@react-three/drei'
+import { ContactShadows, Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react'
 import * as THREE from 'three'
@@ -85,12 +85,13 @@ export function DeckWorld({
     }
   })
 
-  const duty = theme === 'duty'
-  const keyIntensity = duty ? 0.88 : 1.08
-  const fillIntensity = duty ? 0.48 : 0.26
-  const coveIntensity = duty ? 0.95 : 0.22
-  const windowGlow = duty ? 0.62 : 0.12
-  const fixturePoint = duty ? 0.88 : 0.24
+  const night = theme === 'duty'
+  // Day: warm work light · Night: cool screen-led tech room
+  const keyIntensity = night ? 0.22 : 0.95
+  const fillIntensity = night ? 0.18 : 0.32
+  const lampIntensity = night ? 0.28 : 1.35
+  const screenFill = night ? 1.15 : 0.22
+  const windowGlow = night ? 0.08 : 0.55
 
   return (
     <>
@@ -98,15 +99,17 @@ export function DeckWorld({
       <fog attach="fog" args={[palette.bg, lowPower ? 14 : 12, lowPower ? 30 : 26]} />
 
       <hemisphereLight
-        color={duty ? '#1a2a44' : '#e8eef8'}
-        groundColor={duty ? '#05080f' : '#b8c4d4'}
-        intensity={duty ? (lowPower ? 0.42 : 0.34) : 0.55}
+        color={night ? '#1a2838' : '#fff2dc'}
+        groundColor={night ? '#050608' : '#c4a882'}
+        intensity={night ? (lowPower ? 0.28 : 0.2) : 0.62}
       />
-      <ambientLight intensity={duty ? (lowPower ? 0.32 : 0.24) : 0.44} />
+      <ambientLight intensity={night ? (lowPower ? 0.18 : 0.12) : 0.38} />
 
+      {/* Key: day = warm window sun; night = soft cool bounce */}
       <directionalLight
-        position={[6.2, 10.5, 4.2]}
-        intensity={lowPower ? keyIntensity * 1.1 : keyIntensity}
+        position={night ? [2.5, 8.5, 3.5] : [-5.5, 9.5, 2.5]}
+        intensity={lowPower ? keyIntensity * 1.15 : keyIntensity}
+        color={night ? '#88aacc' : '#ffe0b8'}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
@@ -117,97 +120,117 @@ export function DeckWorld({
         shadow-camera-top={12}
         shadow-camera-bottom={-12}
       />
-      <directionalLight position={[-5.5, 4.2, -2.5]} intensity={fillIntensity} color={palette.rim} />
+      <directionalLight
+        position={[5.5, 3.8, -1.5]}
+        intensity={fillIntensity}
+        color={night ? palette.rim : '#f5dcc0'}
+      />
 
-      {/* Duty-mode cove / fixture points — deepen theme read */}
+      {/* Practical desk lamp — warm day, restrained night */}
       <pointLight
-        position={[0, 3.15, -1.2]}
-        intensity={coveIntensity}
+        position={[2.95, 1.35, 2.55]}
+        intensity={lampIntensity}
+        color={palette.lamp}
+        distance={night ? 5 : 9}
+        decay={2}
+      />
+
+      {/* Screen spill — stronger at night for sci-fi read */}
+      <pointLight
+        position={[0, 1.4, -1.0]}
+        intensity={screenFill}
         color={palette.accent}
-        distance={14}
+        distance={night ? 10 : 6}
         decay={2}
       />
       <pointLight
-        position={[-3.8, 2.4, 0.6]}
-        intensity={fixturePoint * 0.7}
-        color={palette.accent2}
-        distance={9}
-        decay={2}
-      />
-      <pointLight
-        position={[3.8, 2.2, -0.8]}
-        intensity={fixturePoint * 0.55}
-        color={palette.ok}
-        distance={8}
-        decay={2}
-      />
-      <pointLight
-        position={[0.2, 1.9, 1.4]}
-        intensity={duty ? 0.55 : 0.18}
-        color={palette.accent}
+        position={[2.45, 1.4, -0.95]}
+        intensity={screenFill * 0.55}
+        color={palette.glow}
         distance={7}
         decay={2}
       />
+
+      {/* Window daylight (day) / faint city glow (night) */}
       <pointLight
-        position={[-5.05, 1.8, -1]}
-        intensity={windowGlow * (duty ? 1.15 : 0.85)}
-        color={palette.accent2}
-        distance={10}
+        position={[-5.0, 2.0, -1.0]}
+        intensity={windowGlow}
+        color={night ? '#4a6a88' : '#ffd8a8'}
+        distance={11}
+        decay={2}
+      />
+
+      {/* Soft ceiling wash — day warm, night cool dim */}
+      <pointLight
+        position={[0, 3.1, 0.2]}
+        intensity={night ? 0.35 : 0.55}
+        color={night ? palette.accent2 : '#ffe8c8'}
+        distance={14}
         decay={2}
       />
 
       {/* Outer floor slab */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <planeGeometry args={[22, 18]} />
-        <meshStandardMaterial color={palette.floor} roughness={0.94} metalness={0.04} />
+        <meshStandardMaterial color={palette.floor} roughness={0.92} metalness={0.03} />
       </mesh>
 
-      {!lowPower && (
-        <Grid
-          position={[0, 0.001, 0]}
-          args={[16, 12]}
-          cellSize={0.5}
-          cellThickness={0.4}
-          cellColor={palette.accent2}
-          sectionSize={2}
-          sectionThickness={0.85}
-          sectionColor={palette.accent}
-          fadeDistance={15}
-          fadeStrength={1.45}
-          infiniteGrid={false}
+      {/* Area rug under desk */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.004, 0.35]} receiveShadow>
+        <planeGeometry args={[5.4, 4.2]} />
+        <meshStandardMaterial
+          color={palette.fabric}
+          roughness={0.95}
+          metalness={0.02}
+          transparent
+          opacity={night ? 0.55 : 0.72}
         />
-      )}
+      </mesh>
 
       <group ref={roomGroup}>
-        <CommandRoomShell palette={palette} theme={theme} lowPower={lowPower} />
+        <StudioShell palette={palette} theme={theme} lowPower={lowPower} />
 
-        {/* Center command island — smaller than former desk diorama */}
-        <mesh position={[0.15, 0.05, 0.15]} receiveShadow castShadow>
-          <boxGeometry args={[5.6, 0.1, 3.4]} />
-          <meshStandardMaterial color={palette.desk} roughness={0.78} metalness={0.08} />
+        {/* Main desk surface */}
+        <mesh position={[0.1, 0.72, -0.35]} receiveShadow castShadow>
+          <boxGeometry args={[4.6, 0.08, 2.0]} />
+          <meshStandardMaterial color={palette.desk} roughness={0.55} metalness={0.08} />
         </mesh>
-        <mesh position={[0.15, 0.11, 0.15]} receiveShadow>
-          <boxGeometry args={[5.68, 0.02, 3.48]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
+        {/* Desk edge trim */}
+        <mesh position={[0.1, 0.68, -0.35]} receiveShadow>
+          <boxGeometry args={[4.7, 0.04, 2.1]} />
+          <meshStandardMaterial color={palette.wood} roughness={0.62} metalness={0.06} />
         </mesh>
-        <mesh position={[0.15, -0.32, 0.15]} castShadow>
-          <boxGeometry args={[5.1, 0.64, 3.0]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.58} metalness={0.32} />
-        </mesh>
+        {/* Desk legs */}
+        {[
+          [-2.0, 0.34, -1.15],
+          [2.2, 0.34, -1.15],
+          [-2.0, 0.34, 0.45],
+          [2.2, 0.34, 0.45],
+        ].map(([x, y, z], i) => (
+          <mesh key={i} position={[x, y, z]} castShadow>
+            <boxGeometry args={[0.1, 0.68, 0.1]} />
+            <meshStandardMaterial color={palette.metal} roughness={0.5} metalness={0.3} />
+          </mesh>
+        ))}
 
-        {/* Island status LEDs — stronger duty emissive */}
-        <group position={[0.15, 0.14, 1.75]}>
-          {[-0.35, 0, 0.35].map((x, i) => (
-            <mesh key={x} position={[x, 0, 0]}>
-              <sphereGeometry args={[0.055, 12, 12]} />
-              <meshStandardMaterial
-                color={i === 0 ? palette.ok : i === 1 ? palette.accent : palette.accent2}
-                emissive={i === 0 ? palette.ok : i === 1 ? palette.accent : palette.accent2}
-                emissiveIntensity={duty ? 0.95 : 0.28}
-                roughness={0.3}
-              />
-            </mesh>
-          ))}
+        {/* Task chair */}
+        <group position={[0.05, 0, 1.15]}>
+          <mesh position={[0, 0.42, 0]} castShadow>
+            <boxGeometry args={[0.72, 0.08, 0.68]} />
+            <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
+          </mesh>
+          <mesh position={[0, 0.85, -0.28]} castShadow>
+            <boxGeometry args={[0.7, 0.75, 0.08]} />
+            <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
+          </mesh>
+          <mesh position={[0, 0.2, 0]} castShadow>
+            <cylinderGeometry args={[0.06, 0.08, 0.35, 10]} />
+            <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
+          </mesh>
+          <mesh position={[0, 0.05, 0]} castShadow>
+            <cylinderGeometry args={[0.32, 0.32, 0.05, 16]} />
+            <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
+          </mesh>
         </group>
 
         {hotspots.map((spot, i) => (
@@ -225,7 +248,7 @@ export function DeckWorld({
           />
         ))}
 
-        <AvatarPod
+        <AvatarDock
           open={avatarOpen}
           onToggle={onToggleAvatar}
           palette={palette}
@@ -248,9 +271,9 @@ export function DeckWorld({
       {!lowPower && (
         <ContactShadows
           position={[0, 0.011, 0]}
-          opacity={duty ? 0.52 : 0.3}
+          opacity={night ? 0.62 : 0.28}
           scale={16}
-          blur={2.6}
+          blur={2.8}
           far={5}
         />
       )}
@@ -287,7 +310,7 @@ export function DeckWorld({
   )
 }
 
-function CommandRoomShell({
+function StudioShell({
   palette,
   theme,
   lowPower,
@@ -296,10 +319,10 @@ function CommandRoomShell({
   theme: ThemeMode
   lowPower: boolean
 }) {
-  const duty = theme === 'duty'
-  const wallEmissive = duty ? 0.08 : 0.02
-  const coveEmissive = duty ? 0.72 : 0.14
-  const windowEmissive = duty ? 0.48 : 0.08
+  const night = theme === 'duty'
+  const wallEmissive = night ? 0.04 : 0.01
+  const windowEmissive = night ? 0.12 : 0.35
+  const coveEmissive = night ? 0.22 : 0.08
 
   return (
     <group>
@@ -307,120 +330,127 @@ function CommandRoomShell({
       <mesh position={[0, 1.7, -4.35]} receiveShadow castShadow>
         <boxGeometry args={[11.2, 3.4, 0.16]} />
         <meshStandardMaterial
-          color={palette.panel}
-          roughness={0.88}
-          metalness={0.06}
-          emissive={palette.accent2}
+          color={palette.wall}
+          roughness={0.92}
+          metalness={0.03}
+          emissive={night ? palette.accent2 : palette.lamp}
           emissiveIntensity={wallEmissive}
         />
       </mesh>
-      {/* Back wall trim / console bay ledge */}
-      <mesh position={[0, 0.22, -3.95]} receiveShadow castShadow>
-        <boxGeometry args={[10.6, 0.44, 0.9]} />
-        <meshStandardMaterial color={palette.desk} roughness={0.72} metalness={0.1} />
+      {/* Rear shelf ledge */}
+      <mesh position={[0, 0.55, -3.95]} receiveShadow castShadow>
+        <boxGeometry args={[8.2, 0.1, 0.55]} />
+        <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.05} />
       </mesh>
-      <mesh position={[0, 0.46, -3.95]} receiveShadow>
-        <boxGeometry args={[10.7, 0.04, 0.96]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.42} metalness={0.4} />
+      <mesh position={[0, 0.28, -3.95]} castShadow>
+        <boxGeometry args={[8.0, 0.5, 0.45]} />
+        <meshStandardMaterial color={palette.desk} roughness={0.65} metalness={0.06} />
       </mesh>
 
       {/* Left wall */}
       <mesh position={[-5.45, 1.6, -0.4]} receiveShadow castShadow>
         <boxGeometry args={[0.14, 3.2, 8.2]} />
-        <meshStandardMaterial color={palette.desk} roughness={0.9} metalness={0.04} />
+        <meshStandardMaterial color={palette.wall} roughness={0.9} metalness={0.03} />
       </mesh>
-      {/* Left wall window strip — duty glow */}
-      <mesh position={[-5.36, 1.85, -1.1]}>
-        <boxGeometry args={[0.06, 1.1, 3.4]} />
+      {/* Window pane */}
+      <mesh position={[-5.36, 1.9, -1.0]}>
+        <boxGeometry args={[0.06, 1.4, 2.8]} />
         <meshStandardMaterial
-          color={palette.screen}
-          emissive={palette.accent2}
+          color={night ? palette.screen : '#d8ecf8'}
+          emissive={night ? '#3a5570' : '#ffe8c0'}
           emissiveIntensity={windowEmissive}
-          roughness={0.25}
-          metalness={0.15}
+          roughness={0.2}
+          metalness={0.12}
+          transparent
+          opacity={night ? 0.85 : 0.55}
         />
       </mesh>
+      {/* Window frame */}
+      <mesh position={[-5.38, 1.9, -1.0]}>
+        <boxGeometry args={[0.04, 1.55, 3.0]} />
+        <meshStandardMaterial color={palette.wood} roughness={0.6} metalness={0.08} />
+      </mesh>
+      <mesh position={[-5.37, 1.9, -1.0]}>
+        <boxGeometry args={[0.05, 0.06, 2.8]} />
+        <meshStandardMaterial color={palette.wood} roughness={0.55} metalness={0.08} />
+      </mesh>
 
-      {/* Right wall — partial / open bay with frame */}
+      {/* Right wall — partial open */}
       <mesh position={[5.45, 1.55, -1.6]} receiveShadow>
         <boxGeometry args={[0.14, 3.1, 5.4]} />
-        <meshStandardMaterial color={palette.desk} roughness={0.9} metalness={0.04} />
+        <meshStandardMaterial color={palette.wall} roughness={0.9} metalness={0.03} />
       </mesh>
       <mesh position={[5.45, 1.55, 2.55]} receiveShadow>
         <boxGeometry args={[0.14, 3.1, 1.6]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.55} metalness={0.28} />
+        <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.05} />
       </mesh>
-      {/* Doorway frame on right-front (open boundary cue) */}
+      {/* Doorway frame */}
       <mesh position={[5.45, 2.95, 1.35]}>
         <boxGeometry args={[0.18, 0.18, 2.4]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.45} roughness={0.4} />
+        <meshStandardMaterial color={palette.metal} metalness={0.35} roughness={0.45} />
       </mesh>
       <mesh position={[5.45, 1.4, 0.25]}>
         <boxGeometry args={[0.18, 3.0, 0.18]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.45} roughness={0.4} />
+        <meshStandardMaterial color={palette.metal} metalness={0.35} roughness={0.45} />
       </mesh>
 
-      {/* Ceiling cove light bars */}
+      {/* Ceiling strip lights — warm day, cool night */}
       {[
-        [0, 3.25, -2.8],
-        [0, 3.25, -0.4],
-        [0, 3.25, 1.8],
+        [0, 3.25, -2.6],
+        [0, 3.25, 0.1],
+        [0, 3.25, 2.0],
       ].map(([x, y, z], i) => (
         <mesh key={i} position={[x, y, z]}>
-          <boxGeometry args={[9.2, 0.06, 0.22]} />
+          <boxGeometry args={[8.5, 0.05, 0.18]} />
           <meshStandardMaterial
             color={palette.metal}
-            emissive={palette.accent}
-            emissiveIntensity={coveEmissive * (i === 1 ? 1.15 : 0.85)}
-            roughness={0.35}
-            metalness={0.4}
+            emissive={night ? palette.accent : palette.lamp}
+            emissiveIntensity={coveEmissive * (i === 1 ? 1.2 : 0.8)}
+            roughness={0.4}
+            metalness={0.35}
           />
         </mesh>
       ))}
 
-      {/* Floor zones — rear bay / island ring / front walk (kept on lite for room read) */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.5]}>
-        <planeGeometry args={[10.2, 1.6]} />
-        <meshBasicMaterial
-          color={palette.accent2}
-          transparent
-          opacity={duty ? (lowPower ? 0.2 : 0.16) : 0.08}
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.15, 0.003, 0.15]}>
-        <planeGeometry args={[6.2, 4.0]} />
-        <meshBasicMaterial
-          color={palette.accent}
-          transparent
-          opacity={duty ? (lowPower ? 0.15 : 0.12) : 0.05}
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 2.9]}>
-        <planeGeometry args={[10.4, 1.4]} />
-        <meshBasicMaterial
-          color={palette.metal}
-          transparent
-          opacity={duty ? (lowPower ? 0.22 : 0.18) : 0.09}
-          depthWrite={false}
-        />
-      </mesh>
+      {/* Soft floor wash bands (subtle — no ops grid) */}
+      {!lowPower && (
+        <>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.4]}>
+            <planeGeometry args={[9.5, 1.2]} />
+            <meshBasicMaterial
+              color={night ? palette.accent2 : palette.lamp}
+              transparent
+              opacity={night ? 0.06 : 0.05}
+              depthWrite={false}
+            />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.003, 0.2]}>
+            <planeGeometry args={[5.2, 3.6]} />
+            <meshBasicMaterial
+              color={night ? palette.accent : palette.wood}
+              transparent
+              opacity={night ? 0.05 : 0.04}
+              depthWrite={false}
+            />
+          </mesh>
+        </>
+      )}
 
       {/* Baseboards */}
       <mesh position={[0, 0.08, -4.24]}>
         <boxGeometry args={[11.0, 0.16, 0.08]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.5} metalness={0.35} />
+        <meshStandardMaterial color={palette.wood} roughness={0.65} metalness={0.08} />
       </mesh>
       <mesh position={[-5.35, 0.08, -0.4]}>
         <boxGeometry args={[0.08, 0.16, 8.0]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.5} metalness={0.35} />
+        <meshStandardMaterial color={palette.wood} roughness={0.65} metalness={0.08} />
       </mesh>
     </group>
   )
 }
 
-function AvatarPod({
+/** Desk-corner dock for the companion figure — studio-friendly, not a sci-fi pod. */
+function AvatarDock({
   open,
   onToggle,
   palette,
@@ -435,7 +465,7 @@ function AvatarPod({
 }) {
   const [hovered, setHovered] = useState(false)
   const root = useRef<THREE.Group>(null)
-  const duty = theme === 'duty'
+  const night = theme === 'duty'
 
   useFrame(() => {
     if (!root.current) return
@@ -463,37 +493,36 @@ function AvatarPod({
         document.body.style.cursor = 'auto'
       }}
     >
-      <mesh position={[0, 0.35, 0]} castShadow>
-        <cylinderGeometry args={[0.55, 0.65, 0.7, 24]} />
+      {/* Raised desk pad */}
+      <mesh position={[0, 0.76, 0]} castShadow>
+        <cylinderGeometry args={[0.38, 0.42, 0.06, 24]} />
         <meshStandardMaterial
           color={palette.panel}
-          roughness={0.32}
-          metalness={0.28}
+          roughness={0.4}
+          metalness={0.18}
           emissive={palette.accent}
-          emissiveIntensity={open || hovered ? (duty ? 0.42 : 0.28) : duty ? 0.16 : 0.08}
+          emissiveIntensity={open || hovered ? (night ? 0.38 : 0.18) : night ? 0.12 : 0.05}
         />
       </mesh>
-      <mesh position={[0, 0.85, 0]}>
-        <sphereGeometry args={[0.42, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <mesh position={[0, 0.8, 0]}>
+        <cylinderGeometry args={[0.28, 0.3, 0.04, 20]} />
         <meshStandardMaterial
-          color={palette.accent}
-          transparent
-          opacity={duty ? 0.36 : 0.2}
-          roughness={0.18}
-          metalness={0.35}
-          emissive={palette.accent}
-          emissiveIntensity={open ? (duty ? 0.62 : 0.42) : hovered ? 0.38 : duty ? 0.24 : 0.14}
+          color={palette.metal}
+          roughness={0.35}
+          metalness={0.3}
+          emissive={palette.glow}
+          emissiveIntensity={open ? (night ? 0.45 : 0.2) : hovered ? 0.28 : night ? 0.14 : 0.06}
         />
       </mesh>
       {(open || hovered) && (
-        <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.7, 0.82, 32]} />
-          <meshBasicMaterial color={palette.accent} transparent opacity={0.35} depthWrite={false} />
+        <mesh position={[0, 0.74, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.45, 0.55, 32]} />
+          <meshBasicMaterial color={palette.accent} transparent opacity={0.32} depthWrite={false} />
         </mesh>
       )}
-      <Html position={[0, 1.35, 0]} center distanceFactor={9} style={{ pointerEvents: 'none' }}>
+      <Html position={[0, 1.25, 0]} center distanceFactor={9} style={{ pointerEvents: 'none' }}>
         <div className={`ops-html-label ops-html-pod${open || hovered ? ' is-hot' : ''}`}>
-          <span className="ops-html-kicker">对话舱</span>
+          <span className="ops-html-kicker">桌面分身</span>
           <span className="ops-html-title">AI 分身</span>
         </div>
       </Html>
