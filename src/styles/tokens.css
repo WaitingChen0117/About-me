@@ -1,53 +1,54 @@
 :root {
-  /* Console-grade type stack — restrained, product-like */
+  /* Studio-grade type stack — restrained, product-like */
   --font-display: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
   --font-body: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  /* Duty / night — cold graphite + electro-cyan */
-  --bg-deep: #0a0c10;
-  --bg-deck: #11151c;
-  --bg-panel: rgba(18, 22, 30, 0.94);
-  --bg-panel-solid: #141922;
-  --bg-elevated: #1a2030;
-  --line: rgba(148, 163, 184, 0.16);
-  --line-strong: rgba(45, 212, 191, 0.38);
+  /* Default / night (duty) — near-black tech studio + cool screen accent */
+  --bg-deep: #050608;
+  --bg-deck: #0c0e12;
+  --bg-panel: rgba(14, 16, 22, 0.94);
+  --bg-panel-solid: #12161c;
+  --bg-elevated: #181c24;
+  --line: rgba(107, 124, 148, 0.18);
+  --line-strong: rgba(61, 224, 200, 0.4);
   --text: #e6eaf0;
   --text-muted: #8b95a8;
   --text-dim: #5c6678;
-  --accent: #2dd4bf;
-  --accent-2: #94a3b8;
+  --accent: #3de0c8;
+  --accent-2: #6b7c94;
   --accent-warm: #d4a574;
   --danger: #e07878;
-  --ok: #5cb88a;
-  --glow: rgba(45, 212, 191, 0.1);
-  --scan: rgba(148, 163, 184, 0.025);
-  --shadow: 0 18px 56px rgba(0, 0, 0, 0.55);
+  --ok: #4ecf8a;
+  --glow: rgba(61, 224, 200, 0.1);
+  --scan: rgba(107, 124, 148, 0.02);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.62);
   --radius: 6px;
   --radius-sm: 4px;
 }
 
+/* Day / work — warm desk-lamp temperature (not cold fluorescent) */
 [data-theme='bright'] {
-  --bg-deep: #c8ced8;
-  --bg-deck: #e4e8ef;
-  --bg-panel: rgba(248, 250, 252, 0.94);
-  --bg-panel-solid: #f8fafc;
-  --bg-elevated: #eef1f6;
-  --line: rgba(55, 65, 85, 0.14);
-  --line-strong: rgba(13, 148, 136, 0.36);
-  --text: #141a24;
-  --text-muted: #5a6578;
-  --text-dim: #7a8496;
-  --accent: #0f766e;
-  --accent-2: #475569;
-  --accent-warm: #b45309;
-  --glow: rgba(15, 118, 110, 0.08);
-  --scan: rgba(71, 85, 105, 0.02);
-  --shadow: 0 16px 40px rgba(30, 40, 55, 0.14);
+  --bg-deep: #d4c8b8;
+  --bg-deck: #e8dcc8;
+  --bg-panel: rgba(250, 244, 234, 0.94);
+  --bg-panel-solid: #faf4ea;
+  --bg-elevated: #f0e6d6;
+  --line: rgba(90, 70, 50, 0.14);
+  --line-strong: rgba(184, 107, 46, 0.4);
+  --text: #2a2218;
+  --text-muted: #6b5e50;
+  --text-dim: #8a7a68;
+  --accent: #b86b2e;
+  --accent-2: #6b635a;
+  --accent-warm: #c47a38;
+  --glow: rgba(184, 107, 46, 0.1);
+  --scan: rgba(120, 90, 60, 0.025);
+  --shadow: 0 16px 40px rgba(60, 45, 30, 0.14);
 }
 
 /*
- * Craft Lab — still distinct from Ops Deck, but same maturity language:
+ * Craft Lab — still distinct from programmer studio, same maturity language:
  * cool graphite studio + amber tool-metal (not cream / terracotta candy).
  */
 [data-scene='craft-lab'] {

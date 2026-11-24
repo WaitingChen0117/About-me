@@ -14,14 +14,15 @@ const CraftLabScene = lazy(async () => {
 })
 
 /**
- * Scene registry — A (ops-deck) + B (craft-lab).
+ * Scene registry — A (ops-deck = programmer studio) + B (craft-lab).
  * skyline-terminal remains reserved for a later pack.
+ * Scene id stays `ops-deck` for routing stability; UX copy says 工作室.
  */
 export const scenes: SceneModule[] = [
   {
     id: 'ops-deck',
-    label: 'Agent 指挥台',
-    description: 'Agent 指挥台：会话、工具、审批与 Trace 的空间化控制台。',
+    label: '程序员工作室',
+    description: '程序员个人工作室：显示器、书架与桌面道具映射各内容板块；日暖夜冷。',
     Component: OpsDeckScene,
     hotspots: opsDeckHotspots,
   },

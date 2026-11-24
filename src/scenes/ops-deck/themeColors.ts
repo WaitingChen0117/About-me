@@ -17,44 +17,64 @@ export type DeckPalette = {
   operatorLeg: string
   /** Soft rim / fill used by secondary lights */
   rim: string
+  /** Warm wood / furniture tone */
+  wood: string
+  /** Soft wall plaster / paint */
+  wall: string
+  /** Fabric (chair, rug) */
+  fabric: string
+  /** Desk-lamp / warm practical light color */
+  lamp: string
 }
 
+/**
+ * bright = day / work — warm desk-lamp temperature
+ * duty  = night — near-black tech studio, cool screen glow OK
+ */
 export function deckPalette(theme: ThemeMode): DeckPalette {
   if (theme === 'bright') {
     return {
-      bg: '#c5cbd6',
-      floor: '#d2d8e2',
-      desk: '#e8ecf2',
-      metal: '#7a8494',
-      panel: '#f0f3f7',
-      accent: '#0f766e',
-      accent2: '#64748b',
-      glow: '#5fb8ae',
-      ok: '#3d8f6a',
-      screen: '#d5e0e8',
-      screenDim: '#b0bcc9',
-      operatorSkin: '#c8c2ba',
-      operatorSuit: '#3a4556',
-      operatorLeg: '#2a3340',
-      rim: '#9aa8b8',
+      bg: '#d8cfc3',
+      floor: '#c4b5a0',
+      desk: '#8b6f52',
+      metal: '#7a736a',
+      panel: '#efe6da',
+      accent: '#b86b2e',
+      accent2: '#6b635a',
+      glow: '#e8a060',
+      ok: '#5a8f6a',
+      screen: '#e8eef2',
+      screenDim: '#c8d0d8',
+      operatorSkin: '#c8b8a8',
+      operatorSuit: '#4a4540',
+      operatorLeg: '#35302c',
+      rim: '#f0dcc0',
+      wood: '#a07850',
+      wall: '#ebe4d8',
+      fabric: '#5c5348',
+      lamp: '#ffb060',
     }
   }
 
   return {
-    bg: '#080a0e',
-    floor: '#121820',
-    desk: '#1a2230',
-    metal: '#323c50',
-    panel: '#222b3a',
-    accent: '#2dd4bf',
-    accent2: '#94a3b8',
-    glow: '#2dd4bf',
-    ok: '#5cb88a',
-    screen: '#0a1218',
-    screenDim: '#101820',
-    operatorSkin: '#b8b4ae',
-    operatorSuit: '#3d4656',
-    operatorLeg: '#1e2633',
-    rim: '#1a2838',
+    bg: '#050608',
+    floor: '#0c0e12',
+    desk: '#1a1614',
+    metal: '#2a3038',
+    panel: '#12161c',
+    accent: '#3de0c8',
+    accent2: '#6b7c94',
+    glow: '#3de0c8',
+    ok: '#4ecf8a',
+    screen: '#060a10',
+    screenDim: '#0a1018',
+    operatorSkin: '#b0aaa4',
+    operatorSuit: '#2e343c',
+    operatorLeg: '#1a1e24',
+    rim: '#142028',
+    wood: '#2a221c',
+    wall: '#0e1014',
+    fabric: '#1c2028',
+    lamp: '#5a8aaa',
   }
 }
