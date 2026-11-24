@@ -416,38 +416,34 @@ function WorkshopShell({
         />
       </mesh>
 
-      {/* Floor zone washes */}
-      {!lowPower && (
-        <>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.4]}>
-            <planeGeometry args={[10.5, 1.5]} />
-            <meshBasicMaterial
-              color={palette.accent2}
-              transparent
-              opacity={duty ? 0.15 : 0.07}
-              depthWrite={false}
-            />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, 0.003, 0.15]}>
-            <planeGeometry args={[5.6, 3.4]} />
-            <meshBasicMaterial
-              color={palette.accent}
-              transparent
-              opacity={duty ? 0.12 : 0.05}
-              depthWrite={false}
-            />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[3.6, 0.003, 2.6]}>
-            <planeGeometry args={[3.2, 1.8]} />
-            <meshBasicMaterial
-              color={palette.metal}
-              transparent
-              opacity={duty ? 0.16 : 0.08}
-              depthWrite={false}
-            />
-          </mesh>
-        </>
-      )}
+      {/* Floor zone washes — kept on lite for room read */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.4]}>
+        <planeGeometry args={[10.5, 1.5]} />
+        <meshBasicMaterial
+          color={palette.accent2}
+          transparent
+          opacity={duty ? (lowPower ? 0.18 : 0.15) : 0.07}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, 0.003, 0.15]}>
+        <planeGeometry args={[5.6, 3.4]} />
+        <meshBasicMaterial
+          color={palette.accent}
+          transparent
+          opacity={duty ? (lowPower ? 0.15 : 0.12) : 0.05}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[3.6, 0.003, 2.6]}>
+        <planeGeometry args={[3.2, 1.8]} />
+        <meshBasicMaterial
+          color={palette.metal}
+          transparent
+          opacity={duty ? (lowPower ? 0.2 : 0.16) : 0.08}
+          depthWrite={false}
+        />
+      </mesh>
 
       {/* Baseboards */}
       <mesh position={[0, 0.08, -4.15]}>

@@ -378,23 +378,34 @@ function CommandRoomShell({
         </mesh>
       ))}
 
-      {/* Floor zones — rear bay / island ring / front walk */}
-      {!lowPower && (
-        <>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.5]}>
-            <planeGeometry args={[10.2, 1.6]} />
-            <meshBasicMaterial color={palette.accent2} transparent opacity={duty ? 0.16 : 0.08} depthWrite={false} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.15, 0.003, 0.15]}>
-            <planeGeometry args={[6.2, 4.0]} />
-            <meshBasicMaterial color={palette.accent} transparent opacity={duty ? 0.12 : 0.05} depthWrite={false} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 2.9]}>
-            <planeGeometry args={[10.4, 1.4]} />
-            <meshBasicMaterial color={palette.metal} transparent opacity={duty ? 0.18 : 0.09} depthWrite={false} />
-          </mesh>
-        </>
-      )}
+      {/* Floor zones — rear bay / island ring / front walk (kept on lite for room read) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.5]}>
+        <planeGeometry args={[10.2, 1.6]} />
+        <meshBasicMaterial
+          color={palette.accent2}
+          transparent
+          opacity={duty ? (lowPower ? 0.2 : 0.16) : 0.08}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.15, 0.003, 0.15]}>
+        <planeGeometry args={[6.2, 4.0]} />
+        <meshBasicMaterial
+          color={palette.accent}
+          transparent
+          opacity={duty ? (lowPower ? 0.15 : 0.12) : 0.05}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 2.9]}>
+        <planeGeometry args={[10.4, 1.4]} />
+        <meshBasicMaterial
+          color={palette.metal}
+          transparent
+          opacity={duty ? (lowPower ? 0.22 : 0.18) : 0.09}
+          depthWrite={false}
+        />
+      </mesh>
 
       {/* Baseboards */}
       <mesh position={[0, 0.08, -4.24]}>
