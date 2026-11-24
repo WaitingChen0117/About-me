@@ -6,6 +6,7 @@ import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
 import { Operator3D } from '../ops-deck/Operator3D'
+import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import { CraftHotspotMesh } from './CraftHotspotMeshes'
 import { ASSIST_MONITOR_POSITION, OPERATOR_HOME, craftLabHotspots } from './hotspots'
@@ -85,7 +86,7 @@ export function LabWorld({
     }
   })
 
-  const duty = theme === 'duty'
+  const duty = getPalette(theme).family === 'dark'
   const keyIntensity = duty ? 0.86 : 1.08
   const fillIntensity = duty ? 0.38 : 0.28
   const pendantIntensity = duty ? 0.82 : 0.2
@@ -322,7 +323,7 @@ function WorkshopShell({
   theme: ThemeMode
   lowPower: boolean
 }) {
-  const duty = theme === 'duty'
+  const duty = getPalette(theme).family === 'dark'
   const wallGlow = duty ? 0.1 : 0.025
   const windowGlow = duty ? 0.42 : 0.08
   const coveGlow = duty ? 0.65 : 0.12
@@ -473,7 +474,7 @@ function AssistMonitor({
 }) {
   const [hovered, setHovered] = useState(false)
   const root = useRef<THREE.Group>(null)
-  const duty = theme === 'duty'
+  const duty = getPalette(theme).family === 'dark'
 
   useFrame(() => {
     if (!root.current) return

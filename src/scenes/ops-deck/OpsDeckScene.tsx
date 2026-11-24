@@ -2,6 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { SECTION_ORDER, type SectionId } from '../../content/sections'
 import { useDeviceProfile } from '../../lib/device-profile'
+import { getPalette } from '../../themes/palettes'
 import type { SceneProps } from '../types'
 import { DeckWorld } from './DeckWorld'
 import { OPS_HOME_VIEW, OPS_HOME_VIEW_NARROW, opsDeckHotspots } from './hotspots'
@@ -58,6 +59,7 @@ export function OpsDeckScene({
   }, [lowPower, isNarrow])
 
   const homeView = isNarrow ? OPS_HOME_VIEW_NARROW : OPS_HOME_VIEW
+  const preset = getPalette(theme)
 
   const camera = useMemo(
     () =>
@@ -84,7 +86,7 @@ export function OpsDeckScene({
           <span />
         </div>
         <div>
-          Mode <strong>{theme === 'duty' ? 'Night' : 'Day'}</strong>
+          Palette <strong>{preset.label}</strong>
           {lowPower ? ' · Lite' : ' · Full'}
         </div>
       </div>
@@ -102,8 +104,8 @@ export function OpsDeckScene({
             stencil: false,
           }}
           onCreated={({ gl }) => {
-            // Night needs a touch more exposure so dark materials still read
-            gl.toneMappingExposure = lowPower ? (theme === 'duty' ? 1.12 : 1) : theme === 'duty' ? 1.18 : 1.06
+            const lights = getPalette(theme).lights
+            gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
           }}
           performance={{ min: lowPower ? 0.45 : 0.7 }}
         >

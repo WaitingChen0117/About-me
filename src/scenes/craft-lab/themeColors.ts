@@ -1,62 +1,63 @@
-import type { ThemeMode } from '../types'
+import { getPalette, type PaletteId } from '../../themes/palettes'
 import type { DeckPalette } from '../ops-deck/themeColors'
 
-/** Craft Lab palette — harbor-slate + warm tool metal (aligned with shell tokens). */
+/** Craft Lab palette — inherits accent family from the active preset. */
 export type LabPalette = DeckPalette & {
   canvas: string
   tape: string
 }
 
-export function labPalette(theme: ThemeMode): LabPalette {
-  if (theme === 'bright') {
+export function labPalette(theme: PaletteId): LabPalette {
+  const preset = getPalette(theme)
+  const d = preset.deck
+
+  if (preset.family === 'light') {
     return {
-      // sky-mist / soft-cloud day bench
-      bg: '#d8d8df', // cool-ash
-      floor: '#e0e0e0', // line-ash
-      desk: '#f8f8f8', // soft-cloud
-      metal: '#8a8a9a', // muted-steel
-      panel: '#f2f7f9', // sky-mist
-      accent: '#184120', // forest-ink
-      accent2: '#98a9b4', // silver-mist
-      glow: '#f76b1c', // warn-amber
-      ok: '#30d018', // signal-green
-      screen: '#e0e7e0', // sage-wash
-      screenDim: '#d8d8df',
-      operatorSkin: '#c4beb4',
-      operatorSuit: '#282828',
-      operatorLeg: '#0f0f0f',
-      rim: '#f2f7f9',
-      wood: '#8a7a68',
-      wall: '#f8f8f6', // paper-ash
-      fabric: '#3a3a3e',
-      lamp: '#ffdd44', // tip-yellow
-      canvas: '#fffff2', // warm-paper
-      tape: '#d71018', // alert-red (craft accent mark)
+      bg: d.bg,
+      floor: '#e0e0e0',
+      desk: '#f8f8f8',
+      metal: d.metal,
+      panel: d.panel,
+      accent: d.accent,
+      accent2: d.accent2,
+      glow: d.glow,
+      ok: d.ok,
+      screen: d.screen,
+      screenDim: d.screenDim,
+      operatorSkin: d.operatorSkin,
+      operatorSuit: d.operatorSuit,
+      operatorLeg: d.operatorLeg,
+      rim: d.rim,
+      wood: d.wood,
+      wall: d.wall,
+      fabric: d.fabric,
+      lamp: d.lamp,
+      canvas: '#fffff2',
+      tape: '#d71018',
     }
   }
 
   return {
-    // void-black / harbor-slate night workshop
-    bg: '#0f0f0f', // void-black
+    bg: d.bg === '#042529' ? '#0f0f0f' : d.bg,
     floor: '#1a1e22',
-    desk: '#243844', // harbor-slate
-    metal: '#8a8a9a', // muted-steel
-    panel: '#282828', // charcoal-panel
-    accent: '#f76b1c', // warn-amber (tool metal)
-    accent2: '#98a9b4', // silver-mist
+    desk: d.wall,
+    metal: d.metal,
+    panel: d.panel,
+    accent: d.glow === d.accent ? '#f76b1c' : d.accent, // tool amber when lime/signal steal accent
+    accent2: d.accent2,
     glow: '#f76b1c',
-    ok: '#30d018',
-    screen: '#042529', // ink-teal
+    ok: d.ok,
+    screen: '#042529',
     screenDim: '#243844',
-    operatorSkin: '#b8b2a8',
-    operatorSuit: '#282828',
-    operatorLeg: '#0f0f0f',
-    rim: '#243844',
-    wood: '#3a3630',
+    operatorSkin: d.operatorSkin,
+    operatorSuit: d.operatorSuit,
+    operatorLeg: d.operatorLeg,
+    rim: d.rim,
+    wood: d.wood,
     wall: '#16181d',
-    fabric: '#1c2226',
+    fabric: d.fabric,
     lamp: '#f76b1c',
-    canvas: '#282828',
+    canvas: d.panel,
     tape: '#d71018',
   }
 }
