@@ -5,14 +5,18 @@ import type { SectionId } from '../../content/sections'
 import type { HotspotDef } from '../types'
 import type { LabPalette } from './themeColors'
 
+const HOVER_LIFT = 0.14
+
 type Props = {
   spot: HotspotDef
   palette: LabPalette
   active: boolean
   targeted: boolean
+  externallyHovered?: boolean
   index?: number
   introRef: MutableRefObject<number>
   onOpen: (id: SectionId) => void
+  onHoverChange?: (id: SectionId | null) => void
 }
 
 export function CraftHotspotMesh({
@@ -20,34 +24,44 @@ export function CraftHotspotMesh({
   palette,
   active,
   targeted,
+  externallyHovered = false,
   index = 0,
   introRef,
   onOpen,
+  onHoverChange,
 }: Props) {
   const [hovered, setHovered] = useState(false)
   const root = useRef<THREE.Group>(null)
   const pulse = useRef(0)
   const scaleCurrent = useRef(1)
+  const liftCurrent = useRef(0)
 
-  const highlight = active || targeted || hovered
-  const emissive = active ? 0.36 : targeted ? 0.26 : hovered ? 0.2 : 0.08
+  const isHovered = hovered || externallyHovered
+  const highlight = active || targeted || isHovered
+  const emissive = active ? 0.36 : targeted ? 0.26 : isHovered ? 0.2 : 0.08
 
   useFrame((_, dt) => {
     const g = root.current
     if (!g) return
 
     pulse.current += dt
-    const scaleTarget = hovered || active ? 1.018 : targeted ? 1.01 : 1
+    const scaleTarget = isHovered || active ? 1.018 : targeted ? 1.01 : 1
     scaleCurrent.current = THREE.MathUtils.damp(scaleCurrent.current, scaleTarget, 10, dt)
+    const liftTarget = isHovered && !active ? HOVER_LIFT : 0
+    liftCurrent.current = THREE.MathUtils.damp(liftCurrent.current, liftTarget, 12, dt)
 
     const intro = introRef.current
     const stagger = Math.min(1, Math.max(0, (intro - index * 0.055) / 0.38))
     const eased = 1 - Math.pow(1 - stagger, 3)
-    const lift = (1 - eased) * 0.28
+    const introLift = (1 - eased) * 0.28
     const s = scaleCurrent.current * (0.84 + 0.16 * eased)
 
     g.scale.setScalar(s)
-    g.position.set(spot.position[0], spot.position[1] + lift, spot.position[2])
+    g.position.set(
+      spot.position[0],
+      spot.position[1] + introLift + liftCurrent.current,
+      spot.position[2],
+    )
     g.visible = eased > 0.02
 
     if (targeted) {
@@ -71,10 +85,12 @@ export function CraftHotspotMesh({
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)
+        onHoverChange?.(spot.id)
         document.body.style.cursor = 'pointer'
       }}
       onPointerOut={() => {
         setHovered(false)
+        onHoverChange?.(null)
         document.body.style.cursor = 'auto'
       }}
     >
@@ -91,7 +107,7 @@ export function CraftHotspotMesh({
           <meshBasicMaterial color={palette.accent2} transparent opacity={0.38} depthWrite={false} />
         </mesh>
       )}
-      {hovered && !active && (
+      {isHovered && !active && (
         <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.38, 0.46, 28]} />
           <meshBasicMaterial color={palette.accent} transparent opacity={0.24} depthWrite={false} />

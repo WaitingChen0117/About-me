@@ -1,0 +1,100 @@
+.world-label-html-wrap {
+  pointer-events: none;
+}
+
+.world-label-html-wrap > div {
+  pointer-events: none;
+}
+
+.world-label {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  pointer-events: auto;
+  cursor: pointer;
+  transform: translate(-50%, -110%);
+  transition: opacity 0.18s ease;
+}
+
+.world-label.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.world-label-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 4.6rem;
+  max-width: 7.5rem;
+  padding: 0.28rem 0.45rem 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--bg-panel-solid) 88%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 35%, transparent);
+  color: var(--text);
+  text-align: left;
+  transform: scale(1);
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.world-label.is-hot .world-label-inner {
+  transform: scale(1.06);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--bg-panel-solid) 92%, var(--accent) 8%);
+}
+
+.world-label-name {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.world-label-hint {
+  font-size: 0.58rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: var(--text-dim, color-mix(in srgb, var(--text) 62%, transparent));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.world-label:focus-visible .world-label-inner {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .world-label-inner {
+    min-width: 3.8rem;
+    max-width: 5.8rem;
+    padding: 0.22rem 0.36rem;
+  }
+
+  .world-label-name {
+    font-size: 0.56rem;
+  }
+
+  .world-label-hint {
+    font-size: 0.52rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-label,
+  .world-label-inner {
+    transition: none;
+  }
+}

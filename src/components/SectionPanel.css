@@ -5,6 +5,8 @@
   background: color-mix(in srgb, var(--bg-deep) 62%, transparent);
   backdrop-filter: blur(3px);
   animation: fadeBackdrop 0.18s ease both;
+  /* Ensure backdrop captures clicks while open; unmount restores 3D hover */
+  pointer-events: auto;
 }
 
 @keyframes fadeBackdrop {
