@@ -15,42 +15,46 @@ export type DeckPalette = {
   operatorSkin: string
   operatorSuit: string
   operatorLeg: string
+  /** Soft rim / fill used by secondary lights */
+  rim: string
 }
 
 export function deckPalette(theme: ThemeMode): DeckPalette {
   if (theme === 'bright') {
     return {
-      bg: '#c9d7ea',
-      floor: '#dfe8f4',
+      bg: '#c4d2e6',
+      floor: '#d5e0ef',
       desk: '#eef3fa',
-      metal: '#9aafc7',
-      panel: '#f7fafc',
-      accent: '#0f9e93',
-      accent2: '#2a62d9',
-      glow: '#7ad0c8',
-      ok: '#2f9e6a',
-      screen: '#d8ecf5',
-      screenDim: '#b8cce0',
-      operatorSkin: '#e8d5c4',
-      operatorSuit: '#2a62d9',
-      operatorLeg: '#3a4d66',
+      metal: '#8ea4bc',
+      panel: '#f4f7fb',
+      accent: '#0d8f85',
+      accent2: '#2458c9',
+      glow: '#6ec4bc',
+      ok: '#2a9460',
+      screen: '#cfe4f0',
+      screenDim: '#a9bfd6',
+      operatorSkin: '#e6d2bf',
+      operatorSuit: '#1e4fad',
+      operatorLeg: '#2c3d52',
+      rim: '#9eb6d4',
     }
   }
 
   return {
-    bg: '#070b14',
-    floor: '#0a1220',
-    desk: '#121c2e',
-    metal: '#1c2a40',
-    panel: '#162338',
-    accent: '#3ee0d5',
-    accent2: '#4b8bff',
-    glow: '#3ee0d5',
-    ok: '#5ddea0',
-    screen: '#0a1828',
-    screenDim: '#0d2034',
-    operatorSkin: '#d7e7f7',
-    operatorSuit: '#4b8bff',
-    operatorLeg: '#24344d',
+    bg: '#060a12',
+    floor: '#080f1c',
+    desk: '#101a2c',
+    metal: '#1a2740',
+    panel: '#152336',
+    accent: '#3ad4c9',
+    accent2: '#4a86f5',
+    glow: '#3ad4c9',
+    ok: '#54d498',
+    screen: '#081520',
+    screenDim: '#0b1c2e',
+    operatorSkin: '#dce8f6',
+    operatorSuit: '#3d7aef',
+    operatorLeg: '#1a283c',
+    rim: '#1e3a5c',
   }
 }
