@@ -439,21 +439,21 @@ function ChibiFigure({
 }
 
 function Glasses({ materials: m }: { materials: FigMats }) {
-  // Thick black round rims — signature of the turnaround sheet
+  // Torus defaults to XY plane (faces +Z) — do not tilt flat or rims read as a mustache
   const r = 0.062
-  const tube = 0.016
-  const z = 0.235
+  const tube = 0.015
+  const z = 0.238
   const y = 0.012
   return (
     <group>
-      <mesh position={[-0.078, y, z]} rotation={[Math.PI / 2, 0, 0]} material={m.glasses}>
+      <mesh position={[-0.078, y, z]} material={m.glasses}>
         <torusGeometry args={[r, tube, 12, 32]} />
       </mesh>
-      <mesh position={[0.078, y, z]} rotation={[Math.PI / 2, 0, 0]} material={m.glasses}>
+      <mesh position={[0.078, y, z]} material={m.glasses}>
         <torusGeometry args={[r, tube, 12, 32]} />
       </mesh>
-      <mesh position={[0, y + 0.008, z]} material={m.glasses}>
-        <boxGeometry args={[0.036, 0.014, 0.014]} />
+      <mesh position={[0, y + 0.006, z]} material={m.glasses}>
+        <boxGeometry args={[0.032, 0.012, 0.012]} />
       </mesh>
       <mesh position={[-0.14, y, 0.1]} rotation={[0, 0.22, 0]} material={m.glasses}>
         <boxGeometry args={[0.014, 0.012, 0.2]} />
