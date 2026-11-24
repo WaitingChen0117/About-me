@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { AvatarChat } from './components/AvatarChat'
 import { SectionPanel } from './components/SectionPanel'
 import type { SectionId } from './content/sections'
@@ -66,19 +66,21 @@ export default function App() {
       </header>
 
       <main className="scene-stage">
-        <Scene
-          theme={theme}
-          activeSection={activeSection}
-          onOpenSection={openSection}
-          onSendOperator={sendOperator}
-          avatarOpen={avatarOpen}
-          onToggleAvatar={() => setAvatarOpen((v) => !v)}
-          operatorTarget={operatorTarget}
-          operatorTicket={operatorTicket}
-          onOperatorArrive={onOperatorArrive}
-        />
+        <Suspense fallback={<div className="scene-loading">加载指挥台…</div>}>
+          <Scene
+            theme={theme}
+            activeSection={activeSection}
+            onOpenSection={openSection}
+            onSendOperator={sendOperator}
+            avatarOpen={avatarOpen}
+            onToggleAvatar={() => setAvatarOpen((v) => !v)}
+            operatorTarget={operatorTarget}
+            operatorTicket={operatorTicket}
+            onOperatorArrive={onOperatorArrive}
+          />
+        </Suspense>
         {hintVisible ? (
-          <div className="hint-toast">点击物件打开板块 · 点小人随机巡视 · 中央对话舱提问</div>
+          <div className="hint-toast">拖拽环视 · 点物件或左侧图例开板块 · 点小人巡视 · 对话舱提问</div>
         ) : null}
       </main>
 

@@ -164,6 +164,16 @@ button {
   min-height: 520px;
 }
 
+.scene-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
 .hint-toast {
   position: absolute;
   left: 50%;

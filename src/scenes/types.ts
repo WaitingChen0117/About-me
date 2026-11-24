@@ -9,9 +9,11 @@ export type HotspotDef = {
   id: SectionId
   label: string
   hint: string
-  /** percentage position within the deck stage */
+  /** Legacy 2D percentage position (HUD / fallback layouts) */
   x: number
   y: number
+  /** World-space floor position for true-3D scenes [x, y, z] */
+  position: [number, number, number]
 }
 
 export type SceneProps = {

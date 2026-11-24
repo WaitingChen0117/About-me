@@ -1,6 +1,11 @@
-import { OpsDeckScene } from './ops-deck/OpsDeckScene'
+import { lazy } from 'react'
 import { opsDeckHotspots } from './ops-deck/hotspots'
 import type { SceneId, SceneModule } from './types'
+
+const OpsDeckScene = lazy(async () => {
+  const mod = await import('./ops-deck/OpsDeckScene')
+  return { default: mod.OpsDeckScene }
+})
 
 /**
  * Scene registry — P0 only ships ops-deck.
