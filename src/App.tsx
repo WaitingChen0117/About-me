@@ -47,6 +47,8 @@ export default function App() {
   })
   const pendingOpen = useRef<SectionId | null>(null)
   const focusing = useRef(false)
+  /** Keeps orbit locked for the whole focus / home fly (incl. return after panel close). */
+  const [flyLock, setFlyLock] = useState(false)
   const reducedMotion = usePrefersReducedMotion()
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function App() {
   const palette = getPalette(theme)
 
   const issueCamera = useCallback((nextFocus: SectionId | null) => {
+    setFlyLock(true)
     setCameraCommand((c) => ({ ticket: c.ticket + 1, focusId: nextFocus }))
   }, [])
 
@@ -94,6 +97,7 @@ export default function App() {
   )
 
   const onCameraArrive = useCallback(() => {
+    setFlyLock(false)
     if (!focusing.current && !pendingOpen.current) return
     const id = pendingOpen.current
     pendingOpen.current = null
@@ -159,6 +163,7 @@ export default function App() {
       setAvatarOpen(false)
       pendingOpen.current = null
       focusing.current = false
+      setFlyLock(false)
       setFocusId(null)
       setCameraCommand({ ticket: 0, focusId: null })
     },
@@ -221,6 +226,7 @@ export default function App() {
             focusId={focusId}
             cameraCommand={cameraCommand}
             onCameraArrive={onCameraArrive}
+            flyLock={flyLock}
             labelsAway={Boolean(activeSection)}
           />
         </Suspense>

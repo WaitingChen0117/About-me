@@ -46,6 +46,7 @@ export function CraftLabScene({
   focusId,
   cameraCommand,
   onCameraArrive,
+  flyLock,
   labelsAway,
 }: SceneProps) {
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
@@ -121,6 +122,7 @@ export function CraftLabScene({
               focusId={focusId}
               cameraCommand={cameraCommand}
               onCameraArrive={onCameraArrive}
+              flyLock={flyLock}
               labelsAway={labelsAway}
               labelPortal={labelPortal}
               lowPower={lowPower}

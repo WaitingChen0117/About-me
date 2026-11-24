@@ -35,6 +35,7 @@ type Props = {
   focusId: SectionId | null
   cameraCommand: CameraCommand
   onCameraArrive: () => void
+  flyLock: boolean
   labelsAway: boolean
   labelPortal: RefObject<HTMLElement | null>
   lowPower: boolean
@@ -56,6 +57,7 @@ export function DeckWorld({
   focusId,
   cameraCommand,
   onCameraArrive,
+  flyLock,
   labelsAway,
   labelPortal,
   lowPower,
@@ -315,7 +317,7 @@ export function DeckWorld({
         home={homeView}
         hotspots={hotspots}
         cameraCommand={cameraCommand}
-        lockOrbit={Boolean(activeSection || focusId)}
+        lockOrbit={Boolean(activeSection || focusId || flyLock)}
         onArrive={onCameraArrive}
         reducedMotion={reducedMotion}
         limits={{
