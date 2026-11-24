@@ -1,7 +1,8 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
+// Project Pages: https://waitingchen0117.github.io/About-me/
 export default defineConfig({
+  base: '/About-me/',
   plugins: [react()],
 })

@@ -4,19 +4,30 @@
 
 ## 预览
 
+### 本地
+
 ```bash
 npm install
 npm run dev
 ```
 
-浏览器打开终端提示的本地地址（默认 `http://localhost:5173`）。
+因配置了 GitHub Pages 的 `base`，本地请打开：
 
-生产构建：
+`http://localhost:5173/About-me/`
+
+生产构建预览：
 
 ```bash
 npm run build
 npm run preview
 ```
+
+### GitHub Pages
+
+合入 `main` 后，Actions 工作流 `Deploy GitHub Pages` 会自动构建并部署。
+
+- 访问地址：https://waitingchen0117.github.io/About-me/
+- 首次需在仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**（只需开一次）
 
 ## 已实现
 
