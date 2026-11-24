@@ -46,6 +46,7 @@ export function OpsDeckScene({
   focusId,
   cameraCommand,
   onCameraArrive,
+  flyLock,
   labelsAway,
 }: SceneProps) {
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
@@ -123,6 +124,7 @@ export function OpsDeckScene({
               focusId={focusId}
               cameraCommand={cameraCommand}
               onCameraArrive={onCameraArrive}
+              flyLock={flyLock}
               labelsAway={labelsAway}
               labelPortal={labelPortal}
               lowPower={lowPower}

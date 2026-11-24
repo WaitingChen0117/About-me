@@ -60,6 +60,8 @@ export type SceneProps = {
   focusId: SectionId | null
   cameraCommand: CameraCommand
   onCameraArrive: () => void
+  /** True while a focus / home camera fly is in progress */
+  flyLock: boolean
   /** Hide world labels while panel is open */
   labelsAway: boolean
 }
