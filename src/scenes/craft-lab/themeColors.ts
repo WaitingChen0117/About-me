@@ -1,7 +1,7 @@
 import type { ThemeMode } from '../types'
 import type { DeckPalette } from '../ops-deck/themeColors'
 
-/** Studio palette — graphite + amber tool-metal (aligned with shell tokens). */
+/** Craft Lab palette — harbor-slate + warm tool metal (aligned with shell tokens). */
 export type LabPalette = DeckPalette & {
   canvas: string
   tape: string
@@ -10,51 +10,53 @@ export type LabPalette = DeckPalette & {
 export function labPalette(theme: ThemeMode): LabPalette {
   if (theme === 'bright') {
     return {
-      bg: '#c6c8ce',
-      floor: '#bbbdc4',
-      desk: '#e4e5e8',
-      metal: '#7a8088',
-      panel: '#f0f0ee',
-      accent: '#9a6b3a',
-      accent2: '#5a6674',
-      glow: '#c4a078',
-      ok: '#5a8a58',
-      screen: '#e8e6e0',
-      screenDim: '#cbc9c2',
+      // sky-mist / soft-cloud day bench
+      bg: '#d8d8df', // cool-ash
+      floor: '#e0e0e0', // line-ash
+      desk: '#f8f8f8', // soft-cloud
+      metal: '#8a8a9a', // muted-steel
+      panel: '#f2f7f9', // sky-mist
+      accent: '#184120', // forest-ink
+      accent2: '#98a9b4', // silver-mist
+      glow: '#f76b1c', // warn-amber
+      ok: '#30d018', // signal-green
+      screen: '#e0e7e0', // sage-wash
+      screenDim: '#d8d8df',
       operatorSkin: '#c4beb4',
-      operatorSuit: '#4a5560',
-      operatorLeg: '#2e353e',
-      rim: '#a8a9ae',
+      operatorSuit: '#282828',
+      operatorLeg: '#0f0f0f',
+      rim: '#f2f7f9',
       wood: '#8a7a68',
-      wall: '#e4e4e0',
-      fabric: '#6a6660',
-      lamp: '#e0b48a',
-      canvas: '#f2f1ed',
-      tape: '#a06040',
+      wall: '#f8f8f6', // paper-ash
+      fabric: '#3a3a3e',
+      lamp: '#ffdd44', // tip-yellow
+      canvas: '#fffff2', // warm-paper
+      tape: '#d71018', // alert-red (craft accent mark)
     }
   }
 
   return {
-    bg: '#0c0d10',
-    floor: '#181b22',
-    desk: '#222830',
-    metal: '#646b76',
-    panel: '#2a3038',
-    accent: '#d4a574',
-    accent2: '#7d8b99',
-    glow: '#d4a574',
-    ok: '#6a9a68',
-    screen: '#14181c',
-    screenDim: '#1c2228',
+    // void-black / harbor-slate night workshop
+    bg: '#0f0f0f', // void-black
+    floor: '#1a1e22',
+    desk: '#243844', // harbor-slate
+    metal: '#8a8a9a', // muted-steel
+    panel: '#282828', // charcoal-panel
+    accent: '#f76b1c', // warn-amber (tool metal)
+    accent2: '#98a9b4', // silver-mist
+    glow: '#f76b1c',
+    ok: '#30d018',
+    screen: '#042529', // ink-teal
+    screenDim: '#243844',
     operatorSkin: '#b8b2a8',
-    operatorSuit: '#3e4854',
-    operatorLeg: '#1e242c',
-    rim: '#2a3038',
-    wood: '#4a4238',
+    operatorSuit: '#282828',
+    operatorLeg: '#0f0f0f',
+    rim: '#243844',
+    wood: '#3a3630',
     wall: '#16181d',
-    fabric: '#2a2e34',
-    lamp: '#d4a574',
-    canvas: '#2a2e34',
-    tape: '#a06040',
+    fabric: '#1c2226',
+    lamp: '#f76b1c',
+    canvas: '#282828',
+    tape: '#d71018',
   }
 }

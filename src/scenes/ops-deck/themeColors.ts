@@ -28,53 +28,56 @@ export type DeckPalette = {
 }
 
 /**
- * bright = day / work — warm desk-lamp temperature
- * duty  = night — near-black tech studio, cool screen glow OK
+ * Scene A (programmer studio) material colors.
+ * bright = day — warm-paper / paper-ash studio, charcoal-ink type
+ * duty  = night — ink-teal / void-black room, silver-mist, sparse acid-lime
  */
 export function deckPalette(theme: ThemeMode): DeckPalette {
   if (theme === 'bright') {
     return {
-      bg: '#d8cfc3',
-      floor: '#c4b5a0',
-      desk: '#8b6f52',
-      metal: '#7a736a',
-      panel: '#efe6da',
-      accent: '#b86b2e',
-      accent2: '#6b635a',
-      glow: '#e8a060',
-      ok: '#5a8f6a',
-      screen: '#e8eef2',
-      screenDim: '#c8d0d8',
+      // warm-paper #FFFFF2 · paper-ash #F8F8F6 · soft-cloud #F8F8F8
+      bg: '#f8f8f6',
+      floor: '#d8d8df', // cool-ash
+      desk: '#6a645c',
+      metal: '#8a8a9a', // muted-steel
+      panel: '#fffff2', // warm-paper
+      accent: '#184120', // forest-ink (restrained)
+      accent2: '#98a9b4', // silver-mist
+      glow: '#f76b1c', // warn-amber (practical lamp spill)
+      ok: '#30d018', // signal-green
+      screen: '#f2f7f9', // sky-mist
+      screenDim: '#e0e0e0', // line-ash
       operatorSkin: '#c8b8a8',
-      operatorSuit: '#4a4540',
-      operatorLeg: '#35302c',
-      rim: '#f0dcc0',
-      wood: '#a07850',
-      wall: '#ebe4d8',
-      fabric: '#5c5348',
-      lamp: '#ffb060',
+      operatorSuit: '#282828', // charcoal-panel
+      operatorLeg: '#1a1a1a',
+      rim: '#fffff2', // warm-paper bounce
+      wood: '#8a7a68',
+      wall: '#fffff2', // warm-paper
+      fabric: '#3a3a3e',
+      lamp: '#ffdd44', // tip-yellow warmth
     }
   }
 
   return {
-    bg: '#080a10',
-    floor: '#1a1e28',
-    desk: '#3a322a',
-    metal: '#4a5464',
-    panel: '#242a36',
-    accent: '#3de0c8',
-    accent2: '#8a9ab0',
-    glow: '#4aecd4',
-    ok: '#4ecf8a',
-    screen: '#071018',
-    screenDim: '#0c1420',
+    // ink-teal #042529 · void-black #0F0F0F · harbor-slate #243844
+    bg: '#042529', // ink-teal
+    floor: '#0f0f0f', // void-black
+    desk: '#2a322e',
+    metal: '#8a8a9a', // muted-steel
+    panel: '#282828', // charcoal-panel
+    accent: '#c1e704', // acid-lime
+    accent2: '#98a9b4', // silver-mist
+    glow: '#c1e704', // acid-lime screen spill
+    ok: '#30d018', // signal-green
+    screen: '#042529', // ink-teal glass
+    screenDim: '#243844', // harbor-slate
     operatorSkin: '#b0aaa4',
-    operatorSuit: '#2e343c',
-    operatorLeg: '#1a1e24',
-    rim: '#1a2838',
-    wood: '#4a3e34',
-    wall: '#222830',
-    fabric: '#343a44',
-    lamp: '#7aa8c0',
+    operatorSuit: '#282828', // charcoal-panel
+    operatorLeg: '#0f0f0f',
+    rim: '#243844', // harbor-slate
+    wood: '#3a3630',
+    wall: '#243844', // harbor-slate
+    fabric: '#1c2226',
+    lamp: '#98a9b4', // silver-mist practical
   }
 }
