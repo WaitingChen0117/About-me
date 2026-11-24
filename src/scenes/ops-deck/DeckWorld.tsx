@@ -70,13 +70,13 @@ export function DeckWorld({
       <hemisphereLight
         color={theme === 'bright' ? '#e8eef8' : '#1a2a44'}
         groundColor={theme === 'bright' ? '#b8c4d4' : '#05080f'}
-        intensity={theme === 'bright' ? 0.55 : 0.28}
+        intensity={theme === 'bright' ? 0.55 : lowPower ? 0.38 : 0.28}
       />
-      <ambientLight intensity={theme === 'bright' ? 0.42 : 0.18} />
+      <ambientLight intensity={theme === 'bright' ? 0.42 : lowPower ? 0.28 : 0.18} />
 
       <directionalLight
         position={[5.2, 8.5, 3.2]}
-        intensity={keyIntensity}
+        intensity={lowPower ? keyIntensity * 1.12 : keyIntensity}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
