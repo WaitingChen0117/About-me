@@ -38,7 +38,8 @@ export function HotspotMesh({
 
   const isHovered = hovered || externallyHovered
   const highlight = active || targeted || isHovered
-  const emissive = active ? 0.42 : targeted ? 0.3 : isHovered ? 0.26 : 0.1
+  // Slightly brighter idle screens so duty-mode fixtures read against the room
+  const emissive = active ? 0.48 : targeted ? 0.34 : isHovered ? 0.3 : 0.14
 
   useFrame((_, dt) => {
     const g = root.current

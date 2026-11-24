@@ -42,10 +42,10 @@ export function deckPalette(theme: ThemeMode): DeckPalette {
 
   return {
     bg: '#080a0e',
-    floor: '#0c1016',
-    desk: '#141a24',
-    metal: '#2a3344',
-    panel: '#1a2230',
+    floor: '#121820',
+    desk: '#1a2230',
+    metal: '#323c50',
+    panel: '#222b3a',
     accent: '#2dd4bf',
     accent2: '#94a3b8',
     glow: '#2dd4bf',

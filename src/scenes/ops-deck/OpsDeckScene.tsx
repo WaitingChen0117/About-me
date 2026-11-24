@@ -62,8 +62,8 @@ export function OpsDeckScene({
   const camera = useMemo(
     () =>
       isNarrow
-        ? { position: [3.4, 6.2, 8.4] as [number, number, number], fov: 44, near: 0.1, far: 60 }
-        : { position: [2.8, 5.2, 7.6] as [number, number, number], fov: 40, near: 0.1, far: 60 },
+        ? { position: [4.2, 7.0, 10.2] as [number, number, number], fov: 44, near: 0.1, far: 80 }
+        : { position: [3.6, 6.2, 9.4] as [number, number, number], fov: 40, near: 0.1, far: 80 },
     [isNarrow],
   )
 
