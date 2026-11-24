@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
-import { avatarPresets } from '../content/avatar-qa'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { suggestionChips } from '../content/knowledge'
+import { matchKnowledge } from '../lib/avatar-match'
+import { isLlmEnabled } from '../lib/llm-optional'
 import type { SectionId } from '../content/sections'
 import './AvatarChat.css'
 
-type Msg = { role: 'bot' | 'user'; text: string }
+type Msg = {
+  role: 'bot' | 'user'
+  text: string
+  openSection?: SectionId
+  citation?: string
+}
 
 type Props = {
   open: boolean
@@ -13,58 +20,107 @@ type Props = {
 
 const INTRO: Msg = {
   role: 'bot',
-  text: '你好。我是站内 AI 分身（预设问答，非联网模型）。点下面的问题，或去点场景里的物件。',
+  text: '你好。我是站内 AI 分身——基于本站板块的离线知识层（关键词 + 意图匹配）。点建议问题，或自己输入；命中后可跳到对应板块。',
 }
 
 export function AvatarChat({ open, onClose, onOpenSection }: Props) {
   const [messages, setMessages] = useState<Msg[]>([INTRO])
+  const [draft, setDraft] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, open])
 
+  useEffect(() => {
+    if (!open) return
+    const t = window.setTimeout(() => inputRef.current?.focus(), 180)
+    return () => window.clearTimeout(t)
+  }, [open])
+
   if (!open) return null
 
-  const ask = (presetId: string) => {
-    const preset = avatarPresets.find((p) => p.id === presetId)
-    if (!preset) return
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', text: preset.question },
-      { role: 'bot', text: preset.answer },
-    ])
-    if (preset.openSection) {
-      window.setTimeout(() => onOpenSection(preset.openSection!), 450)
+  const reply = (query: string) => {
+    const trimmed = query.trim()
+    if (!trimmed) return
+
+    const matched = matchKnowledge(trimmed)
+    const bot: Msg = {
+      role: 'bot',
+      text: matched.answer,
+      openSection: matched.openSection,
+      citation: matched.citation,
+    }
+
+    setMessages((prev) => [...prev, { role: 'user', text: trimmed }, bot])
+    setDraft('')
+
+    if (matched.openSection) {
+      window.setTimeout(() => onOpenSection(matched.openSection!), 450)
     }
   }
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    reply(draft)
+  }
+
+  const modeLabel = isLlmEnabled() ? '知识层 · LLM 可选' : '站内知识层 · 离线'
 
   return (
     <section className="avatar-chat" role="dialog" aria-label="AI 分身对话">
       <header className="avatar-chat-header">
         <div>
           <h2>AI 分身</h2>
-          <p>Preset Q&A · Ops Deck</p>
+          <p>{modeLabel}</p>
         </div>
         <button type="button" className="section-panel-close" aria-label="关闭对话" onClick={onClose}>
           ×
         </button>
       </header>
+
       <div className="avatar-chat-body" ref={bodyRef}>
         {messages.map((m, i) => (
           <div key={i} className={`chat-bubble ${m.role}`}>
-            {m.text}
+            <p className="chat-bubble-text">{m.text}</p>
+            {m.role === 'bot' && m.openSection && m.citation ? (
+              <button
+                type="button"
+                className="chat-cite"
+                onClick={() => onOpenSection(m.openSection!)}
+              >
+                打开「{m.citation}」
+              </button>
+            ) : null}
           </div>
         ))}
       </div>
-      <div className="avatar-presets">
-        {avatarPresets.map((p) => (
-          <button type="button" key={p.id} onClick={() => ask(p.id)}>
-            {p.question}
+
+      <div className="avatar-presets" aria-label="建议问题">
+        {suggestionChips.map((chip) => (
+          <button type="button" key={chip.id} onClick={() => reply(chip.label)}>
+            {chip.label}
           </button>
         ))}
       </div>
+
+      <form className="avatar-compose" onSubmit={onSubmit}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="问问经历、作品、Agent…"
+          aria-label="输入问题"
+          autoComplete="off"
+          maxLength={200}
+        />
+        <button type="submit" disabled={!draft.trim()}>
+          发送
+        </button>
+      </form>
     </section>
   )
 }
