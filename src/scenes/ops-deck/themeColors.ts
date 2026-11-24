@@ -57,13 +57,13 @@ export function deckPalette(theme: ThemeMode): DeckPalette {
   }
 
   return {
-    bg: '#07090e',
-    floor: '#161a22',
-    desk: '#2a241e',
-    metal: '#3c4452',
-    panel: '#1c222c',
+    bg: '#080a10',
+    floor: '#1a1e28',
+    desk: '#3a322a',
+    metal: '#4a5464',
+    panel: '#242a36',
     accent: '#3de0c8',
-    accent2: '#7a8ca4',
+    accent2: '#8a9ab0',
     glow: '#4aecd4',
     ok: '#4ecf8a',
     screen: '#071018',
@@ -72,9 +72,9 @@ export function deckPalette(theme: ThemeMode): DeckPalette {
     operatorSuit: '#2e343c',
     operatorLeg: '#1a1e24',
     rim: '#1a2838',
-    wood: '#3a3028',
-    wall: '#1a1e26',
-    fabric: '#2a3038',
-    lamp: '#6a9ab8',
+    wood: '#4a3e34',
+    wall: '#222830',
+    fabric: '#343a44',
+    lamp: '#7aa8c0',
   }
 }

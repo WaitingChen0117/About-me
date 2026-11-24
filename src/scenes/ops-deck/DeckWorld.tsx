@@ -86,30 +86,34 @@ export function DeckWorld({
   })
 
   const night = theme === 'duty'
-  // Day: warm work light · Night: dark tech room that still reads as furniture
-  const keyIntensity = night ? 0.58 : 0.95
-  const fillIntensity = night ? 0.38 : 0.32
-  const lampIntensity = night ? 0.7 : 1.35
-  const screenFill = night ? 1.65 : 0.22
-  const windowGlow = night ? 0.28 : 0.55
+  // Day: warm work light · Night: dark but legible room + cool screen glow
+  const keyIntensity = night ? 0.85 : 0.95
+  const fillIntensity = night ? 0.55 : 0.32
+  const lampIntensity = night ? 0.95 : 1.35
+  const screenFill = night ? 1.45 : 0.22
+  const windowGlow = night ? 0.4 : 0.55
 
   return (
     <>
       <color attach="background" args={[palette.bg]} />
-      <fog attach="fog" args={[palette.bg, lowPower ? 15 : 13, lowPower ? 32 : 28]} />
+      {/* Push fog out at night so mid-room furniture doesn't crush to black */}
+      <fog
+        attach="fog"
+        args={[palette.bg, night ? (lowPower ? 18 : 16) : lowPower ? 15 : 13, night ? 40 : lowPower ? 32 : 28]}
+      />
 
       <hemisphereLight
-        color={night ? '#2a4058' : '#fff2dc'}
-        groundColor={night ? '#0a0c10' : '#c4a882'}
-        intensity={night ? (lowPower ? 0.58 : 0.48) : 0.62}
+        color={night ? '#3a5570' : '#fff2dc'}
+        groundColor={night ? '#101418' : '#c4a882'}
+        intensity={night ? (lowPower ? 0.72 : 0.62) : 0.62}
       />
-      <ambientLight intensity={night ? (lowPower ? 0.4 : 0.32) : 0.38} />
+      <ambientLight intensity={night ? (lowPower ? 0.55 : 0.48) : 0.38} />
 
       {/* Key: day = warm window sun; night = cool bounce so desk/chair silhouette */}
       <directionalLight
         position={night ? [3.2, 9.0, 4.0] : [-5.5, 9.5, 2.5]}
-        intensity={lowPower ? keyIntensity * 1.15 : keyIntensity}
-        color={night ? '#a8c4dc' : '#ffe0b8'}
+        intensity={lowPower ? keyIntensity * 1.1 : keyIntensity}
+        color={night ? '#b8d0e4' : '#ffe0b8'}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 1024}
         shadow-mapSize-height={lowPower ? 512 : 1024}
@@ -123,7 +127,7 @@ export function DeckWorld({
       <directionalLight
         position={[-4.5, 2.8, 3.5]}
         intensity={fillIntensity}
-        color={night ? '#203848' : '#f5dcc0'}
+        color={night ? '#2a4860' : '#f5dcc0'}
       />
 
       {/* Practical desk lamp — warm day, cool accent night */}
@@ -131,21 +135,21 @@ export function DeckWorld({
         position={[2.95, 1.35, 2.55]}
         intensity={lampIntensity}
         color={palette.lamp}
-        distance={night ? 7 : 9}
+        distance={night ? 8 : 9}
         decay={2}
       />
 
-      {/* Screen spill — primary night illumination */}
+      {/* Screen spill — sci-fi accent, not the only light */}
       <pointLight
         position={[0, 1.4, -1.0]}
         intensity={screenFill}
         color={palette.accent}
-        distance={night ? 12 : 6}
+        distance={night ? 11 : 6}
         decay={2}
       />
       <pointLight
         position={[2.45, 1.4, -0.95]}
-        intensity={screenFill * 0.65}
+        intensity={screenFill * 0.55}
         color={palette.glow}
         distance={8}
         decay={2}
@@ -155,16 +159,16 @@ export function DeckWorld({
       <pointLight
         position={[-5.0, 2.0, -1.0]}
         intensity={windowGlow}
-        color={night ? '#4a6a88' : '#ffd8a8'}
-        distance={11}
+        color={night ? '#5a7a98' : '#ffd8a8'}
+        distance={12}
         decay={2}
       />
 
-      {/* Soft ceiling wash — day warm, night cool */}
+      {/* Soft ceiling wash — day warm, night cool graphite */}
       <pointLight
         position={[0, 3.1, 0.2]}
-        intensity={night ? 0.55 : 0.55}
-        color={night ? palette.accent2 : '#ffe8c8'}
+        intensity={night ? 0.75 : 0.55}
+        color={night ? '#6a7a8c' : '#ffe8c8'}
         distance={14}
         decay={2}
       />
@@ -322,8 +326,8 @@ function StudioShell({
   const night = theme === 'duty'
   const wallEmissive = night ? 0.03 : 0.01
   const windowEmissive = night ? 0.22 : 0.35
-  // Keep cove as soft fixture wash — avoid neon-strip look at night
-  const coveEmissive = night ? 0.18 : 0.08
+  // Soft fixture wash — night stays dim so screens carry the glow
+  const coveEmissive = night ? 0.1 : 0.08
 
   return (
     <group>
