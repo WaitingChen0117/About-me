@@ -55,6 +55,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .chat-bubble {
@@ -63,6 +65,28 @@
   border-radius: 10px;
   line-height: 1.45;
   font-size: 0.88rem;
+}
+
+.chat-bubble-text {
+  margin: 0;
+}
+
+.chat-cite {
+  margin-top: 0.45rem;
+  padding: 0.2rem 0;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.chat-cite:hover {
+  color: var(--text);
 }
 
 .chat-bubble.bot {
@@ -81,7 +105,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  padding: 0 0.85rem 0.95rem;
+  padding: 0 0.85rem 0.55rem;
 }
 
 .avatar-presets button {
@@ -91,11 +115,60 @@
   background: var(--bg-elevated);
   font-size: 0.75rem;
   color: var(--text-muted);
+  cursor: pointer;
 }
 
 .avatar-presets button:hover {
   border-color: var(--accent);
   color: var(--text);
+}
+
+.avatar-compose {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 0.85rem 0.85rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.65rem;
+}
+
+.avatar-compose input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.avatar-compose input::placeholder {
+  color: var(--text-muted);
+}
+
+.avatar-compose input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.avatar-compose button[type='submit'] {
+  flex-shrink: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.avatar-compose button[type='submit']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.avatar-compose button[type='submit']:not(:disabled):hover {
+  border-color: var(--accent);
 }
 
 @media (max-width: 560px) {
