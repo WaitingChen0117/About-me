@@ -38,7 +38,8 @@ export function HotspotMesh({
 
   const isHovered = hovered || externallyHovered
   const highlight = active || targeted || isHovered
-  const emissive = active ? 0.52 : targeted ? 0.36 : isHovered ? 0.28 : 0.12
+  // Idle screens stay lit enough to read as monitors (esp. night studio)
+  const emissive = active ? 0.62 : targeted ? 0.44 : isHovered ? 0.36 : 0.26
 
   useFrame((_, dt) => {
     const g = root.current

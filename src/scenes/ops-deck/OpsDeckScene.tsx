@@ -102,7 +102,8 @@ export function OpsDeckScene({
             stencil: false,
           }}
           onCreated={({ gl }) => {
-            gl.toneMappingExposure = lowPower ? 1 : 1.06
+            // Night needs a touch more exposure so dark materials still read
+            gl.toneMappingExposure = lowPower ? (theme === 'duty' ? 1.12 : 1) : theme === 'duty' ? 1.18 : 1.06
           }}
           performance={{ min: lowPower ? 0.45 : 0.7 }}
         >
