@@ -17,7 +17,7 @@ import {
   type WalkObstacle,
   type WalkRect,
 } from '../walk/clampWalk'
-import { OPERATOR_HOME } from './hotspots'
+import { CHAIR_OUTWARD_YAW, OPERATOR_HOME } from './hotspots'
 import type { DeckPalette } from './themeColors'
 
 /** Free click-to-walk goal (not a section patrol). */
@@ -38,11 +38,13 @@ export type SitCommand = {
   faceYaw: number
 }
 
-/** Stand up from the seat, then rest at standX/Z. */
+/** Turn chair+body to exitYaw first, then stand and rest at standX/Z. */
 export type StandCommand = {
   ticket: number
   standX: number
   standZ: number
+  /** World yaw to face before rising (aisle / outward). */
+  exitYaw?: number
 }
 
 type Props = {
@@ -76,6 +78,20 @@ type Props = {
    * so DeckWorld can swivel the chair in lockstep (no body-only twist).
    */
   seatYawRef?: MutableRefObject<number>
+  /**
+   * DeckWorld sets true once the chair seat opens toward the character.
+   * Sit-blend waits on this so the body never drops through the backrest.
+   */
+  chairOrientedRef?: MutableRefObject<boolean>
+  /**
+   * While seated, prefer this yaw over lookAtId (forced monitor turn).
+   */
+  seatTurnYawRef?: MutableRefObject<number | null>
+}
+
+/** Shortest signed angle from `from` to `to` in (−π, π]. */
+function angleDelta(from: number, to: number) {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from))
 }
 
 const WALK_SPEED = 2.55
@@ -112,7 +128,14 @@ const FIG = {
   lace: '#ececef',
 } as const
 
-type SeatPhase = 'none' | 'to-approach' | 'sit-blend' | 'seated' | 'stand-blend'
+type SeatPhase =
+  | 'none'
+  | 'to-approach'
+  | 'wait-chair'
+  | 'sit-blend'
+  | 'seated'
+  | 'pre-stand-turn'
+  | 'stand-blend'
 
 export function Operator3D({
   hotspots,
@@ -133,6 +156,8 @@ export function Operator3D({
   onSeated,
   onStood,
   seatYawRef,
+  chairOrientedRef,
+  seatTurnYawRef,
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
@@ -151,6 +176,8 @@ export function Operator3D({
   /** World XZ captured when sit-blend begins (approach → seat lerp). */
   const sitFrom = useRef({ x: 0, z: 0 })
   const standTarget = useRef({ x: 0, z: 0 })
+  /** Yaw to reach (chair follows) before stand-blend. */
+  const standExitYaw = useRef(CHAIR_OUTWARD_YAW)
   const collide = useRef(true)
   const boundsRef = useRef(walkBounds)
   const obstaclesRef = useRef(walkObstacles)
@@ -294,8 +321,14 @@ export function Operator3D({
   useEffect(() => {
     if (!target || ticket === 0) return
     // Section patrol cancels an in-flight sit approach (stand path owns that).
-    if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
-    if (seatPhase.current === 'to-approach') {
+    if (
+      seatPhase.current === 'seated' ||
+      seatPhase.current === 'sit-blend' ||
+      seatPhase.current === 'pre-stand-turn'
+    ) {
+      return
+    }
+    if (seatPhase.current === 'to-approach' || seatPhase.current === 'wait-chair') {
       seatPhase.current = 'none'
       sitBlend.current = 0
       collide.current = true
@@ -316,8 +349,14 @@ export function Operator3D({
     if (!freeWalk || freeWalk.ticket === 0) return
     if (freeWalk.ticket === lastFreeTicket.current) return
     lastFreeTicket.current = freeWalk.ticket
-    if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
-    if (seatPhase.current === 'to-approach') {
+    if (
+      seatPhase.current === 'seated' ||
+      seatPhase.current === 'sit-blend' ||
+      seatPhase.current === 'pre-stand-turn'
+    ) {
+      return
+    }
+    if (seatPhase.current === 'to-approach' || seatPhase.current === 'wait-chair') {
       seatPhase.current = 'none'
       sitBlend.current = 0
       collide.current = true
@@ -353,8 +392,9 @@ export function Operator3D({
     lastStandTicket.current = standCommand.ticket
     pending.current = null
     standTarget.current = { x: standCommand.standX, z: standCommand.standZ }
+    standExitYaw.current = standCommand.exitYaw ?? CHAIR_OUTWARD_YAW
 
-    if (seatPhase.current === 'to-approach') {
+    if (seatPhase.current === 'to-approach' || seatPhase.current === 'wait-chair') {
       // Abort walk-to-sit; pending after-stand owns the next goal.
       seatPhase.current = 'none'
       sitBlend.current = 0
@@ -369,14 +409,18 @@ export function Operator3D({
       return
     }
 
-    if (seatPhase.current !== 'seated' && seatPhase.current !== 'sit-blend') {
+    if (
+      seatPhase.current !== 'seated' &&
+      seatPhase.current !== 'sit-blend' &&
+      seatPhase.current !== 'pre-stand-turn'
+    ) {
       // Already standing — still ack so pending actions can run.
       queueMicrotask(() => stoodRef.current?.())
       return
     }
+    // Chair + body turn aisle-outward FIRST; stand-blend waits until aligned.
     collide.current = false
-    seatPhase.current = 'stand-blend'
-    // Keep sitBlend as the stand-down progress source (1 → 0).
+    seatPhase.current = 'pre-stand-turn'
     if (sitBlend.current < 0.99) sitBlend.current = 1
     walkingRef.current = false
     queueMicrotask(() => {
@@ -393,11 +437,16 @@ export function Operator3D({
     const phase = seatPhase.current
 
     // —— Sit / stand blends (skip normal walk locomotion) ——
-    if (phase === 'sit-blend' || phase === 'stand-blend' || phase === 'seated') {
+    if (
+      phase === 'sit-blend' ||
+      phase === 'stand-blend' ||
+      phase === 'seated' ||
+      phase === 'pre-stand-turn'
+    ) {
       bob.current = THREE.MathUtils.damp(bob.current, 0, 10, delta)
 
       if (phase === 'sit-blend') {
-        // ~0.7s ease onto the seat (smoothstep — soft settle, not a snap).
+        // Chair already faces the character — ease body onto the seat.
         sitBlend.current = Math.min(1, sitBlend.current + delta * 1.45)
         const u = smoothstep01(sitBlend.current)
         const st = sitTarget.current
@@ -420,8 +469,26 @@ export function Operator3D({
             seatedRef.current?.()
           })
         }
+      } else if (phase === 'pre-stand-turn') {
+        // Rotate chair+body to aisle FIRST; only then rise (no backrest clip).
+        const st = sitTarget.current
+        const exitYaw = standExitYaw.current
+        pos.current.set(st.x, st.y, st.z)
+        sitAmountRef.current = Math.max(sitAmountRef.current, sitBlend.current)
+        applySitPose(legL, legR, calfL, calfR, armL, armR, sitAmountRef.current)
+        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, exitYaw, 5.5, delta)
+        st.yaw = g.rotation.y
+        publishSeatYaw(g.rotation.y)
+        g.position.set(st.x, st.y, st.z)
+        if (Math.abs(angleDelta(g.rotation.y, exitYaw)) < 0.08) {
+          g.rotation.y = exitYaw
+          st.yaw = exitYaw
+          publishSeatYaw(exitYaw)
+          seatPhase.current = 'stand-blend'
+          if (sitBlend.current < 0.99) sitBlend.current = 1
+        }
       } else if (phase === 'stand-blend') {
-        // ~0.65s rise: leave the cushion first; chair rest-damp waits for onStood.
+        // Chair already aisle-facing — rise and step to approach.
         sitBlend.current = Math.max(0, sitBlend.current - delta * 1.55)
         const u = smoothstep01(sitBlend.current)
         const st = sitTarget.current
@@ -451,7 +518,10 @@ export function Operator3D({
         sitAmountRef.current = 1
         applySitPose(legL, legR, calfL, calfR, armL, armR, 1)
         let yaw = st.yaw
-        if (lookAtId) {
+        const forced = seatTurnYawRef?.current
+        if (forced != null) {
+          yaw = forced
+        } else if (lookAtId) {
           const spot = hotspots.find((h) => h.id === lookAtId)
           if (spot) {
             const dx = spot.position[0] - pos.current.x
@@ -549,15 +619,29 @@ export function Operator3D({
         queueMicrotask(() => setWalking(false))
         resetLimbPose()
         if (seatPhase.current === 'to-approach') {
-          // Reached chair approach — start sit blend (ignore chair AABB).
+          // Reached approach — wait until chair faces the character, then sit.
           collide.current = false
-          seatPhase.current = 'sit-blend'
-          sitBlend.current = 0
-          sitFrom.current = { x: pos.current.x, z: pos.current.z }
+          if (chairOrientedRef && !chairOrientedRef.current) {
+            seatPhase.current = 'wait-chair'
+          } else {
+            seatPhase.current = 'sit-blend'
+            sitBlend.current = 0
+            sitFrom.current = { x: pos.current.x, z: pos.current.z }
+          }
         } else if (pending.current) {
           const arrived = pending.current
           pending.current = null
           arriveRef.current(arrived)
+        }
+      } else if (seatPhase.current === 'wait-chair') {
+        // Stand at approach until the chair finishes rotating toward us.
+        const faceYaw = sitTarget.current.yaw
+        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, faceYaw, 8, delta)
+        if (!chairOrientedRef || chairOrientedRef.current) {
+          collide.current = false
+          seatPhase.current = 'sit-blend'
+          sitBlend.current = 0
+          sitFrom.current = { x: pos.current.x, z: pos.current.z }
         }
       } else {
         if (legL.current) legL.current.rotation.x = THREE.MathUtils.damp(legL.current.rotation.x, 0, 10, delta)

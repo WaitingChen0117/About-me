@@ -24,6 +24,7 @@ import {
   AVATAR_POD_POSITION,
   CHAIR_APPROACH,
   CHAIR_FACE_YAW,
+  CHAIR_OUTWARD_YAW,
   CHAIR_POSITION,
   CHAIR_REST_SWIVEL,
   CHAIR_SIT,
@@ -44,8 +45,14 @@ function isDeskMonitor(id: SectionId): boolean {
   return (DESK_MONITOR_IDS as readonly SectionId[]).includes(id)
 }
 
-/** Chair swivel sequencer — independent of React `seated` so stand can't race the damp. */
-type ChairSwivelPhase = 'rest' | 'to-seat' | 'seated' | 'hold' | 'to-rest'
+/**
+ * Chair swivel sequencer — independent of React `seated`.
+ * Sit: to-seat rotates in place so the seat opens toward the character,
+ * then the body blends on. Stand: operator turns outward first (phase
+ * stays `seated` so mesh follows), then stand-blend. Monitor clicks while
+ * aisle-facing turn chair+body to the desk before focusThenOpen.
+ */
+type ChairSwivelPhase = 'rest' | 'to-seat' | 'seated' | 'to-rest'
 
 type PendingAfterStand =
   | { kind: 'walk'; x: number; z: number }
@@ -130,11 +137,20 @@ export function DeckWorld({
   const chairSwivelRef = useRef<THREE.Group>(null)
   /**
    * Explicit swivel sequencer — do NOT key rest-damp off React `seated`.
-   * Stand must freeze the chair until the character has left the seat, then damp out.
+   * Chair orients to the target facing BEFORE the body sits or stands.
    */
   const chairPhaseRef = useRef<ChairSwivelPhase>('rest')
-  /** Frozen swivel yaw while the operator stands up (hold phase). */
-  const chairHoldSwivelRef = useRef(CHAIR_REST_SWIVEL)
+  /**
+   * True once the empty chair has eased so the seat opens toward the
+   * approach (faces the character) — sit-blend may begin.
+   */
+  const chairOrientedRef = useRef(false)
+  /**
+   * While seated, force yaw toward this value (monitor turn). Null = use lookAtId.
+   * When the body reaches it, DeckWorld fires pending monitor focusThenOpen.
+   */
+  const seatTurnYawRef = useRef<number | null>(null)
+  const pendingMonitorOpenRef = useRef<SectionId | null>(null)
 
   useEffect(() => {
     gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
@@ -142,16 +158,16 @@ export function DeckWorld({
 
   const requestStand = useCallback(() => {
     seatBusy.current = true
-    // Freeze current seat facing NOW — never damp to outward while rising.
-    const swivel = chairSwivelRef.current
-    chairHoldSwivelRef.current = swivel
-      ? swivel.rotation.y
-      : seatYawRef.current - CHAIR_FACE_YAW
-    chairPhaseRef.current = 'hold'
+    seatTurnYawRef.current = null
+    pendingMonitorOpenRef.current = null
+    // Stay in `seated` so the mesh follows seatYaw while the operator
+    // turns aisle-outward first; stand-blend starts only after that turn.
+    chairPhaseRef.current = 'seated'
     setStandCommand((prev) => ({
       ticket: (prev?.ticket ?? 0) + 1,
       standX: CHAIR_APPROACH[0],
       standZ: CHAIR_APPROACH[2],
+      exitYaw: CHAIR_OUTWARD_YAW,
     }))
   }, [])
 
@@ -159,7 +175,11 @@ export function DeckWorld({
     if (seated || seatBusy.current) return
     pendingAfterStand.current = null
     seatBusy.current = true
-    seatYawRef.current = CHAIR_FACE_YAW
+    // Board facing the character / aisle — rotate in place, never translate.
+    seatYawRef.current = CHAIR_OUTWARD_YAW
+    chairOrientedRef.current = false
+    seatTurnYawRef.current = null
+    pendingMonitorOpenRef.current = null
     chairPhaseRef.current = 'to-seat'
     setSitCommand((prev) => ({
       ticket: (prev?.ticket ?? 0) + 1,
@@ -168,12 +188,13 @@ export function DeckWorld({
       sitX: CHAIR_SIT[0],
       sitY: CHAIR_SIT[1],
       sitZ: CHAIR_SIT[2],
-      faceYaw: CHAIR_FACE_YAW,
+      faceYaw: CHAIR_OUTWARD_YAW,
     }))
   }, [seated])
 
   const onSeated = useCallback(() => {
     seatBusy.current = false
+    chairOrientedRef.current = true
     chairPhaseRef.current = 'seated'
     setSeated(true)
   }, [])
@@ -181,7 +202,7 @@ export function DeckWorld({
   const onStood = useCallback(() => {
     seatBusy.current = false
     setSeated(false)
-    // Character has left the seat — only NOW ease the chair back outward.
+    // Body already left after the chair faced the aisle — settle residual.
     chairPhaseRef.current = 'to-rest'
     const pending = pendingAfterStand.current
     pendingAfterStand.current = null
@@ -203,12 +224,36 @@ export function DeckWorld({
     }
   }, [hotspots, onFocusThenOpen, onSendOperator, onToggleAvatar])
 
+  const yawTowardHotspot = useCallback((id: SectionId) => {
+    const spot = hotspots.find((h) => h.id === id)
+    if (!spot) return CHAIR_FACE_YAW
+    const dx = spot.position[0] - CHAIR_SIT[0]
+    const dz = spot.position[2] - CHAIR_SIT[2]
+    if (dx * dx + dz * dz < 1e-4) return CHAIR_FACE_YAW
+    return Math.atan2(dx, dz)
+  }, [hotspots])
+
   const selectSection = useCallback(
     (id: SectionId) => {
       if (seated || seatBusy.current) {
         if (seated && isDeskMonitor(id)) {
-          // Stay seated — Operator looks via lookAtId / focusId; same focusThenOpen path.
-          onFocusThenOpen(id)
+          // Stay seated: if facing away from the desk/monitor, turn together
+          // first, then focusThenOpen — never open while still aisle-facing.
+          const targetYaw = yawTowardHotspot(id)
+          const delta = Math.abs(
+            Math.atan2(
+              Math.sin(seatYawRef.current - targetYaw),
+              Math.cos(seatYawRef.current - targetYaw),
+            ),
+          )
+          if (delta < 0.35) {
+            seatTurnYawRef.current = null
+            pendingMonitorOpenRef.current = null
+            onFocusThenOpen(id)
+            return
+          }
+          pendingMonitorOpenRef.current = id
+          seatTurnYawRef.current = targetYaw
           return
         }
         pendingAfterStand.current = { kind: 'open', id }
@@ -217,7 +262,7 @@ export function DeckWorld({
       }
       onFocusThenOpen(id)
     },
-    [seated, onFocusThenOpen, requestStand],
+    [seated, onFocusThenOpen, requestStand, yawTowardHotspot],
   )
 
   useEffect(() => {
@@ -267,8 +312,9 @@ export function DeckWorld({
       roomGroup.current.scale.setScalar(0.96 + 0.04 * e)
     }
     // Chair swivel sequencer (mesh backrest local +Z):
-    // to-seat → ease toward desk/live yaw · seated → hard lock ·
-    // hold → freeze while character rises · to-rest → damp outward AFTER stand.
+    // to-seat → ease seat-open toward the character BEFORE sit-blend ·
+    // seated → hard lock (follows pre-stand / monitor turns) ·
+    // to-rest → residual aisle damp after stand.
     const swivel = chairSwivelRef.current
     if (swivel) {
       const seatedSwivel = seatYawRef.current - CHAIR_FACE_YAW
@@ -276,11 +322,28 @@ export function DeckWorld({
       const phase = chairPhaseRef.current
       if (phase === 'seated') {
         swivel.rotation.y = seatedSwivel
-      } else if (phase === 'hold') {
-        // Character still leaving the seat — keep the last planted facing.
-        swivel.rotation.y = chairHoldSwivelRef.current
+        // Monitor click: finish forced seat turn, then focusThenOpen.
+        const turnYaw = seatTurnYawRef.current
+        const pendingMon = pendingMonitorOpenRef.current
+        if (turnYaw != null && pendingMon) {
+          const delta = Math.abs(
+            Math.atan2(
+              Math.sin(seatYawRef.current - turnYaw),
+              Math.cos(seatYawRef.current - turnYaw),
+            ),
+          )
+          if (delta < 0.1) {
+            seatTurnYawRef.current = null
+            pendingMonitorOpenRef.current = null
+            onFocusThenOpen(pendingMon)
+          }
+        }
       } else if (phase === 'to-seat') {
+        // Board orientation = face character (aisle). Position never moves.
         swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, seatedSwivel, 4.5, step)
+        if (Math.abs(swivel.rotation.y - seatedSwivel) < 0.08) {
+          chairOrientedRef.current = true
+        }
       } else {
         // 'rest' | 'to-rest' — aisle-facing empty chair
         swivel.rotation.y = THREE.MathUtils.damp(
@@ -558,6 +621,8 @@ export function DeckWorld({
           onSeated={onSeated}
           onStood={onStood}
           seatYawRef={seatYawRef}
+          chairOrientedRef={chairOrientedRef}
+          seatTurnYawRef={seatTurnYawRef}
         />
       </group>
 
