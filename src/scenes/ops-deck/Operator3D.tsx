@@ -193,10 +193,10 @@ export function Operator3D({
     lastFreeTicket.current = freeWalk.ticket
     // Free walk cancels an in-flight section patrol so we don't open a panel later.
     pending.current = null
-    goal.current.set(freeWalk.x, 0, freeWalk.z)
+    goal.current.set(freeWalk.x, floorY, freeWalk.z)
     walkingRef.current = true
     queueMicrotask(() => setWalking(true))
-  }, [freeWalk])
+  }, [freeWalk, floorY])
 
   useFrame((_, dt) => {
     const g = group.current
