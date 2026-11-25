@@ -295,6 +295,8 @@ export function LabWorld({
           tipClassName="craft-html-tip"
           lookAtId={focusId}
           freeWalk={freeWalk}
+          walkBounds={CRAFT_WALK_BOUNDS}
+          walkObstacles={CRAFT_WALK_OBSTACLES}
         />
       </group>
 
