@@ -249,13 +249,17 @@ function DustMotes({ palette, dark }: { palette: DeckPalette; dark: boolean }) {
   const count = 48
 
   const { positions, speeds } = useMemo(() => {
+    // Deterministic layout — avoids impure Math.random during render.
     const positions = new Float32Array(count * 3)
     const speeds = new Float32Array(count)
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 9
-      positions[i * 3 + 1] = 0.4 + Math.random() * 2.6
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 7
-      speeds[i] = 0.08 + Math.random() * 0.12
+      const u = ((i * 17 + 3) % 48) / 48
+      const v = ((i * 29 + 11) % 48) / 48
+      const w = ((i * 41 + 7) % 48) / 48
+      positions[i * 3] = (u - 0.5) * 9
+      positions[i * 3 + 1] = 0.4 + v * 2.6
+      positions[i * 3 + 2] = (w - 0.5) * 7
+      speeds[i] = 0.08 + ((i * 13) % 12) * 0.01
     }
     return { positions, speeds }
   }, [])
@@ -269,9 +273,11 @@ function DustMotes({ palette, dark }: { palette: DeckPalette; dark: boolean }) {
       arr[i * 3 + 1]! += speeds[i]! * dt
       arr[i * 3]! += Math.sin(arr[i * 3 + 1]! * 0.8 + i) * dt * 0.04
       if (arr[i * 3 + 1]! > 3.1) {
+        const u = ((i * 17 + Math.floor(arr[i * 3 + 1]! * 10)) % 48) / 48
+        const w = ((i * 41 + Math.floor(arr[i * 3]! * 10)) % 48) / 48
         arr[i * 3 + 1] = 0.35
-        arr[i * 3] = (Math.random() - 0.5) * 9
-        arr[i * 3 + 2] = (Math.random() - 0.5) * 7
+        arr[i * 3] = (u - 0.5) * 9
+        arr[i * 3 + 2] = (w - 0.5) * 7
       }
     }
     attr.needsUpdate = true
