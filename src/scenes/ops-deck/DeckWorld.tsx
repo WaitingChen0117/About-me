@@ -20,11 +20,34 @@ import {
   OPS_WALK_OBSTACLES,
 } from '../walk/clampWalk'
 import { WalkSurface } from '../walk/WalkSurface'
-import { AVATAR_POD_POSITION, opsDeckHotspots } from './hotspots'
+import {
+  AVATAR_POD_POSITION,
+  CHAIR_APPROACH,
+  CHAIR_FACE_YAW,
+  CHAIR_POSITION,
+  CHAIR_SIT,
+  DESK_MONITOR_IDS,
+  opsDeckHotspots,
+} from './hotspots'
 import { HotspotMesh } from './HotspotMeshes'
-import { Operator3D, type FreeWalkCommand } from './Operator3D'
+import {
+  Operator3D,
+  type FreeWalkCommand,
+  type SitCommand,
+  type StandCommand,
+} from './Operator3D'
 import { StudioDecor } from './StudioDecor'
 import { deckPalette, type DeckPalette } from './themeColors'
+
+function isDeskMonitor(id: SectionId): boolean {
+  return (DESK_MONITOR_IDS as readonly SectionId[]).includes(id)
+}
+
+type PendingAfterStand =
+  | { kind: 'walk'; x: number; z: number }
+  | { kind: 'open'; id: SectionId }
+  | { kind: 'avatar' }
+  | { kind: 'patrol' }
 
 const SECTION_TITLES: Record<SectionId, string> = {
   about: '关于我',
@@ -56,6 +79,8 @@ type Props = {
   isTouch: boolean
   reducedMotion: boolean
   homeView: CameraView
+  /** Lets the scene shell (legend / rail) reuse seat-aware select. */
+  selectSectionRef?: MutableRefObject<(id: SectionId) => void>
 }
 
 export function DeckWorld({
@@ -78,6 +103,7 @@ export function DeckWorld({
   isTouch,
   reducedMotion,
   homeView,
+  selectSectionRef,
 }: Props) {
   const palette = useMemo(() => deckPalette(theme), [theme])
   const lights = useMemo(() => getPalette(theme).lights, [theme])
@@ -88,20 +114,123 @@ export function DeckWorld({
   const roomGroup = useRef<THREE.Group>(null)
   const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
   const [freeWalk, setFreeWalk] = useState<FreeWalkCommand | null>(null)
+  const [sitCommand, setSitCommand] = useState<SitCommand | null>(null)
+  const [standCommand, setStandCommand] = useState<StandCommand | null>(null)
+  const [seated, setSeated] = useState(false)
+  const [chairHovered, setChairHovered] = useState(false)
+  /** True while walking-to-sit or blending onto / off the seat. */
+  const seatBusy = useRef(false)
+  const pendingAfterStand = useRef<PendingAfterStand | null>(null)
 
   useEffect(() => {
     gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
   }, [gl, lights, lowPower])
 
+  const requestStand = useCallback(() => {
+    seatBusy.current = true
+    setStandCommand((prev) => ({
+      ticket: (prev?.ticket ?? 0) + 1,
+      standX: CHAIR_APPROACH[0],
+      standZ: CHAIR_APPROACH[2],
+    }))
+  }, [])
+
+  const requestSit = useCallback(() => {
+    if (seated || seatBusy.current) return
+    pendingAfterStand.current = null
+    seatBusy.current = true
+    setSitCommand((prev) => ({
+      ticket: (prev?.ticket ?? 0) + 1,
+      approachX: CHAIR_APPROACH[0],
+      approachZ: CHAIR_APPROACH[2],
+      sitX: CHAIR_SIT[0],
+      sitY: CHAIR_SIT[1],
+      sitZ: CHAIR_SIT[2],
+      faceYaw: CHAIR_FACE_YAW,
+    }))
+  }, [seated])
+
+  const onSeated = useCallback(() => {
+    seatBusy.current = false
+    setSeated(true)
+  }, [])
+
+  const onStood = useCallback(() => {
+    seatBusy.current = false
+    setSeated(false)
+    const pending = pendingAfterStand.current
+    pendingAfterStand.current = null
+    if (!pending) return
+    if (pending.kind === 'walk') {
+      setFreeWalk((prev) => ({
+        ticket: (prev?.ticket ?? 0) + 1,
+        x: pending.x,
+        z: pending.z,
+      }))
+    } else if (pending.kind === 'open') {
+      onFocusThenOpen(pending.id)
+    } else if (pending.kind === 'avatar') {
+      onToggleAvatar()
+    } else if (pending.kind === 'patrol') {
+      const pool = hotspots.map((h) => h.id)
+      const next = pool[Math.floor(Math.random() * pool.length)]!
+      onSendOperator(next)
+    }
+  }, [hotspots, onFocusThenOpen, onSendOperator, onToggleAvatar])
+
+  const selectSection = useCallback(
+    (id: SectionId) => {
+      if (seated || seatBusy.current) {
+        if (seated && isDeskMonitor(id)) {
+          // Stay seated — Operator looks via lookAtId / focusId; same focusThenOpen path.
+          onFocusThenOpen(id)
+          return
+        }
+        pendingAfterStand.current = { kind: 'open', id }
+        requestStand()
+        return
+      }
+      onFocusThenOpen(id)
+    },
+    [seated, onFocusThenOpen, requestStand],
+  )
+
+  useEffect(() => {
+    if (!selectSectionRef) return
+    selectSectionRef.current = selectSection
+  }, [selectSection, selectSectionRef])
+
   const onOperatorTap = () => {
+    if (seated || seatBusy.current) {
+      pendingAfterStand.current = { kind: 'patrol' }
+      requestStand()
+      return
+    }
     const pool = hotspots.map((h) => h.id)
     const next = pool[Math.floor(Math.random() * pool.length)]!
     onSendOperator(next)
   }
 
-  const onWalkTo = useCallback((x: number, z: number) => {
-    setFreeWalk((prev) => ({ ticket: (prev?.ticket ?? 0) + 1, x, z }))
-  }, [])
+  const onWalkTo = useCallback(
+    (x: number, z: number) => {
+      if (seated || seatBusy.current) {
+        pendingAfterStand.current = { kind: 'walk', x, z }
+        requestStand()
+        return
+      }
+      setFreeWalk((prev) => ({ ticket: (prev?.ticket ?? 0) + 1, x, z }))
+    },
+    [seated, requestStand],
+  )
+
+  const onAvatarToggle = useCallback(() => {
+    if (seated || seatBusy.current) {
+      pendingAfterStand.current = { kind: 'avatar' }
+      requestStand()
+      return
+    }
+    onToggleAvatar()
+  }, [seated, requestStand, onToggleAvatar])
 
   useFrame((_, dt) => {
     if (introRef.current < 1) {
@@ -272,11 +401,33 @@ export function DeckWorld({
           </mesh>
         ))}
 
-        {/* Task chair */}
-        <group position={[0.05, 0, 1.15]}>
+        {/* Task chair — click to walk + sit */}
+        <group
+          position={CHAIR_POSITION}
+          onClick={(e) => {
+            e.stopPropagation()
+            if (seated || seatBusy.current) return
+            requestSit()
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation()
+            setChairHovered(true)
+            document.body.style.cursor = 'pointer'
+          }}
+          onPointerOut={() => {
+            setChairHovered(false)
+            document.body.style.cursor = 'auto'
+          }}
+        >
           <mesh position={[0, 0.42, 0]} castShadow>
             <boxGeometry args={[0.72, 0.08, 0.68]} />
-            <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
+            <meshStandardMaterial
+              color={palette.fabric}
+              roughness={0.88}
+              metalness={0.04}
+              emissive={palette.accent}
+              emissiveIntensity={chairHovered || seated ? 0.12 : 0}
+            />
           </mesh>
           <mesh position={[0, 0.85, -0.28]} castShadow>
             <boxGeometry args={[0.7, 0.75, 0.08]} />
@@ -290,6 +441,17 @@ export function DeckWorld({
             <cylinderGeometry args={[0.32, 0.32, 0.05, 16]} />
             <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
           </mesh>
+          {(chairHovered || seated) && (
+            <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.42, 0.55, 28]} />
+              <meshBasicMaterial
+                color={palette.accent}
+                transparent
+                opacity={seated ? 0.22 : 0.34}
+                depthWrite={false}
+              />
+            </mesh>
+          )}
         </group>
 
         <StudioDecor palette={palette} theme={theme} lowPower={lowPower} />
@@ -304,14 +466,14 @@ export function DeckWorld({
             externallyHovered={hoveredId === spot.id}
             index={i}
             introRef={introRef}
-            onOpen={onFocusThenOpen}
+            onOpen={selectSection}
             onHoverChange={setHoveredId}
           />
         ))}
 
         <AvatarDock
           open={avatarOpen}
-          onToggle={onToggleAvatar}
+          onToggle={onAvatarToggle}
           palette={palette}
           theme={theme}
           introRef={introRef}
@@ -329,6 +491,10 @@ export function DeckWorld({
           freeWalk={freeWalk}
           walkBounds={OPS_WALK_BOUNDS}
           walkObstacles={OPS_WALK_OBSTACLES}
+          sitCommand={sitCommand}
+          standCommand={standCommand}
+          onSeated={onSeated}
+          onStood={onStood}
         />
       </group>
 
@@ -347,7 +513,7 @@ export function DeckWorld({
         sectionTitles={SECTION_TITLES}
         hoveredId={hoveredId}
         onHover={setHoveredId}
-        onSelect={onFocusThenOpen}
+        onSelect={selectSection}
         away={labelsAway}
         portal={labelPortal}
       />

@@ -27,6 +27,24 @@ export type FreeWalkCommand = {
   z: number
 }
 
+/** Walk to approach, then blend onto the seat. */
+export type SitCommand = {
+  ticket: number
+  approachX: number
+  approachZ: number
+  sitX: number
+  sitY: number
+  sitZ: number
+  faceYaw: number
+}
+
+/** Stand up from the seat, then rest at standX/Z. */
+export type StandCommand = {
+  ticket: number
+  standX: number
+  standZ: number
+}
+
 type Props = {
   hotspots: HotspotDef[]
   target: SectionId | null
@@ -47,6 +65,12 @@ type Props = {
   walkBounds?: WalkRect | null
   /** Furniture AABBs — click-walk and patrol cannot sink into these */
   walkObstacles?: WalkObstacle[]
+  /** Desk chair sit request */
+  sitCommand?: SitCommand | null
+  /** Leave chair request */
+  standCommand?: StandCommand | null
+  onSeated?: () => void
+  onStood?: () => void
 }
 
 const WALK_SPEED = 2.55
@@ -69,6 +93,8 @@ const FIG = {
   lace: '#ececef',
 } as const
 
+type SeatPhase = 'none' | 'to-approach' | 'sit-blend' | 'seated' | 'stand-blend'
+
 export function Operator3D({
   hotspots,
   target,
@@ -83,20 +109,34 @@ export function Operator3D({
   freeWalk = null,
   walkBounds = null,
   walkObstacles = [],
+  sitCommand = null,
+  standCommand = null,
+  onSeated,
+  onStood,
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
   const goal = useRef(new THREE.Vector3(...home))
   const pending = useRef<SectionId | null>(null)
   const arriveRef = useRef(onArrive)
+  const seatedRef = useRef(onSeated)
+  const stoodRef = useRef(onStood)
   const lastFreeTicket = useRef(0)
+  const lastSitTicket = useRef(0)
+  const lastStandTicket = useRef(0)
   const walkingRef = useRef(false)
+  const seatPhase = useRef<SeatPhase>('none')
+  const sitBlend = useRef(0)
+  const sitTarget = useRef({ x: 0, y: 0, z: 0, yaw: 0 })
+  const standTarget = useRef({ x: 0, z: 0 })
+  const collide = useRef(true)
   const boundsRef = useRef(walkBounds)
   const obstaclesRef = useRef(walkObstacles)
   boundsRef.current = walkBounds
   obstaclesRef.current = walkObstacles
 
   const [walking, setWalking] = useState(false)
+  const [seated, setSeated] = useState(false)
   const [hovered, setHovered] = useState(false)
   const stride = useRef(0)
   const bob = useRef(0)
@@ -179,6 +219,12 @@ export function Operator3D({
   useEffect(() => {
     arriveRef.current = onArrive
   }, [onArrive])
+  useEffect(() => {
+    seatedRef.current = onSeated
+  }, [onSeated])
+  useEffect(() => {
+    stoodRef.current = onStood
+  }, [onStood])
 
   // Walk / idle plane follows home Y so scenes can raise or lower the floor
   // without rewriting bob math (ops-deck home Y is 0; craft-lab stays on floor).
@@ -187,7 +233,7 @@ export function Operator3D({
   const applyWalkGoal = (x: number, z: number) => {
     const bounds = boundsRef.current
     const obstacles = obstaclesRef.current
-    if (bounds) {
+    if (bounds && collide.current) {
       const clamped = clampWalkPoint(x, z, bounds, obstacles)
       goal.current.set(clamped.x, floorY, clamped.z)
     } else {
@@ -195,8 +241,20 @@ export function Operator3D({
     }
   }
 
+  const beginWalk = () => {
+    walkingRef.current = true
+    queueMicrotask(() => setWalking(true))
+  }
+
   useEffect(() => {
     if (!target || ticket === 0) return
+    // Section patrol cancels an in-flight sit approach (stand path owns that).
+    if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
+    if (seatPhase.current === 'to-approach') {
+      seatPhase.current = 'none'
+      sitBlend.current = 0
+      collide.current = true
+    }
     const spot = hotspots.find((h) => h.id === target)
     if (!spot) return
     if (spot.standPosition) {
@@ -206,26 +264,172 @@ export function Operator3D({
       applyWalkGoal(x * 0.72, z * 0.72 + (z < 0 ? 0.45 : -0.15))
     }
     pending.current = target
-    walkingRef.current = true
-    queueMicrotask(() => setWalking(true))
+    beginWalk()
   }, [target, ticket, hotspots, floorY])
 
   useEffect(() => {
     if (!freeWalk || freeWalk.ticket === 0) return
     if (freeWalk.ticket === lastFreeTicket.current) return
     lastFreeTicket.current = freeWalk.ticket
+    if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
+    if (seatPhase.current === 'to-approach') {
+      seatPhase.current = 'none'
+      sitBlend.current = 0
+      collide.current = true
+    }
     // Free walk cancels an in-flight section patrol so we don't open a panel later.
     pending.current = null
     applyWalkGoal(freeWalk.x, freeWalk.z)
-    walkingRef.current = true
-    queueMicrotask(() => setWalking(true))
+    beginWalk()
   }, [freeWalk, floorY])
+
+  useEffect(() => {
+    if (!sitCommand || sitCommand.ticket === 0) return
+    if (sitCommand.ticket === lastSitTicket.current) return
+    lastSitTicket.current = sitCommand.ticket
+    if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
+    pending.current = null
+    sitTarget.current = {
+      x: sitCommand.sitX,
+      y: sitCommand.sitY,
+      z: sitCommand.sitZ,
+      yaw: sitCommand.faceYaw,
+    }
+    collide.current = true
+    seatPhase.current = 'to-approach'
+    sitBlend.current = 0
+    applyWalkGoal(sitCommand.approachX, sitCommand.approachZ)
+    beginWalk()
+  }, [sitCommand, floorY])
+
+  useEffect(() => {
+    if (!standCommand || standCommand.ticket === 0) return
+    if (standCommand.ticket === lastStandTicket.current) return
+    lastStandTicket.current = standCommand.ticket
+    pending.current = null
+    standTarget.current = { x: standCommand.standX, z: standCommand.standZ }
+
+    if (seatPhase.current === 'to-approach') {
+      // Abort walk-to-sit; pending after-stand owns the next goal.
+      seatPhase.current = 'none'
+      sitBlend.current = 0
+      collide.current = true
+      walkingRef.current = false
+      goal.current.set(pos.current.x, floorY, pos.current.z)
+      queueMicrotask(() => {
+        setWalking(false)
+        setSeated(false)
+        stoodRef.current?.()
+      })
+      return
+    }
+
+    if (seatPhase.current !== 'seated' && seatPhase.current !== 'sit-blend') {
+      // Already standing — still ack so pending actions can run.
+      queueMicrotask(() => stoodRef.current?.())
+      return
+    }
+    collide.current = false
+    seatPhase.current = 'stand-blend'
+    // Keep sitBlend as the stand-down progress source (1 → 0).
+    if (sitBlend.current < 0.99) sitBlend.current = 1
+    walkingRef.current = false
+    queueMicrotask(() => {
+      setWalking(false)
+      setSeated(false)
+    })
+  }, [standCommand, floorY])
 
   useFrame((_, dt) => {
     const g = group.current
     if (!g) return
 
     const delta = Math.min(dt, 0.05)
+    const phase = seatPhase.current
+
+    // —— Sit / stand blends (skip normal walk locomotion) ——
+    if (phase === 'sit-blend' || phase === 'stand-blend' || phase === 'seated') {
+      bob.current = THREE.MathUtils.damp(bob.current, 0, 10, delta)
+
+      if (phase === 'sit-blend') {
+        sitBlend.current = Math.min(1, sitBlend.current + delta * 2.4)
+        const u = 1 - Math.pow(1 - sitBlend.current, 2)
+        const st = sitTarget.current
+        pos.current.x = THREE.MathUtils.lerp(pos.current.x, st.x, 0.2)
+        pos.current.z = THREE.MathUtils.lerp(pos.current.z, st.z, 0.2)
+        const y = THREE.MathUtils.lerp(floorY, st.y, u)
+        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, st.yaw, 10, delta)
+        applySitPose(legL, legR, armL, armR, u)
+        g.position.set(pos.current.x, y, pos.current.z)
+        if (sitBlend.current >= 1) {
+          seatPhase.current = 'seated'
+          pos.current.set(st.x, st.y, st.z)
+          collide.current = false
+          queueMicrotask(() => {
+            setSeated(true)
+            setWalking(false)
+            seatedRef.current?.()
+          })
+        }
+      } else if (phase === 'stand-blend') {
+        sitBlend.current = Math.max(0, sitBlend.current - delta * 2.8)
+        const u = sitBlend.current
+        const ease = u * u
+        const st = sitTarget.current
+        const sd = standTarget.current
+        pos.current.x = THREE.MathUtils.lerp(sd.x, st.x, ease)
+        pos.current.z = THREE.MathUtils.lerp(sd.z, st.z, ease)
+        const y = THREE.MathUtils.lerp(floorY, st.y, ease)
+        applySitPose(legL, legR, armL, armR, u)
+        g.position.set(pos.current.x, y, pos.current.z)
+        if (sitBlend.current <= 0.001) {
+          sitBlend.current = 0
+          seatPhase.current = 'none'
+          collide.current = true
+          pos.current.set(sd.x, floorY, sd.z)
+          goal.current.set(sd.x, floorY, sd.z)
+          if (legL.current) legL.current.rotation.x = 0
+          if (legR.current) legR.current.rotation.x = 0
+          if (armL.current) armL.current.rotation.x = 0
+          if (armR.current) armR.current.rotation.x = 0
+          g.position.set(sd.x, floorY, sd.z)
+          queueMicrotask(() => stoodRef.current?.())
+        }
+      } else {
+        // Seated idle — hold pose, turn toward focused desk monitor when set
+        const st = sitTarget.current
+        pos.current.set(st.x, st.y, st.z)
+        applySitPose(legL, legR, armL, armR, 1)
+        let yaw = st.yaw
+        if (lookAtId) {
+          const spot = hotspots.find((h) => h.id === lookAtId)
+          if (spot) {
+            const dx = spot.position[0] - pos.current.x
+            const dz = spot.position[2] - pos.current.z
+            if (dx * dx + dz * dz > 1e-4) yaw = Math.atan2(dx, dz)
+          }
+        }
+        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, yaw, 6, delta)
+        g.position.set(st.x, st.y, st.z)
+      }
+
+      const appearSit = Math.min(1, Math.max(0, (introRef.current - 0.15) / 0.4))
+      const easedSit = 1 - Math.pow(1 - appearSit, 3)
+      g.scale.setScalar(0.7 + 0.3 * easedSit)
+      g.visible = easedSit > 0.05
+
+      if (marker.current) {
+        const mat = marker.current.material as THREE.MeshBasicMaterial
+        mat.opacity = seated || phase === 'seated' ? 0.08 : 0.18
+        marker.current.scale.setScalar(1)
+      }
+      if (torso.current) {
+        const mat = torso.current.material as THREE.MeshStandardMaterial
+        mat.emissiveIntensity = 0.03
+      }
+      return
+    }
+
     const dist = pos.current.distanceTo(goal.current)
     const isWalking = dist > 0.04
 
@@ -239,7 +443,7 @@ export function Operator3D({
       const obstacles = obstaclesRef.current
       let nx = nextX
       let nz = nextZ
-      if (bounds) {
+      if (bounds && collide.current) {
         const resolved = resolveWalkStep(
           pos.current.x,
           pos.current.z,
@@ -258,6 +462,9 @@ export function Operator3D({
           goal.current.set(pos.current.x, floorY, pos.current.z)
           // Drop pending so we don't open a panel after bouncing off a desk.
           pending.current = null
+          if (seatPhase.current === 'to-approach') {
+            seatPhase.current = 'none'
+          }
         } else {
           pos.current.x = nx
           pos.current.z = nz
@@ -289,7 +496,12 @@ export function Operator3D({
         if (legR.current) legR.current.rotation.x = 0
         if (armL.current) armL.current.rotation.x = 0
         if (armR.current) armR.current.rotation.x = 0
-        if (pending.current) {
+        if (seatPhase.current === 'to-approach') {
+          // Reached chair approach — start sit blend (ignore chair AABB).
+          collide.current = false
+          seatPhase.current = 'sit-blend'
+          sitBlend.current = 0
+        } else if (pending.current) {
           const arrived = pending.current
           pending.current = null
           arriveRef.current(arrived)
@@ -368,13 +580,29 @@ export function Operator3D({
         <meshBasicMaterial color={palette.accent} transparent opacity={0.14} depthWrite={false} />
       </mesh>
 
-      {(hovered || walking) && (
+      {(hovered || walking || seated) && (
         <Html position={[0, 1.42, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
-          <div className={tipClassName}>{walking ? '巡航中' : '派遣巡视'}</div>
+          <div className={tipClassName}>
+            {seated ? '就座中' : walking ? '巡航中' : '派遣巡视'}
+          </div>
         </Html>
       )}
     </group>
   )
+}
+
+function applySitPose(
+  legL: RefObject<THREE.Group | null>,
+  legR: RefObject<THREE.Group | null>,
+  armL: RefObject<THREE.Group | null>,
+  armR: RefObject<THREE.Group | null>,
+  amount: number,
+) {
+  const a = THREE.MathUtils.clamp(amount, 0, 1)
+  if (legL.current) legL.current.rotation.x = a * 1.22
+  if (legR.current) legR.current.rotation.x = a * 1.22
+  if (armL.current) armL.current.rotation.x = a * -0.35
+  if (armR.current) armR.current.rotation.x = a * -0.28
 }
 
 type FigMats = {
