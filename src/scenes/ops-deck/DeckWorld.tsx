@@ -522,7 +522,7 @@ export function DeckWorld({
         fromRef={operatorPosRef}
         onWalkPath={onWalkPath}
       />
-      <WalkGuide path={walkPath} color={palette.accent} />
+      <WalkGuide path={walkPath} color={palette.accent} followRef={operatorPosRef} />
 
       <group ref={roomGroup}>
         <StudioShell palette={palette} theme={theme} lowPower={lowPower} />
