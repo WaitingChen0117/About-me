@@ -44,6 +44,9 @@ function isDeskMonitor(id: SectionId): boolean {
   return (DESK_MONITOR_IDS as readonly SectionId[]).includes(id)
 }
 
+/** Chair swivel sequencer — independent of React `seated` so stand can't race the damp. */
+type ChairSwivelPhase = 'rest' | 'to-seat' | 'seated' | 'hold' | 'to-rest'
+
 type PendingAfterStand =
   | { kind: 'walk'; x: number; z: number }
   | { kind: 'open'; id: SectionId }
@@ -125,6 +128,13 @@ export function DeckWorld({
   /** Operator world yaw while seated — chair swivel locks to this. */
   const seatYawRef = useRef(CHAIR_FACE_YAW)
   const chairSwivelRef = useRef<THREE.Group>(null)
+  /**
+   * Explicit swivel sequencer — do NOT key rest-damp off React `seated`.
+   * Stand must freeze the chair until the character has left the seat, then damp out.
+   */
+  const chairPhaseRef = useRef<ChairSwivelPhase>('rest')
+  /** Frozen swivel yaw while the operator stands up (hold phase). */
+  const chairHoldSwivelRef = useRef(CHAIR_REST_SWIVEL)
 
   useEffect(() => {
     gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
@@ -132,6 +142,12 @@ export function DeckWorld({
 
   const requestStand = useCallback(() => {
     seatBusy.current = true
+    // Freeze current seat facing NOW — never damp to outward while rising.
+    const swivel = chairSwivelRef.current
+    chairHoldSwivelRef.current = swivel
+      ? swivel.rotation.y
+      : seatYawRef.current - CHAIR_FACE_YAW
+    chairPhaseRef.current = 'hold'
     setStandCommand((prev) => ({
       ticket: (prev?.ticket ?? 0) + 1,
       standX: CHAIR_APPROACH[0],
@@ -144,6 +160,7 @@ export function DeckWorld({
     pendingAfterStand.current = null
     seatBusy.current = true
     seatYawRef.current = CHAIR_FACE_YAW
+    chairPhaseRef.current = 'to-seat'
     setSitCommand((prev) => ({
       ticket: (prev?.ticket ?? 0) + 1,
       approachX: CHAIR_APPROACH[0],
@@ -157,12 +174,15 @@ export function DeckWorld({
 
   const onSeated = useCallback(() => {
     seatBusy.current = false
+    chairPhaseRef.current = 'seated'
     setSeated(true)
   }, [])
 
   const onStood = useCallback(() => {
     seatBusy.current = false
     setSeated(false)
+    // Character has left the seat — only NOW ease the chair back outward.
+    chairPhaseRef.current = 'to-rest'
     const pending = pendingAfterStand.current
     pendingAfterStand.current = null
     if (!pending) return
@@ -246,21 +266,36 @@ export function DeckWorld({
       roomGroup.current.position.y = (1 - e) * -0.18
       roomGroup.current.scale.setScalar(0.96 + 0.04 * e)
     }
-    // Chair swivel: seat+back copy operator yaw while on the seat; ease to outward rest when idle.
-    // Mesh backrest is local +Z; desk sit → swivel 0; empty/outward rest → CHAIR_REST_SWIVEL (−π).
+    // Chair swivel sequencer (mesh backrest local +Z):
+    // to-seat → ease toward desk/live yaw · seated → hard lock ·
+    // hold → freeze while character rises · to-rest → damp outward AFTER stand.
     const swivel = chairSwivelRef.current
     if (swivel) {
       const seatedSwivel = seatYawRef.current - CHAIR_FACE_YAW
       const step = Math.min(dt, 0.05)
-      if (seated) {
-        // Hard lock once planted so look-at / monitor swivel stay 1:1 with the body.
+      const phase = chairPhaseRef.current
+      if (phase === 'seated') {
         swivel.rotation.y = seatedSwivel
-      } else if (seatBusy.current) {
-        // Approach / stand-blend: ease toward the live seat yaw (desk on sit, hold on stand).
-        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, seatedSwivel, 6, step)
+      } else if (phase === 'hold') {
+        // Character still leaving the seat — keep the last planted facing.
+        swivel.rotation.y = chairHoldSwivelRef.current
+      } else if (phase === 'to-seat') {
+        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, seatedSwivel, 4.5, step)
       } else {
-        // After stand-up (and initial idle): reset yaw to face the room / camera aisle.
-        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, CHAIR_REST_SWIVEL, 6, step)
+        // 'rest' | 'to-rest' — aisle-facing empty chair
+        swivel.rotation.y = THREE.MathUtils.damp(
+          swivel.rotation.y,
+          CHAIR_REST_SWIVEL,
+          4.2,
+          step,
+        )
+        if (
+          phase === 'to-rest' &&
+          Math.abs(swivel.rotation.y - CHAIR_REST_SWIVEL) < 0.01
+        ) {
+          swivel.rotation.y = CHAIR_REST_SWIVEL
+          chairPhaseRef.current = 'rest'
+        }
       }
     }
   })

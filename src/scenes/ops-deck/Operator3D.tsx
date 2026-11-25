@@ -80,6 +80,12 @@ type Props = {
 
 const WALK_SPEED = 2.55
 
+/** Hermite smoothstep — softer sit/stand than raw linear or quadratic. */
+function smoothstep01(t: number) {
+  const x = THREE.MathUtils.clamp(t, 0, 1)
+  return x * x * (3 - 2 * x)
+}
+
 /** Standing knee offset along the thigh (local −Y). */
 const CALF_Y_STAND = -0.2
 /**
@@ -142,6 +148,8 @@ export function Operator3D({
   const seatPhase = useRef<SeatPhase>('none')
   const sitBlend = useRef(0)
   const sitTarget = useRef({ x: 0, y: 0, z: 0, yaw: 0 })
+  /** World XZ captured when sit-blend begins (approach → seat lerp). */
+  const sitFrom = useRef({ x: 0, z: 0 })
   const standTarget = useRef({ x: 0, z: 0 })
   const collide = useRef(true)
   const boundsRef = useRef(walkBounds)
@@ -389,13 +397,15 @@ export function Operator3D({
       bob.current = THREE.MathUtils.damp(bob.current, 0, 10, delta)
 
       if (phase === 'sit-blend') {
-        sitBlend.current = Math.min(1, sitBlend.current + delta * 2.4)
-        const u = 1 - Math.pow(1 - sitBlend.current, 2)
+        // ~0.7s ease onto the seat (smoothstep — soft settle, not a snap).
+        sitBlend.current = Math.min(1, sitBlend.current + delta * 1.45)
+        const u = smoothstep01(sitBlend.current)
         const st = sitTarget.current
-        pos.current.x = THREE.MathUtils.lerp(pos.current.x, st.x, 0.2)
-        pos.current.z = THREE.MathUtils.lerp(pos.current.z, st.z, 0.2)
+        const from = sitFrom.current
+        pos.current.x = THREE.MathUtils.lerp(from.x, st.x, u)
+        pos.current.z = THREE.MathUtils.lerp(from.z, st.z, u)
         const y = THREE.MathUtils.lerp(floorY, st.y, u)
-        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, st.yaw, 10, delta)
+        g.rotation.y = THREE.MathUtils.damp(g.rotation.y, st.yaw, 8, delta)
         publishSeatYaw(g.rotation.y)
         sitAmountRef.current = u
         applySitPose(legL, legR, calfL, calfR, armL, armR, u)
@@ -411,14 +421,14 @@ export function Operator3D({
           })
         }
       } else if (phase === 'stand-blend') {
-        sitBlend.current = Math.max(0, sitBlend.current - delta * 2.8)
-        const u = sitBlend.current
-        const ease = u * u
+        // ~0.65s rise: leave the cushion first; chair rest-damp waits for onStood.
+        sitBlend.current = Math.max(0, sitBlend.current - delta * 1.55)
+        const u = smoothstep01(sitBlend.current)
         const st = sitTarget.current
         const sd = standTarget.current
-        pos.current.x = THREE.MathUtils.lerp(sd.x, st.x, ease)
-        pos.current.z = THREE.MathUtils.lerp(sd.z, st.z, ease)
-        const y = THREE.MathUtils.lerp(floorY, st.y, ease)
+        pos.current.x = THREE.MathUtils.lerp(sd.x, st.x, u)
+        pos.current.z = THREE.MathUtils.lerp(sd.z, st.z, u)
+        const y = THREE.MathUtils.lerp(floorY, st.y, u)
         sitAmountRef.current = u
         applySitPose(legL, legR, calfL, calfR, armL, armR, u)
         publishSeatYaw(g.rotation.y)
@@ -543,6 +553,7 @@ export function Operator3D({
           collide.current = false
           seatPhase.current = 'sit-blend'
           sitBlend.current = 0
+          sitFrom.current = { x: pos.current.x, z: pos.current.z }
         } else if (pending.current) {
           const arrived = pending.current
           pending.current = null
