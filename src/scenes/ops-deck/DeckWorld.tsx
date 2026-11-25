@@ -121,6 +121,9 @@ export function DeckWorld({
   /** True while walking-to-sit or blending onto / off the seat. */
   const seatBusy = useRef(false)
   const pendingAfterStand = useRef<PendingAfterStand | null>(null)
+  /** Operator world yaw while seated — chair swivel locks to this. */
+  const seatYawRef = useRef(CHAIR_FACE_YAW)
+  const chairSwivelRef = useRef<THREE.Group>(null)
 
   useEffect(() => {
     gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
@@ -139,6 +142,7 @@ export function DeckWorld({
     if (seated || seatBusy.current) return
     pendingAfterStand.current = null
     seatBusy.current = true
+    seatYawRef.current = CHAIR_FACE_YAW
     setSitCommand((prev) => ({
       ticket: (prev?.ticket ?? 0) + 1,
       approachX: CHAIR_APPROACH[0],
@@ -240,6 +244,16 @@ export function DeckWorld({
       const e = 1 - Math.pow(1 - Math.min(1, introRef.current / 0.55), 3)
       roomGroup.current.position.y = (1 - e) * -0.18
       roomGroup.current.scale.setScalar(0.96 + 0.04 * e)
+    }
+    // Chair swivel: seat+back copy operator yaw (locked) while seated; ease home when standing.
+    // Resting chair faces desk at yaw 0; operator desk-facing is CHAIR_FACE_YAW (π).
+    const swivel = chairSwivelRef.current
+    if (swivel) {
+      if (seated || seatBusy.current) {
+        swivel.rotation.y = seatYawRef.current - CHAIR_FACE_YAW
+      } else {
+        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, 0, 6, Math.min(dt, 0.05))
+      }
     }
   })
 
@@ -401,7 +415,7 @@ export function DeckWorld({
           </mesh>
         ))}
 
-        {/* Task chair — click to walk + sit */}
+        {/* Task chair — click to sit; seat+back swivel with seated look-at */}
         <group
           position={CHAIR_POSITION}
           onClick={(e) => {
@@ -419,20 +433,7 @@ export function DeckWorld({
             document.body.style.cursor = 'auto'
           }}
         >
-          <mesh position={[0, 0.42, 0]} castShadow>
-            <boxGeometry args={[0.72, 0.08, 0.68]} />
-            <meshStandardMaterial
-              color={palette.fabric}
-              roughness={0.88}
-              metalness={0.04}
-              emissive={palette.accent}
-              emissiveIntensity={chairHovered || seated ? 0.12 : 0}
-            />
-          </mesh>
-          <mesh position={[0, 0.85, -0.28]} castShadow>
-            <boxGeometry args={[0.7, 0.75, 0.08]} />
-            <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
-          </mesh>
+          {/* Fixed pedestal + base (does not yaw) */}
           <mesh position={[0, 0.2, 0]} castShadow>
             <cylinderGeometry args={[0.06, 0.08, 0.35, 10]} />
             <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
@@ -441,6 +442,24 @@ export function DeckWorld({
             <cylinderGeometry args={[0.32, 0.32, 0.05, 16]} />
             <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
           </mesh>
+          {/* Swivel: cushion + backrest turn with the seated operator */}
+          <group ref={chairSwivelRef}>
+            <mesh position={[0, 0.42, 0]} castShadow>
+              <boxGeometry args={[0.72, 0.08, 0.68]} />
+              <meshStandardMaterial
+                color={palette.fabric}
+                roughness={0.88}
+                metalness={0.04}
+                emissive={palette.accent}
+                emissiveIntensity={chairHovered || seated ? 0.12 : 0}
+              />
+            </mesh>
+            {/* Backrest on +Z — behind a desk-facing sitter (yaw π → faces −Z) */}
+            <mesh position={[0, 0.85, 0.28]} castShadow>
+              <boxGeometry args={[0.7, 0.75, 0.08]} />
+              <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
+            </mesh>
+          </group>
           {(chairHovered || seated) && (
             <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <ringGeometry args={[0.42, 0.55, 28]} />
@@ -495,6 +514,7 @@ export function DeckWorld({
           standCommand={standCommand}
           onSeated={onSeated}
           onStood={onStood}
+          seatYawRef={seatYawRef}
         />
       </group>
 
