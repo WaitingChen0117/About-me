@@ -19,6 +19,8 @@ import {
   CRAFT_WALK_BOUNDS,
   CRAFT_WALK_OBSTACLES,
 } from '../walk/clampWalk'
+import { type WalkPoint } from '../walk/pathfind'
+import { WalkGuide } from '../walk/WalkGuide'
 import { WalkSurface } from '../walk/WalkSurface'
 import { CraftHotspotMesh } from './CraftHotspotMeshes'
 import { ASSIST_MONITOR_POSITION, OPERATOR_HOME, craftLabHotspots } from './hotspots'
@@ -83,6 +85,8 @@ export function LabWorld({
   const labGroup = useRef<THREE.Group>(null)
   const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
   const [freeWalk, setFreeWalk] = useState<FreeWalkCommand | null>(null)
+  const [walkPath, setWalkPath] = useState<WalkPoint[] | null>(null)
+  const operatorPosRef = useRef({ x: OPERATOR_HOME[0], z: OPERATOR_HOME[2] })
 
   const onOperatorTap = () => {
     const pool = hotspots.map((h) => h.id)
@@ -90,8 +94,19 @@ export function LabWorld({
     onSendOperator(next)
   }
 
-  const onWalkTo = useCallback((x: number, z: number) => {
-    setFreeWalk((prev) => ({ ticket: (prev?.ticket ?? 0) + 1, x, z }))
+  const onWalkPath = useCallback((path: WalkPoint[]) => {
+    const goal = path[path.length - 1]!
+    setWalkPath(path)
+    setFreeWalk((prev) => ({
+      ticket: (prev?.ticket ?? 0) + 1,
+      x: goal.x,
+      z: goal.z,
+      path,
+    }))
+  }, [])
+
+  const onFreeWalkDone = useCallback(() => {
+    setWalkPath(null)
   }, [])
 
   useFrame((_, dt) => {
@@ -221,8 +236,10 @@ export function LabWorld({
       <WalkSurface
         bounds={CRAFT_WALK_BOUNDS}
         obstacles={CRAFT_WALK_OBSTACLES}
-        onWalkTo={onWalkTo}
+        fromRef={operatorPosRef}
+        onWalkPath={onWalkPath}
       />
+      <WalkGuide path={walkPath} color={palette.accent} />
 
       <group ref={labGroup}>
         <WorkshopShell palette={palette} theme={theme} lowPower={lowPower} />
@@ -297,6 +314,8 @@ export function LabWorld({
           freeWalk={freeWalk}
           walkBounds={CRAFT_WALK_BOUNDS}
           walkObstacles={CRAFT_WALK_OBSTACLES}
+          onFreeWalkDone={onFreeWalkDone}
+          positionRef={operatorPosRef}
         />
       </group>
 
