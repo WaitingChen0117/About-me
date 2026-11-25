@@ -10,6 +10,7 @@ import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import { AVATAR_POD_POSITION, opsDeckHotspots } from './hotspots'
 import { HotspotMesh } from './HotspotMeshes'
 import { Operator3D } from './Operator3D'
+import { StudioDecor } from './StudioDecor'
 import { deckPalette, type DeckPalette } from './themeColors'
 
 const SECTION_TITLES: Record<SectionId, string> = {
@@ -151,14 +152,23 @@ export function DeckWorld({
       />
       <directionalLight position={[-4.5, 2.8, 3.5]} intensity={fillIntensity} color={fillColor} />
 
-      {/* Practical desk lamp */}
+      {/* Practical desk lamp — night gets a slightly warmer pool for lived-in read */}
       <pointLight
         position={[2.95, 1.35, 2.55]}
-        intensity={lampIntensity}
+        intensity={lampIntensity * (dark ? 1.18 : 1)}
         color={palette.lamp}
-        distance={dark ? 8 : 9}
+        distance={dark ? 9 : 9}
         decay={2}
       />
+      {dark && (
+        <pointLight
+          position={[2.85, 1.15, 2.55]}
+          intensity={lampIntensity * 0.35}
+          color={palette.lamp}
+          distance={4.5}
+          decay={2}
+        />
+      )}
 
       {/* Screen spill — accent from active preset */}
       <pointLight
@@ -257,6 +267,8 @@ export function DeckWorld({
             <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
           </mesh>
         </group>
+
+        <StudioDecor palette={palette} theme={theme} lowPower={lowPower} />
 
         {hotspots.map((spot, i) => (
           <HotspotMesh
