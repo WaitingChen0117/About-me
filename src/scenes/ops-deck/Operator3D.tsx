@@ -80,6 +80,14 @@ type Props = {
 
 const WALK_SPEED = 2.55
 
+/** Standing knee offset along the thigh (local −Y). */
+const CALF_Y_STAND = -0.2
+/**
+ * Seated knee further along the thigh so the knee clears the seat front
+ * (~0.34 half-depth) and calves can hang in open air.
+ */
+const CALF_Y_SIT = -0.36
+
 /** Blind-box / Pop-Mart palette from the turnaround sheet (stable across day/night). */
 const FIG = {
   skin: '#e8d4c4',
@@ -155,6 +163,8 @@ export function Operator3D({
   const armR = useRef<THREE.Group>(null)
   const torso = useRef<THREE.Mesh>(null)
   const marker = useRef<THREE.Mesh>(null)
+  /** 0 = standing legs, 1 = explicit L-sit leg meshes */
+  const sitAmountRef = useRef(0)
 
   const publishSeatYaw = (yaw: number) => {
     if (seatYawRef) seatYawRef.current = yaw
@@ -165,11 +175,11 @@ export function Operator3D({
     if (legR.current) legR.current.rotation.x = 0
     if (calfL.current) {
       calfL.current.rotation.x = 0
-      calfL.current.position.z = 0
+      calfL.current.position.set(0, CALF_Y_STAND, 0)
     }
     if (calfR.current) {
       calfR.current.rotation.x = 0
-      calfR.current.position.z = 0
+      calfR.current.position.set(0, CALF_Y_STAND, 0)
     }
     if (armL.current) armL.current.rotation.x = 0
     if (armR.current) armR.current.rotation.x = 0
@@ -387,6 +397,7 @@ export function Operator3D({
         const y = THREE.MathUtils.lerp(floorY, st.y, u)
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, st.yaw, 10, delta)
         publishSeatYaw(g.rotation.y)
+        sitAmountRef.current = u
         applySitPose(legL, legR, calfL, calfR, armL, armR, u)
         g.position.set(pos.current.x, y, pos.current.z)
         if (sitBlend.current >= 1) {
@@ -408,11 +419,13 @@ export function Operator3D({
         pos.current.x = THREE.MathUtils.lerp(sd.x, st.x, ease)
         pos.current.z = THREE.MathUtils.lerp(sd.z, st.z, ease)
         const y = THREE.MathUtils.lerp(floorY, st.y, ease)
+        sitAmountRef.current = u
         applySitPose(legL, legR, calfL, calfR, armL, armR, u)
         publishSeatYaw(g.rotation.y)
         g.position.set(pos.current.x, y, pos.current.z)
         if (sitBlend.current <= 0.001) {
           sitBlend.current = 0
+          sitAmountRef.current = 0
           seatPhase.current = 'none'
           collide.current = true
           pos.current.set(sd.x, floorY, sd.z)
@@ -425,6 +438,7 @@ export function Operator3D({
         // Seated idle — hold pose; yaw drives character + chair swivel together
         const st = sitTarget.current
         pos.current.set(st.x, st.y, st.z)
+        sitAmountRef.current = 1
         applySitPose(legL, legR, calfL, calfR, armL, armR, 1)
         let yaw = st.yaw
         if (lookAtId) {
@@ -458,6 +472,8 @@ export function Operator3D({
       }
       return
     }
+
+    sitAmountRef.current = 0
 
     const dist = pos.current.distanceTo(goal.current)
     const isWalking = dist > 0.04
@@ -535,8 +551,16 @@ export function Operator3D({
       } else {
         if (legL.current) legL.current.rotation.x = THREE.MathUtils.damp(legL.current.rotation.x, 0, 10, delta)
         if (legR.current) legR.current.rotation.x = THREE.MathUtils.damp(legR.current.rotation.x, 0, 10, delta)
-        if (calfL.current) calfL.current.rotation.x = THREE.MathUtils.damp(calfL.current.rotation.x, 0, 10, delta)
-        if (calfR.current) calfR.current.rotation.x = THREE.MathUtils.damp(calfR.current.rotation.x, 0, 10, delta)
+        if (calfL.current) {
+          calfL.current.rotation.x = THREE.MathUtils.damp(calfL.current.rotation.x, 0, 10, delta)
+          calfL.current.position.y = THREE.MathUtils.damp(calfL.current.position.y, CALF_Y_STAND, 10, delta)
+          calfL.current.position.z = THREE.MathUtils.damp(calfL.current.position.z, 0, 10, delta)
+        }
+        if (calfR.current) {
+          calfR.current.rotation.x = THREE.MathUtils.damp(calfR.current.rotation.x, 0, 10, delta)
+          calfR.current.position.y = THREE.MathUtils.damp(calfR.current.position.y, CALF_Y_STAND, 10, delta)
+          calfR.current.position.z = THREE.MathUtils.damp(calfR.current.position.z, 0, 10, delta)
+        }
         if (armL.current) armL.current.rotation.x = THREE.MathUtils.damp(armL.current.rotation.x, 0, 10, delta)
         if (armR.current) armR.current.rotation.x = THREE.MathUtils.damp(armR.current.rotation.x, 0, 10, delta)
 
@@ -603,6 +627,7 @@ export function Operator3D({
         legR={legR}
         calfL={calfL}
         calfR={calfR}
+        sitAmountRef={sitAmountRef}
       />
 
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
@@ -622,8 +647,11 @@ export function Operator3D({
 }
 
 /**
- * Sit: thighs near-horizontal, calves fold down at the knee so the read is
- * "sitting in the chair" rather than kneeling on the cushion.
+ * True chair sit: thighs ≈ horizontal on the cushion, knees at the front
+ * edge, calves hanging down, feet near the pedestal — not folded under.
+ *
+ * Three.js +X rotation takes −Y toward −Z; sit uses the opposite signs
+ * (neg thigh → lap toward local +Z / front, pos calf → shin down).
  */
 function applySitPose(
   legL: RefObject<THREE.Group | null>,
@@ -635,17 +663,18 @@ function applySitPose(
   amount: number,
 ) {
   const a = THREE.MathUtils.clamp(amount, 0, 1)
-  // Three.js +X rot swings −Y toward −Z; sit needs the opposite:
-  // negative thigh → lap toward local +Z (front), positive calf → shin down.
-  if (legL.current) legL.current.rotation.x = a * -1.35
-  if (legR.current) legR.current.rotation.x = a * -1.35
+  const thigh = a * -1.52 // ~87° → lap
+  const shin = a * 1.48 // ~85° knee → calf nearly vertical
+  const calfY = THREE.MathUtils.lerp(CALF_Y_STAND, CALF_Y_SIT, a)
+  if (legL.current) legL.current.rotation.x = thigh
+  if (legR.current) legR.current.rotation.x = thigh
   if (calfL.current) {
-    calfL.current.rotation.x = a * 1.05
-    calfL.current.position.z = a * 0.03
+    calfL.current.rotation.x = shin
+    calfL.current.position.set(0, calfY, a * 0.02)
   }
   if (calfR.current) {
-    calfR.current.rotation.x = a * 1.05
-    calfR.current.position.z = a * 0.03
+    calfR.current.rotation.x = shin
+    calfR.current.position.set(0, calfY, a * 0.02)
   }
   if (armL.current) armL.current.rotation.x = a * -0.35
   if (armR.current) armR.current.rotation.x = a * -0.28
@@ -675,6 +704,7 @@ function ChibiFigure({
   legR,
   calfL,
   calfR,
+  sitAmountRef,
 }: {
   materials: FigMats
   torsoRef: RefObject<THREE.Mesh | null>
@@ -684,7 +714,23 @@ function ChibiFigure({
   legR: RefObject<THREE.Group | null>
   calfL: RefObject<THREE.Group | null>
   calfR: RefObject<THREE.Group | null>
+  sitAmountRef: MutableRefObject<number>
 }) {
+  const standLegs = useRef<THREE.Group>(null)
+  const sitLegs = useRef<THREE.Group>(null)
+
+  useFrame(() => {
+    const a = THREE.MathUtils.clamp(sitAmountRef.current, 0, 1)
+    if (standLegs.current) {
+      standLegs.current.visible = a < 0.98
+      standLegs.current.scale.setScalar(1 - a * 0.85)
+    }
+    if (sitLegs.current) {
+      sitLegs.current.visible = a > 0.02
+      sitLegs.current.scale.setScalar(0.15 + 0.85 * a)
+    }
+  })
+
   return (
     <group>
       {/* —— Head (oversized vinyl ball) —— */}
@@ -790,34 +836,102 @@ function ChibiFigure({
         </mesh>
       </group>
 
-      {/* —— Legs (hip → thigh → knee → calf → sneaker) —— */}
-      <group ref={legL} position={[-0.09, 0.32, 0]}>
-        <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
-          <capsuleGeometry args={[0.075, 0.1, 6, 12]} />
-        </mesh>
-        <group ref={calfL} position={[0, -0.22, 0]}>
-          <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
-            <capsuleGeometry args={[0.07, 0.06, 6, 12]} />
+      {/* —— Standing / walk legs (hidden when fully seated) —— */}
+      <group ref={standLegs}>
+        <group ref={legL} position={[-0.09, 0.32, 0]}>
+          <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
+            <capsuleGeometry args={[0.075, 0.12, 6, 12]} />
           </mesh>
-          <mesh position={[0, -0.15, 0]} castShadow material={m.pants}>
-            <cylinderGeometry args={[0.065, 0.055, 0.04, 12]} />
+          <group ref={calfL} position={[0, CALF_Y_STAND, 0]}>
+            <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
+              <capsuleGeometry args={[0.068, 0.06, 6, 12]} />
+            </mesh>
+            <mesh position={[0, -0.14, 0]} castShadow material={m.pants}>
+              <cylinderGeometry args={[0.062, 0.052, 0.04, 12]} />
+            </mesh>
+            <Sneaker materials={m} yOffset={-0.2} />
+          </group>
+        </group>
+        <group ref={legR} position={[0.09, 0.32, 0]}>
+          <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
+            <capsuleGeometry args={[0.075, 0.12, 6, 12]} />
           </mesh>
-          <Sneaker materials={m} yOffset={-0.2} />
+          <group ref={calfR} position={[0, CALF_Y_STAND, 0]}>
+            <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
+              <capsuleGeometry args={[0.068, 0.06, 6, 12]} />
+            </mesh>
+            <mesh position={[0, -0.14, 0]} castShadow material={m.pants}>
+              <cylinderGeometry args={[0.062, 0.052, 0.04, 12]} />
+            </mesh>
+            <Sneaker materials={m} yOffset={-0.2} />
+          </group>
         </group>
       </group>
-      <group ref={legR} position={[0.09, 0.32, 0]}>
-        <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
-          <capsuleGeometry args={[0.075, 0.1, 6, 12]} />
+
+      {/*
+        Explicit L-sit legs in character space (no nested Euler):
+        hip → horizontal thigh along +Z (front) → knee at seat edge →
+        vertical calf down −Y → feet near floor / pedestal.
+      */}
+      <group ref={sitLegs} visible={false}>
+        <SitLeg materials={m} side={-1} />
+        <SitLeg materials={m} side={1} />
+      </group>
+    </group>
+  )
+}
+
+/** One L-shaped sit leg; `side` is −1 left / +1 right. */
+function SitLeg({ materials: m, side }: { materials: FigMats; side: number }) {
+  const x = side * 0.1
+  // Character-local L: hip on cushion → thigh along +Z → calf down −Y to near floor.
+  // Seat top ≈ 0.46 world; with CHAIR_SIT.y=0.15, hipY 0.30 → world ≈ 0.45.
+  const hipY = 0.3
+  const thighLen = 0.36
+  const kneeZ = thighLen
+  const kneeY = hipY
+  // With CHAIR_SIT.y ≈ 0.15, footY -0.10 → world ≈ 0.05 (pedestal / floor).
+  const footY = -0.1
+  const calfLen = kneeY - footY
+  return (
+    <group>
+      {/* Thigh — capsule default along Y, rotate onto +Z (lap on seat) */}
+      <mesh
+        position={[x, hipY, kneeZ * 0.5]}
+        rotation={[Math.PI / 2, 0, 0]}
+        castShadow
+        material={m.pants}
+      >
+        <capsuleGeometry args={[0.08, thighLen * 0.62, 6, 12]} />
+      </mesh>
+      {/* Calf hanging straight down from the seat front edge */}
+      <mesh
+        position={[x, kneeY - calfLen * 0.5, kneeZ]}
+        castShadow
+        material={m.pants}
+      >
+        <capsuleGeometry args={[0.072, calfLen * 0.55, 6, 12]} />
+      </mesh>
+      <mesh position={[x, footY + 0.08, kneeZ]} castShadow material={m.pants}>
+        <cylinderGeometry args={[0.065, 0.055, 0.045, 12]} />
+      </mesh>
+      {/* Sneakers by the pedestal / floor, past the seat front */}
+      <group position={[x, footY, kneeZ + 0.04]} scale={[1.2, 1.15, 1.25]}>
+        <mesh position={[0, 0.0, 0.02]} castShadow material={m.sole}>
+          <boxGeometry args={[0.13, 0.04, 0.22]} />
         </mesh>
-        <group ref={calfR} position={[0, -0.22, 0]}>
-          <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
-            <capsuleGeometry args={[0.07, 0.06, 6, 12]} />
-          </mesh>
-          <mesh position={[0, -0.15, 0]} castShadow material={m.pants}>
-            <cylinderGeometry args={[0.065, 0.055, 0.04, 12]} />
-          </mesh>
-          <Sneaker materials={m} yOffset={-0.2} />
-        </group>
+        <mesh position={[0.055, 0.035, 0.0]} castShadow material={m.blue}>
+          <boxGeometry args={[0.04, 0.07, 0.16]} />
+        </mesh>
+        <mesh position={[-0.055, 0.035, 0.0]} castShadow material={m.blue}>
+          <boxGeometry args={[0.04, 0.07, 0.16]} />
+        </mesh>
+        <mesh position={[0, 0.03, 0.1]} castShadow material={m.red}>
+          <boxGeometry args={[0.12, 0.055, 0.07]} />
+        </mesh>
+        <mesh position={[0, 0.05, -0.085]} castShadow material={m.red}>
+          <boxGeometry args={[0.12, 0.09, 0.055]} />
+        </mesh>
       </group>
     </group>
   )
