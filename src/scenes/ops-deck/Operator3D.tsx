@@ -17,14 +17,18 @@ import {
   type WalkObstacle,
   type WalkRect,
 } from '../walk/clampWalk'
+import { findPath, type WalkPoint } from '../walk/pathfind'
 import { CHAIR_OUTWARD_YAW, OPERATOR_HOME } from './hotspots'
 import type { DeckPalette } from './themeColors'
 
-/** Free click-to-walk goal (not a section patrol). */
+/** Free click-to-walk — follows a planned polyline (path around furniture). */
 export type FreeWalkCommand = {
   ticket: number
+  /** Final click goal (also path[path.length-1]). */
   x: number
   z: number
+  /** Waypoints from near the operator to the goal; required for click-walk. */
+  path: WalkPoint[]
 }
 
 /** Walk to approach, then blend onto the seat. */
@@ -73,6 +77,13 @@ type Props = {
   standCommand?: StandCommand | null
   onSeated?: () => void
   onStood?: () => void
+  /** Fired when a free-walk path is fully consumed (or aborted mid-route). */
+  onFreeWalkDone?: () => void
+  /**
+   * Live XZ for WalkSurface pathfinding / hover reachability.
+   * Written every frame while standing / walking.
+   */
+  positionRef?: MutableRefObject<{ x: number; z: number }>
   /**
    * While in a seat phase, Operator writes its world yaw here each frame
    * so DeckWorld can swivel the chair in lockstep (no body-only twist).
@@ -95,6 +106,12 @@ function angleDelta(from: number, to: number) {
 }
 
 const WALK_SPEED = 2.55
+
+/**
+ * Chibi sole bottoms sit ~0.13 below the group origin; lift standing height
+ * so feet rest on the floor after bob damps out (avoids post-walk sink).
+ */
+const STAND_Y_LIFT = 0.14
 
 /** Hermite smoothstep — softer sit/stand than raw linear or quadratic. */
 function smoothstep01(t: number) {
@@ -155,6 +172,8 @@ export function Operator3D({
   standCommand = null,
   onSeated,
   onStood,
+  onFreeWalkDone,
+  positionRef,
   seatYawRef,
   chairOrientedRef,
   seatTurnYawRef,
@@ -162,10 +181,16 @@ export function Operator3D({
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
   const goal = useRef(new THREE.Vector3(...home))
+  const waypoints = useRef<WalkPoint[]>([])
+  const wpIndex = useRef(0)
+  /** When true, locomotion trusts the polyline (skip AABB step resolve). */
+  const trustPath = useRef(false)
   const pending = useRef<SectionId | null>(null)
   const arriveRef = useRef(onArrive)
   const seatedRef = useRef(onSeated)
   const stoodRef = useRef(onStood)
+  const freeWalkDoneRef = useRef(onFreeWalkDone)
+  const freeWalkActive = useRef(false)
   const lastFreeTicket = useRef(0)
   const lastSitTicket = useRef(0)
   const lastStandTicket = useRef(0)
@@ -297,25 +322,87 @@ export function Operator3D({
   useEffect(() => {
     stoodRef.current = onStood
   }, [onStood])
+  useEffect(() => {
+    freeWalkDoneRef.current = onFreeWalkDone
+  }, [onFreeWalkDone])
 
   // Walk / idle plane follows home Y so scenes can raise or lower the floor
   // without rewriting bob math (ops-deck home Y is 0; craft-lab stays on floor).
-  const floorY = home[1]
+  const floorY = home[1] + STAND_Y_LIFT
 
-  const applyWalkGoal = (x: number, z: number) => {
+  const publishPos = () => {
+    if (positionRef) {
+      positionRef.current.x = pos.current.x
+      positionRef.current.z = pos.current.z
+    }
+  }
+
+  const setWaypoints = (path: WalkPoint[]) => {
+    const cleaned =
+      path.length >= 2
+        ? path
+        : path.length === 1
+          ? [{ x: pos.current.x, z: pos.current.z }, path[0]!]
+          : [{ x: pos.current.x, z: pos.current.z }]
+    // Skip a leading point we're already standing on.
+    let start = 0
+    while (
+      start < cleaned.length - 1 &&
+      Math.hypot(cleaned[start]!.x - pos.current.x, cleaned[start]!.z - pos.current.z) < 0.06
+    ) {
+      start++
+    }
+    waypoints.current = cleaned.slice(start)
+    wpIndex.current = 0
+    trustPath.current = waypoints.current.length > 0
+    const first = waypoints.current[0] ?? { x: pos.current.x, z: pos.current.z }
+    goal.current.set(first.x, floorY, first.z)
+  }
+
+  /**
+   * Plan a route around furniture. Returns false when the goal is unreachable
+   * (caller should abort — no walk). Precomputed `path` skips A*.
+   */
+  const applyWalkGoal = (x: number, z: number, path?: WalkPoint[]): boolean => {
     const bounds = boundsRef.current
     const obstacles = obstaclesRef.current
-    if (bounds && collide.current) {
-      const clamped = clampWalkPoint(x, z, bounds, obstacles)
-      goal.current.set(clamped.x, floorY, clamped.z)
-    } else {
-      goal.current.set(x, floorY, z)
+    if (path && path.length > 0) {
+      setWaypoints(path)
+      return true
     }
+    if (bounds && collide.current) {
+      const planned = findPath(pos.current.x, pos.current.z, x, z, bounds, obstacles)
+      if (!planned) {
+        // Fallback: if goal itself is walkable after soft-clamp (patrol), try clamped.
+        const clamped = clampWalkPoint(x, z, bounds, obstacles)
+        const retry = findPath(
+          pos.current.x,
+          pos.current.z,
+          clamped.x,
+          clamped.z,
+          bounds,
+          obstacles,
+        )
+        if (!retry) return false
+        setWaypoints(retry)
+        return true
+      }
+      setWaypoints(planned)
+      return true
+    }
+    setWaypoints([{ x: pos.current.x, z: pos.current.z }, { x, z }])
+    return true
   }
 
   const beginWalk = () => {
     walkingRef.current = true
     queueMicrotask(() => setWalking(true))
+  }
+
+  const finishFreeWalkIfNeeded = () => {
+    if (!freeWalkActive.current) return
+    freeWalkActive.current = false
+    queueMicrotask(() => freeWalkDoneRef.current?.())
   }
 
   useEffect(() => {
@@ -335,12 +422,15 @@ export function Operator3D({
     }
     const spot = hotspots.find((h) => h.id === target)
     if (!spot) return
+    finishFreeWalkIfNeeded()
+    let ok = false
     if (spot.standPosition) {
-      applyWalkGoal(spot.standPosition[0], spot.standPosition[2])
+      ok = applyWalkGoal(spot.standPosition[0], spot.standPosition[2])
     } else {
       const [x, , z] = spot.position
-      applyWalkGoal(x * 0.72, z * 0.72 + (z < 0 ? 0.45 : -0.15))
+      ok = applyWalkGoal(x * 0.72, z * 0.72 + (z < 0 ? 0.45 : -0.15))
     }
+    if (!ok) return
     pending.current = target
     beginWalk()
   }, [target, ticket, hotspots, floorY])
@@ -363,7 +453,9 @@ export function Operator3D({
     }
     // Free walk cancels an in-flight section patrol so we don't open a panel later.
     pending.current = null
-    applyWalkGoal(freeWalk.x, freeWalk.z)
+    if (!freeWalk.path?.length) return
+    if (!applyWalkGoal(freeWalk.x, freeWalk.z, freeWalk.path)) return
+    freeWalkActive.current = true
     beginWalk()
   }, [freeWalk, floorY])
 
@@ -373,6 +465,7 @@ export function Operator3D({
     lastSitTicket.current = sitCommand.ticket
     if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
     pending.current = null
+    finishFreeWalkIfNeeded()
     sitTarget.current = {
       x: sitCommand.sitX,
       y: sitCommand.sitY,
@@ -382,7 +475,10 @@ export function Operator3D({
     collide.current = true
     seatPhase.current = 'to-approach'
     sitBlend.current = 0
-    applyWalkGoal(sitCommand.approachX, sitCommand.approachZ)
+    if (!applyWalkGoal(sitCommand.approachX, sitCommand.approachZ)) {
+      seatPhase.current = 'none'
+      return
+    }
     beginWalk()
   }, [sitCommand, floorY])
 
@@ -540,6 +636,7 @@ export function Operator3D({
       const easedSit = 1 - Math.pow(1 - appearSit, 3)
       g.scale.setScalar(0.7 + 0.3 * easedSit)
       g.visible = easedSit > 0.05
+      publishPos()
 
       if (marker.current) {
         const mat = marker.current.material as THREE.MeshBasicMaterial
@@ -555,7 +652,19 @@ export function Operator3D({
 
     sitAmountRef.current = 0
 
-    const dist = pos.current.distanceTo(goal.current)
+    // XZ-only distance — pos.y stays at home/sit while floorY is lifted for
+    // sole clearance; Vector3.distanceTo would never drop below STAND_Y_LIFT.
+    const xzDistToGoal = () =>
+      Math.hypot(goal.current.x - pos.current.x, goal.current.z - pos.current.z)
+
+    // Advance along polyline waypoints before testing arrival.
+    let dist = xzDistToGoal()
+    while (dist <= 0.04 && wpIndex.current < waypoints.current.length - 1) {
+      wpIndex.current += 1
+      const next = waypoints.current[wpIndex.current]!
+      goal.current.set(next.x, floorY, next.z)
+      dist = xzDistToGoal()
+    }
     const isWalking = dist > 0.04
 
     if (isWalking) {
@@ -568,7 +677,9 @@ export function Operator3D({
       const obstacles = obstaclesRef.current
       let nx = nextX
       let nz = nextZ
-      if (bounds && collide.current) {
+      // Planned A* polylines are already clear — don't re-collide or we stop short
+      // of corners where grid cells sit flush against inflated furniture.
+      if (bounds && collide.current && !trustPath.current) {
         const resolved = resolveWalkStep(
           pos.current.x,
           pos.current.z,
@@ -579,17 +690,20 @@ export function Operator3D({
         )
         nx = resolved.x
         nz = resolved.z
-        // Blocked mid-path (straight line through furniture) — stop rather than jitter.
+        // Blocked mid-path — stop rather than jitter.
         const moved =
           (nx - pos.current.x) * (nx - pos.current.x) +
           (nz - pos.current.z) * (nz - pos.current.z)
         if (moved < 1e-8) {
           goal.current.set(pos.current.x, floorY, pos.current.z)
+          waypoints.current = [{ x: pos.current.x, z: pos.current.z }]
+          wpIndex.current = 0
           // Drop pending so we don't open a panel after bouncing off a desk.
           pending.current = null
           if (seatPhase.current === 'to-approach') {
             seatPhase.current = 'none'
           }
+          finishFreeWalkIfNeeded()
         } else {
           pos.current.x = nx
           pos.current.z = nz
@@ -613,11 +727,15 @@ export function Operator3D({
       if (armL.current) armL.current.rotation.x = -armSwing
       if (armR.current) armR.current.rotation.x = armSwing
     } else {
-      bob.current = THREE.MathUtils.damp(bob.current, 0, 8, delta)
+      // Snap bob out quickly so soles don't hang mid-sink after arrival.
+      bob.current = THREE.MathUtils.damp(bob.current, 0, 14, delta)
       if (walkingRef.current) {
         walkingRef.current = false
+        trustPath.current = false
+        bob.current = 0
         queueMicrotask(() => setWalking(false))
         resetLimbPose()
+        finishFreeWalkIfNeeded()
         if (seatPhase.current === 'to-approach') {
           // Reached approach — wait until chair faces the character, then sit.
           collide.current = false
@@ -679,6 +797,7 @@ export function Operator3D({
     g.scale.setScalar(0.7 + 0.3 * eased)
     g.visible = eased > 0.05
     g.position.set(pos.current.x, floorY + bob.current, pos.current.z)
+    publishPos()
 
     if (marker.current) {
       const mat = marker.current.material as THREE.MeshBasicMaterial

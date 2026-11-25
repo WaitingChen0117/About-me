@@ -19,6 +19,8 @@ import {
   OPS_WALK_BOUNDS,
   OPS_WALK_OBSTACLES,
 } from '../walk/clampWalk'
+import { findPath, type WalkPoint } from '../walk/pathfind'
+import { WalkGuide } from '../walk/WalkGuide'
 import { WalkSurface } from '../walk/WalkSurface'
 import {
   AVATAR_POD_POSITION,
@@ -125,6 +127,7 @@ export function DeckWorld({
   const roomGroup = useRef<THREE.Group>(null)
   const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
   const [freeWalk, setFreeWalk] = useState<FreeWalkCommand | null>(null)
+  const [walkPath, setWalkPath] = useState<WalkPoint[] | null>(null)
   const [sitCommand, setSitCommand] = useState<SitCommand | null>(null)
   const [standCommand, setStandCommand] = useState<StandCommand | null>(null)
   const [seated, setSeated] = useState(false)
@@ -135,6 +138,7 @@ export function DeckWorld({
   /** Operator world yaw while seated — chair swivel locks to this. */
   const seatYawRef = useRef(CHAIR_FACE_YAW)
   const chairSwivelRef = useRef<THREE.Group>(null)
+  const operatorPosRef = useRef({ x: 0.05, z: 1.85 })
   /**
    * Explicit swivel sequencer — do NOT key rest-damp off React `seated`.
    * Chair orients to the target facing BEFORE the body sits or stands.
@@ -208,10 +212,22 @@ export function DeckWorld({
     pendingAfterStand.current = null
     if (!pending) return
     if (pending.kind === 'walk') {
+      const from = operatorPosRef.current
+      const path = findPath(
+        from.x,
+        from.z,
+        pending.x,
+        pending.z,
+        OPS_WALK_BOUNDS,
+        OPS_WALK_OBSTACLES,
+      )
+      if (!path) return
+      setWalkPath(path)
       setFreeWalk((prev) => ({
         ticket: (prev?.ticket ?? 0) + 1,
         x: pending.x,
         z: pending.z,
+        path,
       }))
     } else if (pending.kind === 'open') {
       onFocusThenOpen(pending.id)
@@ -281,17 +297,28 @@ export function DeckWorld({
     onSendOperator(next)
   }
 
-  const onWalkTo = useCallback(
-    (x: number, z: number) => {
+  const onWalkPath = useCallback(
+    (path: WalkPoint[]) => {
+      const goal = path[path.length - 1]!
+      setWalkPath(path)
       if (seated || seatBusy.current) {
-        pendingAfterStand.current = { kind: 'walk', x, z }
+        pendingAfterStand.current = { kind: 'walk', x: goal.x, z: goal.z }
         requestStand()
         return
       }
-      setFreeWalk((prev) => ({ ticket: (prev?.ticket ?? 0) + 1, x, z }))
+      setFreeWalk((prev) => ({
+        ticket: (prev?.ticket ?? 0) + 1,
+        x: goal.x,
+        z: goal.z,
+        path,
+      }))
     },
     [seated, requestStand],
   )
+
+  const onFreeWalkDone = useCallback(() => {
+    setWalkPath(null)
+  }, [])
 
   const onAvatarToggle = useCallback(() => {
     if (seated || seatBusy.current) {
@@ -492,8 +519,10 @@ export function DeckWorld({
       <WalkSurface
         bounds={OPS_WALK_BOUNDS}
         obstacles={OPS_WALK_OBSTACLES}
-        onWalkTo={onWalkTo}
+        fromRef={operatorPosRef}
+        onWalkPath={onWalkPath}
       />
+      <WalkGuide path={walkPath} color={palette.accent} />
 
       <group ref={roomGroup}>
         <StudioShell palette={palette} theme={theme} lowPower={lowPower} />
@@ -620,6 +649,8 @@ export function DeckWorld({
           standCommand={standCommand}
           onSeated={onSeated}
           onStood={onStood}
+          onFreeWalkDone={onFreeWalkDone}
+          positionRef={operatorPosRef}
           seatYawRef={seatYawRef}
           chairOrientedRef={chairOrientedRef}
           seatTurnYawRef={seatTurnYawRef}
