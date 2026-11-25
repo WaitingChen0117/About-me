@@ -14,6 +14,13 @@ import type { HotspotDef } from '../types'
 import { OPERATOR_HOME } from './hotspots'
 import type { DeckPalette } from './themeColors'
 
+/** Free click-to-walk goal (not a section patrol). */
+export type FreeWalkCommand = {
+  ticket: number
+  x: number
+  z: number
+}
+
 type Props = {
   hotspots: HotspotDef[]
   target: SectionId | null
@@ -28,6 +35,8 @@ type Props = {
   tipClassName?: string
   /** Camera / panel focus — turn to face this hotspot while idle */
   lookAtId?: SectionId | null
+  /** Click-empty-floor walk; ticket bump restarts even to the same point */
+  freeWalk?: FreeWalkCommand | null
 }
 
 const WALK_SPEED = 2.55
@@ -61,12 +70,15 @@ export function Operator3D({
   home = OPERATOR_HOME,
   tipClassName = 'ops-html-tip',
   lookAtId = null,
+  freeWalk = null,
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
   const goal = useRef(new THREE.Vector3(...home))
   const pending = useRef<SectionId | null>(null)
   const arriveRef = useRef(onArrive)
+  const lastFreeTicket = useRef(0)
+  const walkingRef = useRef(false)
 
   const [walking, setWalking] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -171,8 +183,20 @@ export function Operator3D({
       goal.current.set(x * 0.72, floorY, z * 0.72 + (z < 0 ? 0.45 : -0.15))
     }
     pending.current = target
+    walkingRef.current = true
     queueMicrotask(() => setWalking(true))
   }, [target, ticket, hotspots, floorY])
+
+  useEffect(() => {
+    if (!freeWalk || freeWalk.ticket === 0) return
+    if (freeWalk.ticket === lastFreeTicket.current) return
+    lastFreeTicket.current = freeWalk.ticket
+    // Free walk cancels an in-flight section patrol so we don't open a panel later.
+    pending.current = null
+    goal.current.set(freeWalk.x, 0, freeWalk.z)
+    walkingRef.current = true
+    queueMicrotask(() => setWalking(true))
+  }, [freeWalk])
 
   useFrame((_, dt) => {
     const g = group.current
@@ -183,6 +207,7 @@ export function Operator3D({
     const isWalking = dist > 0.04
 
     if (isWalking) {
+      walkingRef.current = true
       const step = Math.min(WALK_SPEED * delta, dist)
       pos.current.lerp(goal.current, step / dist)
       const dir = goal.current.clone().sub(pos.current)
@@ -200,15 +225,18 @@ export function Operator3D({
       if (armR.current) armR.current.rotation.x = armSwing
     } else {
       bob.current = THREE.MathUtils.damp(bob.current, 0, 8, delta)
-      if (pending.current) {
-        const arrived = pending.current
-        pending.current = null
+      if (walkingRef.current) {
+        walkingRef.current = false
         queueMicrotask(() => setWalking(false))
         if (legL.current) legL.current.rotation.x = 0
         if (legR.current) legR.current.rotation.x = 0
         if (armL.current) armL.current.rotation.x = 0
         if (armR.current) armR.current.rotation.x = 0
-        arriveRef.current(arrived)
+        if (pending.current) {
+          const arrived = pending.current
+          pending.current = null
+          arriveRef.current(arrived)
+        }
       } else {
         if (legL.current) legL.current.rotation.x = THREE.MathUtils.damp(legL.current.rotation.x, 0, 10, delta)
         if (legR.current) legR.current.rotation.x = THREE.MathUtils.damp(legR.current.rotation.x, 0, 10, delta)
