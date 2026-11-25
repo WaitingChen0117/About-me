@@ -1,15 +1,28 @@
 import { ContactShadows, Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type RefObject,
+} from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
 import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
+import {
+  OPS_WALK_BOUNDS,
+  OPS_WALK_OBSTACLES,
+} from '../walk/clampWalk'
+import { WalkSurface } from '../walk/WalkSurface'
 import { AVATAR_POD_POSITION, opsDeckHotspots } from './hotspots'
 import { HotspotMesh } from './HotspotMeshes'
-import { Operator3D } from './Operator3D'
+import { Operator3D, type FreeWalkCommand } from './Operator3D'
 import { StudioDecor } from './StudioDecor'
 import { deckPalette, type DeckPalette } from './themeColors'
 
@@ -74,6 +87,7 @@ export function DeckWorld({
   const introRef = useRef(0)
   const roomGroup = useRef<THREE.Group>(null)
   const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
+  const [freeWalk, setFreeWalk] = useState<FreeWalkCommand | null>(null)
 
   useEffect(() => {
     gl.toneMappingExposure = lowPower ? lights.exposureLite : lights.exposure
@@ -84,6 +98,10 @@ export function DeckWorld({
     const next = pool[Math.floor(Math.random() * pool.length)]!
     onSendOperator(next)
   }
+
+  const onWalkTo = useCallback((x: number, z: number) => {
+    setFreeWalk((prev) => ({ ticket: (prev?.ticket ?? 0) + 1, x, z }))
+  }, [])
 
   useFrame((_, dt) => {
     if (introRef.current < 1) {
@@ -222,6 +240,12 @@ export function DeckWorld({
         />
       </mesh>
 
+      <WalkSurface
+        bounds={OPS_WALK_BOUNDS}
+        obstacles={OPS_WALK_OBSTACLES}
+        onWalkTo={onWalkTo}
+      />
+
       <group ref={roomGroup}>
         <StudioShell palette={palette} theme={theme} lowPower={lowPower} />
 
@@ -302,6 +326,7 @@ export function DeckWorld({
           palette={palette}
           introRef={introRef}
           lookAtId={focusId}
+          freeWalk={freeWalk}
         />
       </group>
 

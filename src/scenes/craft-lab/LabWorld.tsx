@@ -1,13 +1,25 @@
 import { ContactShadows, Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, useState, type MutableRefObject, type RefObject } from 'react'
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type RefObject,
+} from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
-import { Operator3D } from '../ops-deck/Operator3D'
+import { Operator3D, type FreeWalkCommand } from '../ops-deck/Operator3D'
 import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
+import {
+  CRAFT_WALK_BOUNDS,
+  CRAFT_WALK_OBSTACLES,
+} from '../walk/clampWalk'
+import { WalkSurface } from '../walk/WalkSurface'
 import { CraftHotspotMesh } from './CraftHotspotMeshes'
 import { ASSIST_MONITOR_POSITION, OPERATOR_HOME, craftLabHotspots } from './hotspots'
 import { labPalette, type LabPalette } from './themeColors'
@@ -70,12 +82,17 @@ export function LabWorld({
   const introRef = useRef(0)
   const labGroup = useRef<THREE.Group>(null)
   const [hoveredId, setHoveredId] = useState<SectionId | null>(null)
+  const [freeWalk, setFreeWalk] = useState<FreeWalkCommand | null>(null)
 
   const onOperatorTap = () => {
     const pool = hotspots.map((h) => h.id)
     const next = pool[Math.floor(Math.random() * pool.length)]!
     onSendOperator(next)
   }
+
+  const onWalkTo = useCallback((x: number, z: number) => {
+    setFreeWalk((prev) => ({ ticket: (prev?.ticket ?? 0) + 1, x, z }))
+  }, [])
 
   useFrame((_, dt) => {
     if (introRef.current < 1) {
@@ -201,6 +218,12 @@ export function LabWorld({
         </group>
       )}
 
+      <WalkSurface
+        bounds={CRAFT_WALK_BOUNDS}
+        obstacles={CRAFT_WALK_OBSTACLES}
+        onWalkTo={onWalkTo}
+      />
+
       <group ref={labGroup}>
         <WorkshopShell palette={palette} theme={theme} lowPower={lowPower} />
 
@@ -271,6 +294,7 @@ export function LabWorld({
           home={OPERATOR_HOME}
           tipClassName="craft-html-tip"
           lookAtId={focusId}
+          freeWalk={freeWalk}
         />
       </group>
 
