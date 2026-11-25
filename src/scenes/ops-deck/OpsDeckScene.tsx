@@ -52,6 +52,12 @@ export function OpsDeckScene({
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
   const reducedMotion = usePrefersReducedMotion()
   const labelPortal = useRef<HTMLDivElement>(null)
+  /** Seat-aware select from DeckWorld (stand first when needed). */
+  const selectSectionRef = useRef<(id: SectionId) => void>(onFocusThenOpen)
+
+  const selectSection = (id: SectionId) => {
+    selectSectionRef.current(id)
+  }
 
   const dpr = useMemo<[number, number]>(() => {
     if (lowPower && isNarrow) return [1, 1]
@@ -131,6 +137,7 @@ export function OpsDeckScene({
               isTouch={isTouch}
               reducedMotion={reducedMotion}
               homeView={homeView}
+              selectSectionRef={selectSectionRef}
             />
           </Suspense>
         </Canvas>
@@ -148,7 +155,7 @@ export function OpsDeckScene({
             ]
               .filter(Boolean)
               .join(' ')}
-            onClick={() => onFocusThenOpen(spot.id)}
+            onClick={() => selectSection(spot.id)}
           >
             <span className="ops-legend-kicker">{spot.label}</span>
             <span className="ops-legend-title">{SECTION_TITLES[spot.id]}</span>
@@ -162,7 +169,7 @@ export function OpsDeckScene({
             key={id}
             type="button"
             className={activeSection === id ? 'is-active' : undefined}
-            onClick={() => onFocusThenOpen(id)}
+            onClick={() => selectSection(id)}
           >
             {SECTION_TITLES[id]}
           </button>

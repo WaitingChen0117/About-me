@@ -118,6 +118,20 @@ export const AVATAR_POD_POSITION: [number, number, number] = [1.15, 0, 0.55]
 /** Idle walk home — in front of the desk chair. */
 export const OPERATOR_HOME: [number, number, number] = [0.05, 0, 1.85]
 
+/** Task chair world root (matches DeckWorld mesh). */
+export const CHAIR_POSITION: [number, number, number] = [0.05, 0, 1.15]
+/**
+ * Approach point south of the chair (outside the chair AABB + radius)
+ * before the sit blend locks onto the seat.
+ */
+export const CHAIR_APPROACH: [number, number, number] = [0.05, 0, 1.78]
+/** Seated root — hip on cushion, facing the desk (−Z). */
+export const CHAIR_SIT: [number, number, number] = [0.05, 0.3, 1.2]
+/** Face desk monitors (local +Z front → world −Z). */
+export const CHAIR_FACE_YAW = Math.PI
+/** Desk computers / monitors that keep the operator seated on click. */
+export const DESK_MONITOR_IDS = ['about', 'works'] as const
+
 /** Desktop HOME framing for room-scale studio. */
 export const OPS_HOME_VIEW = {
   target: [0, 0.85, -0.35] as [number, number, number],
