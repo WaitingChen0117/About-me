@@ -152,15 +152,27 @@ export function Operator3D({
     arriveRef.current = onArrive
   }, [onArrive])
 
+  // Walk / idle plane follows home Y so scenes can raise or lower the floor
+  // without rewriting bob math (ops-deck home Y is 0; craft-lab stays on floor).
+  const floorY = home[1]
+
   useEffect(() => {
     if (!target || ticket === 0) return
     const spot = hotspots.find((h) => h.id === target)
     if (!spot) return
-    const [x, , z] = spot.position
-    goal.current.set(x * 0.72, 0, z * 0.72 + (z < 0 ? 0.45 : -0.15))
+    if (spot.standPosition) {
+      goal.current.set(
+        spot.standPosition[0],
+        spot.standPosition[1],
+        spot.standPosition[2],
+      )
+    } else {
+      const [x, , z] = spot.position
+      goal.current.set(x * 0.72, floorY, z * 0.72 + (z < 0 ? 0.45 : -0.15))
+    }
     pending.current = target
     queueMicrotask(() => setWalking(true))
-  }, [target, ticket, hotspots])
+  }, [target, ticket, hotspots, floorY])
 
   useFrame((_, dt) => {
     const g = group.current
@@ -222,7 +234,7 @@ export function Operator3D({
     const eased = 1 - Math.pow(1 - appear, 3)
     g.scale.setScalar(0.7 + 0.3 * eased)
     g.visible = eased > 0.05
-    g.position.set(pos.current.x, bob.current, pos.current.z)
+    g.position.set(pos.current.x, floorY + bob.current, pos.current.z)
 
     if (marker.current) {
       const mat = marker.current.material as THREE.MeshBasicMaterial

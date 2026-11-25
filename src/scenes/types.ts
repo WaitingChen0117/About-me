@@ -27,6 +27,12 @@ export type HotspotDef = {
   y: number
   /** World-space floor position for true-3D scenes [x, y, z] */
   position: [number, number, number]
+  /**
+   * Optional operator stand point [x, y, z] when walking to this hotspot.
+   * Use when the mesh sits on a raised island / table so the default
+   * approach from `position` would land inside furniture.
+   */
+  standPosition?: [number, number, number]
   /** Optional focus framing; missing → derived from position */
   view?: CameraView
   /** World-space label height above floor (defaults ~1.05) */
