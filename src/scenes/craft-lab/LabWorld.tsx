@@ -239,7 +239,7 @@ export function LabWorld({
         fromRef={operatorPosRef}
         onWalkPath={onWalkPath}
       />
-      <WalkGuide path={walkPath} color={palette.accent} />
+      <WalkGuide path={walkPath} color={palette.accent} followRef={operatorPosRef} />
 
       <group ref={labGroup}>
         <WorkshopShell palette={palette} theme={theme} lowPower={lowPower} />

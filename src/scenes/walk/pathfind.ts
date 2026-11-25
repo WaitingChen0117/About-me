@@ -348,3 +348,50 @@ export function canReachPoint(
 ): boolean {
   return findPath(fromX, fromZ, toX, toZ, bounds, obstacles, radius) != null
 }
+
+/**
+ * Trim a planned route to the still-ahead portion given the follower's XZ.
+ * The polyline starts at the follower so walked segments disappear behind them.
+ */
+export function remainingWalkPath(
+  path: WalkPoint[],
+  x: number,
+  z: number,
+): WalkPoint[] {
+  if (path.length === 0) return []
+  const goal = path[path.length - 1]!
+  if (path.length === 1) return [{ x, z }, goal]
+
+  let seg = 0
+  for (; seg < path.length - 1; seg++) {
+    const a = path[seg]!
+    const b = path[seg + 1]!
+    const abx = b.x - a.x
+    const abz = b.z - a.z
+    const len2 = abx * abx + abz * abz
+    if (len2 < 1e-10) continue
+    const t = ((x - a.x) * abx + (z - a.z) * abz) / len2
+    // Still on / before this segment — keep from here to the goal.
+    if (t < 0.98) {
+      const fromIdx = t <= 0 ? seg : seg + 1
+      return dedupePath([{ x, z }, ...path.slice(fromIdx)])
+    }
+  }
+
+  return dedupePath([{ x, z }, goal])
+}
+
+/** Drop near-duplicate consecutive points; always keep ≥2 when possible. */
+function dedupePath(points: WalkPoint[]): WalkPoint[] {
+  if (points.length === 0) return points
+  const out: WalkPoint[] = [points[0]!]
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]!
+    const prev = out[out.length - 1]!
+    if (Math.hypot(p.x - prev.x, p.z - prev.z) > 0.02) out.push(p)
+  }
+  if (out.length < 2 && points.length >= 2) {
+    out.push(points[points.length - 1]!)
+  }
+  return out
+}
