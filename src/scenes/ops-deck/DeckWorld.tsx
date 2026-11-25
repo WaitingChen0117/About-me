@@ -327,6 +327,8 @@ export function DeckWorld({
           introRef={introRef}
           lookAtId={focusId}
           freeWalk={freeWalk}
+          walkBounds={OPS_WALK_BOUNDS}
+          walkObstacles={OPS_WALK_OBSTACLES}
         />
       </group>
 

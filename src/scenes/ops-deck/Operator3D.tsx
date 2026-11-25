@@ -11,6 +11,12 @@ import {
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
 import type { HotspotDef } from '../types'
+import {
+  clampWalkPoint,
+  resolveWalkStep,
+  type WalkObstacle,
+  type WalkRect,
+} from '../walk/clampWalk'
 import { OPERATOR_HOME } from './hotspots'
 import type { DeckPalette } from './themeColors'
 
@@ -37,6 +43,10 @@ type Props = {
   lookAtId?: SectionId | null
   /** Click-empty-floor walk; ticket bump restarts even to the same point */
   freeWalk?: FreeWalkCommand | null
+  /** Room walk bounds — solid-clamp goals + per-step collision */
+  walkBounds?: WalkRect | null
+  /** Furniture AABBs — click-walk and patrol cannot sink into these */
+  walkObstacles?: WalkObstacle[]
 }
 
 const WALK_SPEED = 2.55
@@ -71,6 +81,8 @@ export function Operator3D({
   tipClassName = 'ops-html-tip',
   lookAtId = null,
   freeWalk = null,
+  walkBounds = null,
+  walkObstacles = [],
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
@@ -79,6 +91,10 @@ export function Operator3D({
   const arriveRef = useRef(onArrive)
   const lastFreeTicket = useRef(0)
   const walkingRef = useRef(false)
+  const boundsRef = useRef(walkBounds)
+  const obstaclesRef = useRef(walkObstacles)
+  boundsRef.current = walkBounds
+  obstaclesRef.current = walkObstacles
 
   const [walking, setWalking] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -168,19 +184,26 @@ export function Operator3D({
   // without rewriting bob math (ops-deck home Y is 0; craft-lab stays on floor).
   const floorY = home[1]
 
+  const applyWalkGoal = (x: number, z: number) => {
+    const bounds = boundsRef.current
+    const obstacles = obstaclesRef.current
+    if (bounds) {
+      const clamped = clampWalkPoint(x, z, bounds, obstacles)
+      goal.current.set(clamped.x, floorY, clamped.z)
+    } else {
+      goal.current.set(x, floorY, z)
+    }
+  }
+
   useEffect(() => {
     if (!target || ticket === 0) return
     const spot = hotspots.find((h) => h.id === target)
     if (!spot) return
     if (spot.standPosition) {
-      goal.current.set(
-        spot.standPosition[0],
-        spot.standPosition[1],
-        spot.standPosition[2],
-      )
+      applyWalkGoal(spot.standPosition[0], spot.standPosition[2])
     } else {
       const [x, , z] = spot.position
-      goal.current.set(x * 0.72, floorY, z * 0.72 + (z < 0 ? 0.45 : -0.15))
+      applyWalkGoal(x * 0.72, z * 0.72 + (z < 0 ? 0.45 : -0.15))
     }
     pending.current = target
     walkingRef.current = true
@@ -193,7 +216,7 @@ export function Operator3D({
     lastFreeTicket.current = freeWalk.ticket
     // Free walk cancels an in-flight section patrol so we don't open a panel later.
     pending.current = null
-    goal.current.set(freeWalk.x, floorY, freeWalk.z)
+    applyWalkGoal(freeWalk.x, freeWalk.z)
     walkingRef.current = true
     queueMicrotask(() => setWalking(true))
   }, [freeWalk, floorY])
@@ -209,10 +232,44 @@ export function Operator3D({
     if (isWalking) {
       walkingRef.current = true
       const step = Math.min(WALK_SPEED * delta, dist)
-      pos.current.lerp(goal.current, step / dist)
-      const dir = goal.current.clone().sub(pos.current)
-      if (dir.lengthSq() > 1e-6) {
-        const angle = Math.atan2(dir.x, dir.z)
+      const t = step / dist
+      const nextX = pos.current.x + (goal.current.x - pos.current.x) * t
+      const nextZ = pos.current.z + (goal.current.z - pos.current.z) * t
+      const bounds = boundsRef.current
+      const obstacles = obstaclesRef.current
+      let nx = nextX
+      let nz = nextZ
+      if (bounds) {
+        const resolved = resolveWalkStep(
+          pos.current.x,
+          pos.current.z,
+          nextX,
+          nextZ,
+          bounds,
+          obstacles,
+        )
+        nx = resolved.x
+        nz = resolved.z
+        // Blocked mid-path (straight line through furniture) — stop rather than jitter.
+        const moved =
+          (nx - pos.current.x) * (nx - pos.current.x) +
+          (nz - pos.current.z) * (nz - pos.current.z)
+        if (moved < 1e-8) {
+          goal.current.set(pos.current.x, floorY, pos.current.z)
+          // Drop pending so we don't open a panel after bouncing off a desk.
+          pending.current = null
+        } else {
+          pos.current.x = nx
+          pos.current.z = nz
+        }
+      } else {
+        pos.current.x = nx
+        pos.current.z = nz
+      }
+      const dirX = goal.current.x - pos.current.x
+      const dirZ = goal.current.z - pos.current.z
+      if (dirX * dirX + dirZ * dirZ > 1e-6) {
+        const angle = Math.atan2(dirX, dirZ)
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, angle, 12, delta)
       }
       stride.current += delta * 11.5
