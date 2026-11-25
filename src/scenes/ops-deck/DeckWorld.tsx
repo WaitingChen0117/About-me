@@ -25,6 +25,7 @@ import {
   CHAIR_APPROACH,
   CHAIR_FACE_YAW,
   CHAIR_POSITION,
+  CHAIR_REST_SWIVEL,
   CHAIR_SIT,
   DESK_MONITOR_IDS,
   opsDeckHotspots,
@@ -245,14 +246,21 @@ export function DeckWorld({
       roomGroup.current.position.y = (1 - e) * -0.18
       roomGroup.current.scale.setScalar(0.96 + 0.04 * e)
     }
-    // Chair swivel: seat+back copy operator yaw (locked) while seated; ease home when standing.
-    // Resting chair faces desk at yaw 0; operator desk-facing is CHAIR_FACE_YAW (π).
+    // Chair swivel: seat+back copy operator yaw while on the seat; ease to outward rest when idle.
+    // Mesh backrest is local +Z; desk sit → swivel 0; empty/outward rest → CHAIR_REST_SWIVEL (−π).
     const swivel = chairSwivelRef.current
     if (swivel) {
-      if (seated || seatBusy.current) {
-        swivel.rotation.y = seatYawRef.current - CHAIR_FACE_YAW
+      const seatedSwivel = seatYawRef.current - CHAIR_FACE_YAW
+      const step = Math.min(dt, 0.05)
+      if (seated) {
+        // Hard lock once planted so look-at / monitor swivel stay 1:1 with the body.
+        swivel.rotation.y = seatedSwivel
+      } else if (seatBusy.current) {
+        // Approach / stand-blend: ease toward the live seat yaw (desk on sit, hold on stand).
+        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, seatedSwivel, 6, step)
       } else {
-        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, 0, 6, Math.min(dt, 0.05))
+        // After stand-up (and initial idle): reset yaw to face the room / camera aisle.
+        swivel.rotation.y = THREE.MathUtils.damp(swivel.rotation.y, CHAIR_REST_SWIVEL, 6, step)
       }
     }
   })
@@ -442,8 +450,8 @@ export function DeckWorld({
             <cylinderGeometry args={[0.32, 0.32, 0.05, 16]} />
             <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
           </mesh>
-          {/* Swivel: cushion + backrest turn with the seated operator */}
-          <group ref={chairSwivelRef}>
+          {/* Swivel: cushion + backrest turn with the seated operator; idle faces aisle */}
+          <group ref={chairSwivelRef} rotation={[0, CHAIR_REST_SWIVEL, 0]}>
             <mesh position={[0, 0.42, 0]} castShadow>
               <boxGeometry args={[0.72, 0.08, 0.68]} />
               <meshStandardMaterial
@@ -454,7 +462,7 @@ export function DeckWorld({
                 emissiveIntensity={chairHovered || seated ? 0.12 : 0}
               />
             </mesh>
-            {/* Backrest on +Z — behind a desk-facing sitter (yaw π → faces −Z) */}
+            {/* Backrest on local +Z; at REST_SWIVEL (−π) backrest faces desk, seat opens to +Z aisle */}
             <mesh position={[0, 0.85, 0.28]} castShadow>
               <boxGeometry args={[0.7, 0.75, 0.08]} />
               <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />

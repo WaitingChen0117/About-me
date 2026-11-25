@@ -133,6 +133,16 @@ export const CHAIR_APPROACH: [number, number, number] = [0.05, 0, 1.78]
 export const CHAIR_SIT: [number, number, number] = [0.05, 0.15, 1.15]
 /** Face desk monitors (local +Z front → world −Z). */
 export const CHAIR_FACE_YAW = Math.PI
+/**
+ * Empty-chair / after-stand facing: room aisle & camera (+Z), not under the desk.
+ * Operator local +Z front → world +Z.
+ */
+export const CHAIR_OUTWARD_YAW = 0
+/**
+ * Swivel Y when idle: backrest toward desk (−Z), seat open to the aisle.
+ * Equals `CHAIR_OUTWARD_YAW - CHAIR_FACE_YAW` (mesh backrest is on local +Z).
+ */
+export const CHAIR_REST_SWIVEL = CHAIR_OUTWARD_YAW - CHAIR_FACE_YAW
 /** Desk computers / monitors that keep the operator seated on click. */
 export const DESK_MONITOR_IDS = ['about', 'works'] as const
 
