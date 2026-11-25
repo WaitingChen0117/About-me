@@ -125,8 +125,11 @@ export const CHAIR_POSITION: [number, number, number] = [0.05, 0, 1.15]
  * before the sit blend locks onto the seat.
  */
 export const CHAIR_APPROACH: [number, number, number] = [0.05, 0, 1.78]
-/** Seated root — hip on cushion, facing the desk (−Z). */
-export const CHAIR_SIT: [number, number, number] = [0.05, 0.3, 1.2]
+/**
+ * Seated root — butt on cushion (seat top ≈ 0.46), coaxial with chair
+ * so swivel keeps character+seat locked without orbit drift.
+ */
+export const CHAIR_SIT: [number, number, number] = [0.05, 0.06, 1.15]
 /** Face desk monitors (local +Z front → world −Z). */
 export const CHAIR_FACE_YAW = Math.PI
 /** Desk computers / monitors that keep the operator seated on click. */

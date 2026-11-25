@@ -71,6 +71,11 @@ type Props = {
   standCommand?: StandCommand | null
   onSeated?: () => void
   onStood?: () => void
+  /**
+   * While in a seat phase, Operator writes its world yaw here each frame
+   * so DeckWorld can swivel the chair in lockstep (no body-only twist).
+   */
+  seatYawRef?: MutableRefObject<number>
 }
 
 const WALK_SPEED = 2.55
@@ -113,6 +118,7 @@ export function Operator3D({
   standCommand = null,
   onSeated,
   onStood,
+  seatYawRef,
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
@@ -143,10 +149,31 @@ export function Operator3D({
 
   const legL = useRef<THREE.Group>(null)
   const legR = useRef<THREE.Group>(null)
+  const calfL = useRef<THREE.Group>(null)
+  const calfR = useRef<THREE.Group>(null)
   const armL = useRef<THREE.Group>(null)
   const armR = useRef<THREE.Group>(null)
   const torso = useRef<THREE.Mesh>(null)
   const marker = useRef<THREE.Mesh>(null)
+
+  const publishSeatYaw = (yaw: number) => {
+    if (seatYawRef) seatYawRef.current = yaw
+  }
+
+  const resetLimbPose = () => {
+    if (legL.current) legL.current.rotation.x = 0
+    if (legR.current) legR.current.rotation.x = 0
+    if (calfL.current) {
+      calfL.current.rotation.x = 0
+      calfL.current.position.z = 0
+    }
+    if (calfR.current) {
+      calfR.current.rotation.x = 0
+      calfR.current.position.z = 0
+    }
+    if (armL.current) armL.current.rotation.x = 0
+    if (armR.current) armR.current.rotation.x = 0
+  }
 
   const materials = useMemo(
     () => ({
@@ -359,7 +386,8 @@ export function Operator3D({
         pos.current.z = THREE.MathUtils.lerp(pos.current.z, st.z, 0.2)
         const y = THREE.MathUtils.lerp(floorY, st.y, u)
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, st.yaw, 10, delta)
-        applySitPose(legL, legR, armL, armR, u)
+        publishSeatYaw(g.rotation.y)
+        applySitPose(legL, legR, calfL, calfR, armL, armR, u)
         g.position.set(pos.current.x, y, pos.current.z)
         if (sitBlend.current >= 1) {
           seatPhase.current = 'seated'
@@ -380,7 +408,8 @@ export function Operator3D({
         pos.current.x = THREE.MathUtils.lerp(sd.x, st.x, ease)
         pos.current.z = THREE.MathUtils.lerp(sd.z, st.z, ease)
         const y = THREE.MathUtils.lerp(floorY, st.y, ease)
-        applySitPose(legL, legR, armL, armR, u)
+        applySitPose(legL, legR, calfL, calfR, armL, armR, u)
+        publishSeatYaw(g.rotation.y)
         g.position.set(pos.current.x, y, pos.current.z)
         if (sitBlend.current <= 0.001) {
           sitBlend.current = 0
@@ -388,18 +417,15 @@ export function Operator3D({
           collide.current = true
           pos.current.set(sd.x, floorY, sd.z)
           goal.current.set(sd.x, floorY, sd.z)
-          if (legL.current) legL.current.rotation.x = 0
-          if (legR.current) legR.current.rotation.x = 0
-          if (armL.current) armL.current.rotation.x = 0
-          if (armR.current) armR.current.rotation.x = 0
+          resetLimbPose()
           g.position.set(sd.x, floorY, sd.z)
           queueMicrotask(() => stoodRef.current?.())
         }
       } else {
-        // Seated idle — hold pose, turn toward focused desk monitor when set
+        // Seated idle — hold pose; yaw drives character + chair swivel together
         const st = sitTarget.current
         pos.current.set(st.x, st.y, st.z)
-        applySitPose(legL, legR, armL, armR, 1)
+        applySitPose(legL, legR, calfL, calfR, armL, armR, 1)
         let yaw = st.yaw
         if (lookAtId) {
           const spot = hotspots.find((h) => h.id === lookAtId)
@@ -409,7 +435,10 @@ export function Operator3D({
             if (dx * dx + dz * dz > 1e-4) yaw = Math.atan2(dx, dz)
           }
         }
+        // Persist yaw so stand-blend / re-sit keep the last facing
+        st.yaw = yaw
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, yaw, 6, delta)
+        publishSeatYaw(g.rotation.y)
         g.position.set(st.x, st.y, st.z)
       }
 
@@ -492,10 +521,7 @@ export function Operator3D({
       if (walkingRef.current) {
         walkingRef.current = false
         queueMicrotask(() => setWalking(false))
-        if (legL.current) legL.current.rotation.x = 0
-        if (legR.current) legR.current.rotation.x = 0
-        if (armL.current) armL.current.rotation.x = 0
-        if (armR.current) armR.current.rotation.x = 0
+        resetLimbPose()
         if (seatPhase.current === 'to-approach') {
           // Reached chair approach — start sit blend (ignore chair AABB).
           collide.current = false
@@ -509,6 +535,8 @@ export function Operator3D({
       } else {
         if (legL.current) legL.current.rotation.x = THREE.MathUtils.damp(legL.current.rotation.x, 0, 10, delta)
         if (legR.current) legR.current.rotation.x = THREE.MathUtils.damp(legR.current.rotation.x, 0, 10, delta)
+        if (calfL.current) calfL.current.rotation.x = THREE.MathUtils.damp(calfL.current.rotation.x, 0, 10, delta)
+        if (calfR.current) calfR.current.rotation.x = THREE.MathUtils.damp(calfR.current.rotation.x, 0, 10, delta)
         if (armL.current) armL.current.rotation.x = THREE.MathUtils.damp(armL.current.rotation.x, 0, 10, delta)
         if (armR.current) armR.current.rotation.x = THREE.MathUtils.damp(armR.current.rotation.x, 0, 10, delta)
 
@@ -573,6 +601,8 @@ export function Operator3D({
         armR={armR}
         legL={legL}
         legR={legR}
+        calfL={calfL}
+        calfR={calfR}
       />
 
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
@@ -581,7 +611,7 @@ export function Operator3D({
       </mesh>
 
       {(hovered || walking || seated) && (
-        <Html position={[0, 1.42, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+        <Html position={[0, seated ? 1.28 : 1.42, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
           <div className={tipClassName}>
             {seated ? '就座中' : walking ? '巡航中' : '派遣巡视'}
           </div>
@@ -591,16 +621,32 @@ export function Operator3D({
   )
 }
 
+/**
+ * Sit: thighs near-horizontal, calves fold down at the knee so the read is
+ * "sitting in the chair" rather than kneeling on the cushion.
+ */
 function applySitPose(
   legL: RefObject<THREE.Group | null>,
   legR: RefObject<THREE.Group | null>,
+  calfL: RefObject<THREE.Group | null>,
+  calfR: RefObject<THREE.Group | null>,
   armL: RefObject<THREE.Group | null>,
   armR: RefObject<THREE.Group | null>,
   amount: number,
 ) {
   const a = THREE.MathUtils.clamp(amount, 0, 1)
-  if (legL.current) legL.current.rotation.x = a * 1.22
-  if (legR.current) legR.current.rotation.x = a * 1.22
+  // Three.js +X rot swings −Y toward −Z; sit needs the opposite:
+  // negative thigh → lap toward local +Z (front), positive calf → shin down.
+  if (legL.current) legL.current.rotation.x = a * -1.35
+  if (legR.current) legR.current.rotation.x = a * -1.35
+  if (calfL.current) {
+    calfL.current.rotation.x = a * 1.05
+    calfL.current.position.z = a * 0.03
+  }
+  if (calfR.current) {
+    calfR.current.rotation.x = a * 1.05
+    calfR.current.position.z = a * 0.03
+  }
   if (armL.current) armL.current.rotation.x = a * -0.35
   if (armR.current) armR.current.rotation.x = a * -0.28
 }
@@ -627,6 +673,8 @@ function ChibiFigure({
   armR,
   legL,
   legR,
+  calfL,
+  calfR,
 }: {
   materials: FigMats
   torsoRef: RefObject<THREE.Mesh | null>
@@ -634,6 +682,8 @@ function ChibiFigure({
   armR: RefObject<THREE.Group | null>
   legL: RefObject<THREE.Group | null>
   legR: RefObject<THREE.Group | null>
+  calfL: RefObject<THREE.Group | null>
+  calfR: RefObject<THREE.Group | null>
 }) {
   return (
     <group>
@@ -740,24 +790,34 @@ function ChibiFigure({
         </mesh>
       </group>
 
-      {/* —— Legs + sneakers —— */}
+      {/* —— Legs (hip → thigh → knee → calf → sneaker) —— */}
       <group ref={legL} position={[-0.09, 0.32, 0]}>
         <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
-          <capsuleGeometry args={[0.075, 0.12, 6, 12]} />
+          <capsuleGeometry args={[0.075, 0.1, 6, 12]} />
         </mesh>
-        <mesh position={[0, -0.2, 0]} castShadow material={m.pants}>
-          <cylinderGeometry args={[0.07, 0.06, 0.05, 12]} />
-        </mesh>
-        <Sneaker materials={m} />
+        <group ref={calfL} position={[0, -0.22, 0]}>
+          <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
+            <capsuleGeometry args={[0.07, 0.06, 6, 12]} />
+          </mesh>
+          <mesh position={[0, -0.15, 0]} castShadow material={m.pants}>
+            <cylinderGeometry args={[0.065, 0.055, 0.04, 12]} />
+          </mesh>
+          <Sneaker materials={m} yOffset={-0.2} />
+        </group>
       </group>
       <group ref={legR} position={[0.09, 0.32, 0]}>
         <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
-          <capsuleGeometry args={[0.075, 0.12, 6, 12]} />
+          <capsuleGeometry args={[0.075, 0.1, 6, 12]} />
         </mesh>
-        <mesh position={[0, -0.2, 0]} castShadow material={m.pants}>
-          <cylinderGeometry args={[0.07, 0.06, 0.05, 12]} />
-        </mesh>
-        <Sneaker materials={m} />
+        <group ref={calfR} position={[0, -0.22, 0]}>
+          <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
+            <capsuleGeometry args={[0.07, 0.06, 6, 12]} />
+          </mesh>
+          <mesh position={[0, -0.15, 0]} castShadow material={m.pants}>
+            <cylinderGeometry args={[0.065, 0.055, 0.04, 12]} />
+          </mesh>
+          <Sneaker materials={m} yOffset={-0.2} />
+        </group>
       </group>
     </group>
   )
@@ -831,10 +891,10 @@ function Hair({ materials: m }: { materials: FigMats }) {
   )
 }
 
-function Sneaker({ materials: m }: { materials: FigMats }) {
+function Sneaker({ materials: m, yOffset = -0.26 }: { materials: FigMats; yOffset?: number }) {
   // Chunkier high-tops so red / white / blue read at room scale
   return (
-    <group position={[0, -0.26, 0.03]} scale={[1.15, 1.1, 1.2]}>
+    <group position={[0, yOffset, 0.03]} scale={[1.15, 1.1, 1.2]}>
       <mesh position={[0, -0.01, 0.02]} castShadow material={m.sole}>
         <boxGeometry args={[0.13, 0.04, 0.22]} />
       </mesh>
