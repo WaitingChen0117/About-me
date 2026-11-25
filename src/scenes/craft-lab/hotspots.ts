@@ -42,6 +42,8 @@ export const craftLabHotspots: HotspotDef[] = [
     x: 50,
     y: 48,
     position: [0.25, 0, -0.25],
+    // Stand south of the workbench island (island front ≈ z 1.55), not on the tabletop.
+    standPosition: [0.15, 0, 2.25],
     labelY: 1.1,
     view: {
       target: [0.25, 0.7, -0.2],
@@ -115,7 +117,13 @@ export const craftLabHotspots: HotspotDef[] = [
 /** Desk secondary monitor / assist arm → AI twin (not a section panel). */
 export const ASSIST_MONITOR_POSITION: [number, number, number] = [1.85, 0, 1.35]
 
-export const OPERATOR_HOME: [number, number, number] = [-0.25, 0, 0.95]
+/**
+ * Idle spawn / home — clear floor south-west of the central workbench island
+ * (island top ≈ y 0.4, front edge ≈ z 1.55). Keep Y at floor (0) and push
+ * Z past the island so the default CRAFT_HOME_VIEW silhouette does not read
+ * as sunk into the timeline tabletop.
+ */
+export const OPERATOR_HOME: [number, number, number] = [-0.9, 0, 2.35]
 
 export const CRAFT_HOME_VIEW = {
   target: [0.15, 0.85, -0.35] as [number, number, number],
