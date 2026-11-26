@@ -56,20 +56,22 @@ export function CollectorBox({
   const boxGeometry = useMemo(() => new THREE.BoxGeometry(boxSize, boxSize, boxSize), [boxSize])
 
   const materials = useMemo(() => {
-    const faceMaterial = (color: string) =>
+    const faceMaterial = (color: string, opacity = 1) =>
       new THREE.MeshStandardMaterial({
         color,
         roughness: 0.4,
         metalness: 0.1,
+        transparent: opacity < 1,
+        opacity,
       })
 
     return [
-      faceMaterial('#e8d4c0'),
-      faceMaterial('#e8d4c0'),
+      faceMaterial('#e8d4c0', 0.3),
+      faceMaterial('#e8d4c0', 0.3),
       faceMaterial('#e8d4c0'),
       faceMaterial('#d4c4b0'),
-      faceMaterial('#e8d4c0'),
-      faceMaterial('#e8d4c0'),
+      faceMaterial('#e8d4c0', 0.3),
+      faceMaterial('#e8d4c0', 0.3),
     ]
   }, [])
 

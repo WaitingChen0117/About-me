@@ -29,21 +29,37 @@ export function FigureOperator({ position }: FigureOperatorProps) {
 
   return (
     <group position={position}>
-      <mesh geometry={headGeometry} material={skinMaterial} position={[0, 0.85, 0]} />
+      <mesh
+        geometry={headGeometry}
+        material={skinMaterial}
+        position={[0, 0.85, 0]}
+        castShadow
+        receiveShadow
+      />
 
-      <mesh geometry={torsoGeometry} material={clothMaterial} position={[0, 0.3, 0]} />
+      <mesh
+        geometry={torsoGeometry}
+        material={clothMaterial}
+        position={[0, 0.3, 0]}
+        castShadow
+        receiveShadow
+      />
 
       <mesh
         geometry={legGeometry}
         material={darkMaterial}
         position={[-0.12, -0.2, 0]}
         rotation={[0.1, 0, 0]}
+        castShadow
+        receiveShadow
       />
       <mesh
         geometry={legGeometry}
         material={darkMaterial}
         position={[0.12, -0.2, 0]}
         rotation={[-0.1, 0, 0]}
+        castShadow
+        receiveShadow
       />
 
       <mesh
@@ -51,12 +67,16 @@ export function FigureOperator({ position }: FigureOperatorProps) {
         material={clothMaterial}
         position={[-0.28, 0.35, 0]}
         rotation={[0, 0, 0.3]}
+        castShadow
+        receiveShadow
       />
       <mesh
         geometry={armGeometry}
         material={clothMaterial}
         position={[0.28, 0.35, 0]}
         rotation={[0, 0, -0.3]}
+        castShadow
+        receiveShadow
       />
     </group>
   )
