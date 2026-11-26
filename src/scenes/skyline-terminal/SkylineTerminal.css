@@ -1,0 +1,288 @@
+.skyline-terminal {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.skyline-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.skyline-canvas-wrap .world-labels-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.skyline-canvas-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+
+.skyline-hud-rail {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.9rem;
+  right: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.skyline-hud-rail strong {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.skyline-status-marks {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.skyline-status-marks span {
+  width: 0.45rem;
+  height: 0.14rem;
+  border-radius: 1px;
+  background: var(--text-dim);
+}
+
+.skyline-status-marks span:nth-child(1) {
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.skyline-status-marks span:nth-child(2) {
+  background: var(--accent-2);
+  opacity: 0.7;
+}
+
+.skyline-status-marks span:nth-child(3) {
+  background: var(--ok);
+  opacity: 0.65;
+}
+
+.skyline-html-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 4.2rem;
+  padding: 0.28rem 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-panel-solid) 92%, transparent);
+  backdrop-filter: blur(6px);
+  text-align: left;
+  white-space: nowrap;
+  transform: translateZ(0);
+  transition: border-color 0.18s ease;
+}
+
+.skyline-html-label.is-hot {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+}
+
+.skyline-html-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.skyline-html-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.15;
+}
+
+.skyline-html-pod {
+  min-width: 5rem;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+
+.skyline-html-tip {
+  padding: 0.16rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-solid);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.skyline-legend {
+  position: absolute;
+  left: 0.7rem;
+  top: 2.35rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  max-height: calc(100% - 5rem);
+  overflow-y: auto;
+  padding: 0.1rem;
+  pointer-events: auto;
+  animation: skylineLegendIn 0.4s ease both;
+}
+
+@keyframes skylineLegendIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.skyline-legend-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.04rem;
+  min-width: 5.9rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-panel-solid) 90%, transparent);
+  backdrop-filter: blur(6px);
+  text-align: left;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.skyline-legend-item:hover,
+.skyline-legend-item.is-active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-panel-solid));
+}
+
+.skyline-legend-item.is-target {
+  border-color: var(--accent);
+}
+
+.skyline-legend-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skyline-legend-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.skyline-terminal .mobile-section-rail {
+  display: none;
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  z-index: 8;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-panel-solid) 78%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  max-height: 2.5rem;
+}
+
+.skyline-terminal .mobile-section-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.skyline-terminal .mobile-section-rail button {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.skyline-terminal .mobile-section-rail button.is-active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+@media (max-width: 900px) {
+  .skyline-legend {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .skyline-hud-rail {
+    top: 0.4rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.52rem;
+    gap: 0.35rem;
+  }
+
+  .skyline-status-marks {
+    display: none;
+  }
+
+  .skyline-html-label {
+    min-width: 3.2rem;
+    padding: 0.18rem 0.3rem;
+  }
+
+  .skyline-html-title {
+    font-size: 0.6rem;
+  }
+
+  .skyline-html-pod {
+    display: none;
+  }
+
+  .skyline-terminal .mobile-section-rail {
+    display: flex;
+  }
+}
+
+.skyline-terminal[data-low-power='true'] .skyline-html-label,
+.skyline-terminal[data-low-power='true'] .skyline-legend-item {
+  backdrop-filter: none;
+}
+
+.skyline-terminal[data-low-power='true'] .mobile-section-rail {
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--bg-panel-solid) 90%, transparent);
+}
+
+.skyline-terminal[data-touch='true'] .skyline-canvas-wrap {
+  touch-action: none;
+}
