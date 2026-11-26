@@ -75,11 +75,12 @@ export const craftLabHotspots: HotspotDef[] = [
     y: 60,
     position: [-4.25, 0, 0.85],
     labelY: 1.2,
+    // Same framing intent as Scene A: readable prop + workshop context.
     view: {
-      target: [-4.05, 0.7, 0.85],
-      radius: 3.2,
-      theta: -1.08,
-      phi: 1.04,
+      target: [-3.65, 1.05, 1.0],
+      radius: 5.5,
+      theta: -0.55,
+      phi: 1.06,
     },
   },
   {

@@ -347,7 +347,8 @@ export function LabWorld({
         onArrive={onCameraArrive}
         reducedMotion={reducedMotion}
         limits={{
-          minPolarAngle: 0.34,
+          // Keep orbit below the open ceiling / roof beams (home φ ≈ 1.06).
+          minPolarAngle: 0.96,
           maxPolarAngle: Math.PI / 2.12,
           minDistance: isTouch ? 6.4 : 5.5,
           maxDistance: isTouch ? 14.5 : 15.8,

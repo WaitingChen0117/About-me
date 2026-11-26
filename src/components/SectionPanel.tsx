@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type SyntheticEvent } from 'react'
 import { sectionById, type SectionId } from '../content/sections'
 import './SectionPanel.css'
 
@@ -20,14 +20,33 @@ export function SectionPanel({ sectionId, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, sectionId])
 
+  /** Keep canvas / orbit / Html overlays from stealing the close gesture. */
+  const stopScenePointer = (e: SyntheticEvent) => {
+    e.stopPropagation()
+  }
+
+  const handleClose = (e: SyntheticEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onClose()
+  }
+
   return (
     <>
-      <div className="panel-backdrop" onClick={onClose} aria-hidden="true" />
+      <div
+        className="panel-backdrop"
+        onClick={onClose}
+        onPointerDown={stopScenePointer}
+        aria-hidden="true"
+      />
       <aside
         className="section-panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="section-panel-title"
+        onPointerDown={stopScenePointer}
+        onMouseDown={stopScenePointer}
+        onClick={stopScenePointer}
       >
         <header className="section-panel-header">
           <div>
@@ -42,7 +61,8 @@ export function SectionPanel({ sectionId, onClose }: Props) {
             type="button"
             className="section-panel-close"
             aria-label="关闭面板"
-            onClick={onClose}
+            onPointerDown={handleClose}
+            onClick={handleClose}
           >
             ×
           </button>
