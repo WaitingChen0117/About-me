@@ -64,24 +64,29 @@ export default function App() {
   const palette = getPalette(theme)
 
   const sceneChipLabel = (id: SceneId) => {
+    if (id === 'collector-box') return '收藏盒'
     if (id === 'ops-deck') return 'A · 工作室'
     if (id === 'craft-lab') return 'B · 工坊'
     return 'C · 终端'
   }
 
   const loadingLabel =
-    sceneId === 'craft-lab'
-      ? '加载工坊…'
-      : sceneId === 'skyline-terminal'
-        ? '加载终端…'
-        : '加载工作室…'
+    sceneId === 'collector-box'
+      ? '加载收藏盒…'
+      : sceneId === 'craft-lab'
+        ? '加载工坊…'
+        : sceneId === 'skyline-terminal'
+          ? '加载终端…'
+          : '加载工作室…'
 
   const hintLabel =
-    sceneId === 'craft-lab'
-      ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 副屏提问'
-      : sceneId === 'skyline-terminal'
-        ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 对话球提问'
-        : '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 桌面分身提问'
+    sceneId === 'collector-box'
+      ? '拖拽旋转盒子 · 点击标签切换面 · 背面查看作品 · 右侧进入工作室'
+      : sceneId === 'craft-lab'
+        ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 副屏提问'
+        : sceneId === 'skyline-terminal'
+          ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 对话球提问'
+          : '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 桌面分身提问'
 
   const issueCamera = useCallback((nextFocus: SectionId | null) => {
     setFlyLock(true)
@@ -263,6 +268,7 @@ export default function App() {
             onCameraArrive={onCameraArrive}
             flyLock={flyLock}
             labelsAway={Boolean(activeSection)}
+            onSwitchScene={switchScene}
           />
         </Suspense>
         {hintVisible ? <div className="hint-toast">{hintLabel}</div> : null}

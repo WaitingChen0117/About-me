@@ -1,8 +1,14 @@
 import { lazy } from 'react'
+import { collectorBoxHotspots } from './collector-box/hotspots'
 import { craftLabHotspots } from './craft-lab/hotspots'
 import { opsDeckHotspots } from './ops-deck/hotspots'
 import { skylineHotspots } from './skyline-terminal/hotspots'
 import type { SceneId, SceneModule } from './types'
+
+const CollectorBoxScene = lazy(async () => {
+  const mod = await import('./collector-box/CollectorBoxScene')
+  return { default: mod.CollectorBoxScene }
+})
 
 const OpsDeckScene = lazy(async () => {
   const mod = await import('./ops-deck/OpsDeckScene')
@@ -20,10 +26,16 @@ const SkylineTerminalScene = lazy(async () => {
 })
 
 /**
- * Scene registry — A (ops-deck) + B (craft-lab) + C (skyline-terminal).
- * Scene id stays `ops-deck` for routing stability; UX copy says 工作室.
+ * Scene registry — Collector Box (entry) + A (ops-deck) + B (craft-lab) + C (skyline-terminal).
  */
 export const scenes: SceneModule[] = [
+  {
+    id: 'collector-box',
+    label: '收藏盒',
+    description: '盲盒收藏体验：旋转盒子查看不同面，背面展示作品集，可进入工作室探索。',
+    Component: CollectorBoxScene,
+    hotspots: collectorBoxHotspots,
+  },
   {
     id: 'ops-deck',
     label: '程序员工作室',
@@ -47,7 +59,7 @@ export const scenes: SceneModule[] = [
   },
 ]
 
-export const defaultSceneId: SceneId = 'ops-deck'
+export const defaultSceneId: SceneId = 'collector-box'
 
 export function getScene(id: SceneId): SceneModule {
   const found = scenes.find((s) => s.id === id)
@@ -59,6 +71,7 @@ export function getScene(id: SceneId): SceneModule {
 
 /** Known scene ids — keep for routing / future packs. */
 export const reservedSceneIds: SceneId[] = [
+  'collector-box',
   'ops-deck',
   'craft-lab',
   'skyline-terminal',

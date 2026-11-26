@@ -3,7 +3,7 @@ import type { SectionId } from '../content/sections'
 
 import type { PaletteId } from '../themes/palettes'
 
-export type SceneId = 'ops-deck' | 'craft-lab' | 'skyline-terminal'
+export type SceneId = 'collector-box' | 'ops-deck' | 'craft-lab' | 'skyline-terminal'
 
 /** Active named palette preset (replaces binary day/night). */
 export type ThemeMode = PaletteId
@@ -70,6 +70,8 @@ export type SceneProps = {
   flyLock: boolean
   /** Hide world labels while panel is open */
   labelsAway: boolean
+  /** Switch to a different scene */
+  onSwitchScene?: (id: SceneId) => void
 }
 
 export type SceneModule = {
