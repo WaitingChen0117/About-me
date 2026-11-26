@@ -48,6 +48,7 @@ export function CraftLabScene({
   onCameraArrive,
   flyLock,
   labelsAway,
+  operatorLook,
 }: SceneProps) {
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
   const reducedMotion = usePrefersReducedMotion()
@@ -129,6 +130,7 @@ export function CraftLabScene({
               isTouch={isTouch}
               reducedMotion={reducedMotion}
               homeView={homeView}
+              operatorLook={operatorLook}
             />
           </Suspense>
         </Canvas>

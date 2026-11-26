@@ -37,13 +37,13 @@ npm run preview
 - 共享板块：关于我、经历、作品、项目、文章、爱好、联系（脱敏文案 + 公开 GitHub / Quartz 外链）
 - AI 分身：站内知识层 + 关键词 / 意图匹配；建议问题 chips、自由输入、回答可引用并跳转板块；默认离线可用
 - 可选 LLM：通过 `VITE_LLM_ENDPOINT` / `VITE_LLM_API_KEY` / `VITE_LLM_MODEL` 预留接口（见 `src/lib/llm-optional.ts`），未配置时不联网
-- 真 3D Operator：KayKit Adventurers「Rogue」GLB（CC0），三场景复用；Idle / Walk / Sit 动画；点地 A* 寻路 + 走过消除轨迹
+- 真 3D Operator：可切换「旅人」KayKit Rogue GLB（CC0）与「潮玩」自研乙烯程序化形象；三场景复用；Idle / Walk / Sit；点地 A* 寻路 + 走过消除轨迹
 - 多套命名配色预设（各场景均跟色）；移动端降 DPR / 少阴影
 - 架构：`sceneId` + 共享 `sections`；A/B/C 均为一等场景
 
 ## 3D 资源许可
 
-Operator 角色：`public/models/operator-kaykit-rogue.glb`
+KayKit Operator（「旅人」）：`public/models/operator-kaykit-rogue.glb`；「潮玩」为自研程序化网格（无第二份 GLB）。
 
 | 项 | 内容 |
 |----|------|

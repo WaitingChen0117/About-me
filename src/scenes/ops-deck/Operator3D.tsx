@@ -19,6 +19,12 @@ import {
 import { findPath, type WalkPoint } from '../walk/pathfind'
 import { CHAIR_OUTWARD_YAW, OPERATOR_HOME } from './hotspots'
 import { OperatorAvatar, type OperatorClip } from './OperatorAvatar'
+import {
+  OperatorProcedural,
+  PROCEDURAL_SIT_Y,
+  PROCEDURAL_STAND_Y_LIFT,
+} from './OperatorProcedural'
+import type { OperatorLookId } from './operatorLooks'
 import type { DeckPalette } from './themeColors'
 
 /** Free click-to-walk — follows a planned polyline (path around furniture). */
@@ -98,6 +104,8 @@ type Props = {
    * While seated, prefer this yaw over lookAtId (forced monitor turn).
    */
   seatTurnYawRef?: MutableRefObject<number | null>
+  /** Visual look — KayKit GLB or beautified procedural vinyl. */
+  look?: OperatorLookId
 }
 
 /** Shortest signed angle from `from` to `to` in (−π, π]. */
@@ -107,11 +115,8 @@ function angleDelta(from: number, to: number) {
 
 const WALK_SPEED = 2.55
 
-/**
- * KayKit Rogue origin is at the soles — no procedural sole offset.
- * Keep a tiny lift so ContactShadows don't z-fight.
- */
-const STAND_Y_LIFT = 0.02
+/** KayKit soles sit at origin — tiny lift avoids shadow z-fight. */
+const KAYKIT_STAND_Y_LIFT = 0.02
 
 /** Hermite smoothstep — softer sit/stand XZ ease. */
 function smoothstep01(t: number) {
@@ -151,7 +156,13 @@ export function Operator3D({
   seatYawRef,
   chairOrientedRef,
   seatTurnYawRef,
+  look = 'kaykit',
 }: Props) {
+  const isProcedural = look === 'procedural'
+  const standYLift = isProcedural ? PROCEDURAL_STAND_Y_LIFT : KAYKIT_STAND_Y_LIFT
+  const lookRef = useRef(look)
+  lookRef.current = look
+
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
   const goal = useRef(new THREE.Vector3(...home))
@@ -187,6 +198,7 @@ export function Operator3D({
   const [seated, setSeated] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [clip, setClip] = useState<OperatorClip>('idle')
+  const sitAmountRef = useRef(0)
   const marker = useRef<THREE.Mesh>(null)
   const stride = useRef(0)
 
@@ -208,7 +220,10 @@ export function Operator3D({
   }, [onFreeWalkDone])
 
   // Walk / idle plane follows home Y (ops-deck 0; craft/skyline may raise floor).
-  const floorY = home[1] + STAND_Y_LIFT
+  const floorY = home[1] + standYLift
+
+  const seatRootY = (sitYFromCmd: number) =>
+    lookRef.current === 'procedural' ? sitYFromCmd : floorY
 
   const publishPos = () => {
     if (positionRef) {
@@ -282,34 +297,71 @@ export function Operator3D({
     queueMicrotask(() => freeWalkDoneRef.current?.())
   }
 
-  const onClipFinished = useCallback((finished: OperatorClip) => {
-    if (finished === 'sit-down' && seatPhase.current === 'sit-blend') {
-      sitBlend.current = 1
-      seatPhase.current = 'seated'
-      const st = sitTarget.current
-      pos.current.set(st.x, floorY, st.z)
-      collide.current = false
-      queueMicrotask(() => {
-        setSeated(true)
-        setWalking(false)
-        setClip('sit-idle')
-        seatedRef.current?.()
-      })
-      return
-    }
-    if (finished === 'stand-up' && seatPhase.current === 'stand-blend') {
-      sitBlend.current = 0
-      seatPhase.current = 'none'
-      collide.current = true
-      const sd = standTarget.current
-      pos.current.set(sd.x, floorY, sd.z)
-      goal.current.set(sd.x, floorY, sd.z)
-      queueMicrotask(() => {
-        setClip('idle')
-        stoodRef.current?.()
-      })
-    }
+  const finishSitSeated = useCallback(() => {
+    sitBlend.current = 1
+    sitAmountRef.current = 1
+    seatPhase.current = 'seated'
+    const st = sitTarget.current
+    pos.current.set(st.x, st.y, st.z)
+    collide.current = false
+    queueMicrotask(() => {
+      setSeated(true)
+      setWalking(false)
+      setClip('sit-idle')
+      seatedRef.current?.()
+    })
+  }, [])
+
+  const finishStandUp = useCallback(() => {
+    sitBlend.current = 0
+    sitAmountRef.current = 0
+    seatPhase.current = 'none'
+    collide.current = true
+    const sd = standTarget.current
+    pos.current.set(sd.x, floorY, sd.z)
+    goal.current.set(sd.x, floorY, sd.z)
+    queueMicrotask(() => {
+      setClip('idle')
+      stoodRef.current?.()
+    })
   }, [floorY])
+
+  // Keep seated pose in sync when switching looks mid-seat.
+  useEffect(() => {
+    const seatedNow =
+      seatPhase.current === 'seated' ||
+      seatPhase.current === 'sit-blend' ||
+      seatPhase.current === 'pre-stand-turn' ||
+      seatPhase.current === 'stand-blend'
+    if (look === 'procedural') {
+      if (seatedNow) {
+        sitAmountRef.current = seatPhase.current === 'stand-blend' ? sitBlend.current : 1
+        sitTarget.current.y = PROCEDURAL_SIT_Y
+      } else {
+        sitAmountRef.current = 0
+      }
+    } else {
+      sitAmountRef.current = 0
+      if (seatedNow) {
+        sitTarget.current.y = floorY
+        setClip('sit-idle')
+      }
+    }
+  }, [look, floorY])
+
+  const onClipFinished = useCallback(
+    (finished: OperatorClip) => {
+      if (lookRef.current === 'procedural') return
+      if (finished === 'sit-down' && seatPhase.current === 'sit-blend') {
+        finishSitSeated()
+        return
+      }
+      if (finished === 'stand-up' && seatPhase.current === 'stand-blend') {
+        finishStandUp()
+      }
+    },
+    [finishSitSeated, finishStandUp],
+  )
 
   useEffect(() => {
     if (!target || ticket === 0) return
@@ -370,10 +422,10 @@ export function Operator3D({
     if (seatPhase.current === 'seated' || seatPhase.current === 'sit-blend') return
     pending.current = null
     finishFreeWalkIfNeeded()
-    // GLB sit clips keep feet on the floor — ignore procedural sitY lift.
+    // KayKit sit clips keep feet on floor; procedural plants hip via sitY.
     sitTarget.current = {
       x: sitCommand.sitX,
-      y: floorY,
+      y: seatRootY(sitCommand.sitY || PROCEDURAL_SIT_Y),
       z: sitCommand.sitZ,
       yaw: sitCommand.faceYaw,
     }
@@ -443,24 +495,29 @@ export function Operator3D({
       phase === 'pre-stand-turn'
     ) {
       if (phase === 'sit-blend') {
-        // XZ ease onto chair while Sit_Chair_Down plays (finish → seated).
+        // XZ ease onto chair; KayKit finishes via clip, procedural via blend.
         sitBlend.current = Math.min(1, sitBlend.current + delta * 1.35)
         const u = smoothstep01(sitBlend.current)
         const st = sitTarget.current
         const from = sitFrom.current
         pos.current.x = THREE.MathUtils.lerp(from.x, st.x, u)
         pos.current.z = THREE.MathUtils.lerp(from.z, st.z, u)
+        const rootY = THREE.MathUtils.lerp(floorY, st.y, u)
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, st.yaw, 8, delta)
         publishSeatYaw(g.rotation.y)
-        g.position.set(pos.current.x, floorY, pos.current.z)
+        g.position.set(pos.current.x, rootY, pos.current.z)
+        if (lookRef.current === 'procedural') {
+          sitAmountRef.current = u
+          if (sitBlend.current >= 0.999) finishSitSeated()
+        }
       } else if (phase === 'pre-stand-turn') {
         const st = sitTarget.current
         const exitYaw = standExitYaw.current
-        pos.current.set(st.x, floorY, st.z)
+        pos.current.set(st.x, st.y, st.z)
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, exitYaw, 5.5, delta)
         st.yaw = g.rotation.y
         publishSeatYaw(g.rotation.y)
-        g.position.set(st.x, floorY, st.z)
+        g.position.set(st.x, st.y, st.z)
         if (Math.abs(angleDelta(g.rotation.y, exitYaw)) < 0.08) {
           g.rotation.y = exitYaw
           st.yaw = exitYaw
@@ -471,19 +528,24 @@ export function Operator3D({
           queueMicrotask(() => setClip('stand-up'))
         }
       } else if (phase === 'stand-blend') {
-        // Rise clip plays; ease XZ toward approach while standing up.
+        // Rise clip / limb blend; ease XZ toward approach while standing up.
         sitBlend.current = Math.max(0, sitBlend.current - delta * 1.2)
         const u = smoothstep01(sitBlend.current)
         const st = sitTarget.current
         const sd = standTarget.current
         pos.current.x = THREE.MathUtils.lerp(sd.x, st.x, u)
         pos.current.z = THREE.MathUtils.lerp(sd.z, st.z, u)
+        const rootY = THREE.MathUtils.lerp(floorY, st.y, u)
         publishSeatYaw(g.rotation.y)
-        g.position.set(pos.current.x, floorY, pos.current.z)
+        g.position.set(pos.current.x, rootY, pos.current.z)
+        if (lookRef.current === 'procedural') {
+          sitAmountRef.current = u
+          if (sitBlend.current <= 0.001) finishStandUp()
+        }
       } else {
         // Seated idle — yaw drives character + chair swivel together
         const st = sitTarget.current
-        pos.current.set(st.x, floorY, st.z)
+        pos.current.set(st.x, st.y, st.z)
         let yaw = st.yaw
         const forced = seatTurnYawRef?.current
         if (forced != null) {
@@ -499,7 +561,7 @@ export function Operator3D({
         st.yaw = yaw
         g.rotation.y = THREE.MathUtils.damp(g.rotation.y, yaw, 6, delta)
         publishSeatYaw(g.rotation.y)
-        g.position.set(st.x, floorY, st.z)
+        g.position.set(st.x, st.y, st.z)
       }
 
       const appearSit = Math.min(1, Math.max(0, (introRef.current - 0.15) / 0.4))
@@ -658,11 +720,19 @@ export function Operator3D({
         document.body.style.cursor = 'auto'
       }}
     >
-      <OperatorAvatar
-        clip={clip}
-        highlight={hovered || walking}
-        onClipFinished={onClipFinished}
-      />
+      {isProcedural ? (
+        <OperatorProcedural
+          walking={walking}
+          sitAmountRef={sitAmountRef}
+          highlight={hovered || walking}
+        />
+      ) : (
+        <OperatorAvatar
+          clip={clip}
+          highlight={hovered || walking}
+          onClipFinished={onClipFinished}
+        />
+      )}
 
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
         <ringGeometry args={[0.18, 0.28, 24]} />

@@ -15,6 +15,7 @@ import { WorldLabels } from '../labels/WorldLabels'
 import { Operator3D, type FreeWalkCommand } from '../ops-deck/Operator3D'
 import { SoftBox, SoftColumn, SoftMonitor } from '../primitives'
 import { getPalette } from '../../themes/palettes'
+import type { OperatorLookId } from '../ops-deck/operatorLooks'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import {
   SKYLINE_WALK_BOUNDS,
@@ -61,6 +62,7 @@ type Props = {
   isTouch: boolean
   reducedMotion: boolean
   homeView: CameraView
+  operatorLook: OperatorLookId
 }
 
 export function TerminalWorld({
@@ -83,6 +85,7 @@ export function TerminalWorld({
   isTouch,
   reducedMotion,
   homeView,
+  operatorLook,
 }: Props) {
   const palette = useMemo(() => skylinePalette(theme), [theme])
   const hotspots = skylineHotspots as HotspotDef[]
@@ -324,6 +327,7 @@ export function TerminalWorld({
           walkObstacles={SKYLINE_WALK_OBSTACLES}
           onFreeWalkDone={onFreeWalkDone}
           positionRef={operatorPosRef}
+          look={operatorLook}
         />
       </group>
 

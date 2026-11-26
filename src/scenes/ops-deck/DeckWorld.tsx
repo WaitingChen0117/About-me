@@ -15,6 +15,7 @@ import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
 import { SoftBox } from '../primitives'
 import { getPalette } from '../../themes/palettes'
+import type { OperatorLookId } from './operatorLooks'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import {
   OPS_WALK_BOUNDS,
@@ -95,6 +96,7 @@ type Props = {
   homeView: CameraView
   /** Lets the scene shell (legend / rail) reuse seat-aware select. */
   selectSectionRef?: MutableRefObject<(id: SectionId) => void>
+  operatorLook: OperatorLookId
 }
 
 export function DeckWorld({
@@ -118,6 +120,7 @@ export function DeckWorld({
   reducedMotion,
   homeView,
   selectSectionRef,
+  operatorLook,
 }: Props) {
   const palette = useMemo(() => deckPalette(theme), [theme])
   const lights = useMemo(() => getPalette(theme).lights, [theme])
@@ -711,6 +714,7 @@ export function DeckWorld({
           seatYawRef={seatYawRef}
           chairOrientedRef={chairOrientedRef}
           seatTurnYawRef={seatTurnYawRef}
+          look={operatorLook}
         />
       </group>
 

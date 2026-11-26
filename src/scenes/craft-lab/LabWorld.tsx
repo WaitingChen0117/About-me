@@ -15,6 +15,7 @@ import { WorldLabels } from '../labels/WorldLabels'
 import { Operator3D, type FreeWalkCommand } from '../ops-deck/Operator3D'
 import { SoftBox, SoftColumn, SoftMonitor } from '../primitives'
 import { getPalette } from '../../themes/palettes'
+import type { OperatorLookId } from '../ops-deck/operatorLooks'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import {
   CRAFT_WALK_BOUNDS,
@@ -57,6 +58,7 @@ type Props = {
   isTouch: boolean
   reducedMotion: boolean
   homeView: CameraView
+  operatorLook: OperatorLookId
 }
 
 export function LabWorld({
@@ -79,6 +81,7 @@ export function LabWorld({
   isTouch,
   reducedMotion,
   homeView,
+  operatorLook,
 }: Props) {
   const palette = useMemo(() => labPalette(theme), [theme])
   const hotspots = craftLabHotspots as HotspotDef[]
@@ -335,6 +338,7 @@ export function LabWorld({
           walkObstacles={CRAFT_WALK_OBSTACLES}
           onFreeWalkDone={onFreeWalkDone}
           positionRef={operatorPosRef}
+          look={operatorLook}
         />
       </group>
 
