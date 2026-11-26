@@ -153,6 +153,10 @@ export function BoxWorld({
   }, [gl, handlePointerMove, handlePointerUp])
 
   useFrame((_, delta) => {
+    if (cameraRef.current) {
+      cameraRef.current.lookAt(0, 0, 0)
+    }
+    
     if (boxGroup.current) {
       // Smooth rotation
       currentRotation.current.x = THREE.MathUtils.damp(
