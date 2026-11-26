@@ -74,11 +74,13 @@ export const opsDeckHotspots: HotspotDef[] = [
     y: 58,
     position: [-4.05, 0, 0.75],
     labelY: 1.05,
+    // Pull back from the left-wall cabinet and aim at the notebook stack so
+    // the panel sits on a readable prop + room view (not a dark tight crop).
     view: {
-      target: [-3.85, 0.55, 0.7],
-      radius: 3.1,
-      theta: -1.02,
-      phi: 1.05,
+      target: [-3.55, 1.05, 0.9],
+      radius: 5.4,
+      theta: -0.52,
+      phi: 1.08,
     },
   },
   {

@@ -685,7 +685,8 @@ export function DeckWorld({
         onArrive={onCameraArrive}
         reducedMotion={reducedMotion}
         limits={{
-          minPolarAngle: 0.32,
+          // Keep orbit below the open ceiling / roof beams (home φ ≈ 1.05).
+          minPolarAngle: 0.95,
           maxPolarAngle: Math.PI / 2.15,
           minDistance: isTouch ? 6.2 : 5.4,
           maxDistance: isTouch ? 14 : 15.5,

@@ -81,11 +81,13 @@
   position: absolute;
   top: calc(100% + 0.35rem);
   right: 0;
-  z-index: 40;
+  z-index: 60;
   margin: 0;
   padding: 0.25rem;
   list-style: none;
-  min-width: 15.5rem;
+  min-width: 16.5rem;
+  max-height: min(70dvh, 22rem);
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--bg-panel-solid) 96%, transparent);
@@ -130,6 +132,10 @@
   font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .palette-option-hint {
@@ -140,6 +146,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .palette-family {

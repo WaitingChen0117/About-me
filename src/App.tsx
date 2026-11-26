@@ -114,8 +114,25 @@ export default function App() {
 
   const closeSection = useCallback(() => {
     setActiveSection(null)
+    // Return to idle exploration — restore control hint when still relevant.
+    setHintVisible(true)
     cameraHome()
   }, [cameraHome])
+
+  const setAvatar = useCallback(
+    (open: boolean) => {
+      setAvatarOpen(open)
+      // Closing AI must not permanently hide the bottom hint while idle.
+      if (!open && !activeSection && !focusId && !focusing.current) {
+        setHintVisible(true)
+      }
+    },
+    [activeSection, focusId],
+  )
+
+  const toggleAvatar = useCallback(() => {
+    setAvatar(!avatarOpen)
+  }, [avatarOpen, setAvatar])
 
   // Esc while focusing (before panel) cancels fly + homes
   useEffect(() => {
@@ -124,6 +141,7 @@ export default function App() {
       if (activeSection) return // SectionPanel owns Esc when open
       if (focusId || focusing.current) {
         e.preventDefault()
+        setHintVisible(true)
         cameraHome()
       }
     }
@@ -197,7 +215,7 @@ export default function App() {
             type="button"
             className="chip-btn"
             aria-pressed={avatarOpen}
-            onClick={() => setAvatarOpen((v) => !v)}
+            onClick={toggleAvatar}
           >
             AI 分身
           </button>
@@ -219,7 +237,7 @@ export default function App() {
             onFocusThenOpen={focusThenOpen}
             onSendOperator={sendOperator}
             avatarOpen={avatarOpen}
-            onToggleAvatar={() => setAvatarOpen((v) => !v)}
+            onToggleAvatar={toggleAvatar}
             operatorTarget={operatorTarget}
             operatorTicket={operatorTicket}
             onOperatorArrive={onOperatorArrive}
@@ -245,7 +263,7 @@ export default function App() {
 
       <AvatarChat
         open={avatarOpen}
-        onClose={() => setAvatarOpen(false)}
+        onClose={() => setAvatar(false)}
         onOpenSection={focusThenOpen}
       />
     </div>

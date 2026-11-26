@@ -2,11 +2,12 @@
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: color-mix(in srgb, var(--bg-deep) 62%, transparent);
-  backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--bg-deep) 55%, transparent);
+  backdrop-filter: blur(2px);
   animation: fadeBackdrop 0.18s ease both;
   /* Ensure backdrop captures clicks while open; unmount restores 3D hover */
   pointer-events: auto;
+  touch-action: none;
 }
 
 @keyframes fadeBackdrop {
@@ -34,6 +35,9 @@
   box-shadow: var(--shadow);
   overflow: hidden;
   animation: panelIn 0.22s ease both;
+  isolation: isolate;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 @keyframes panelIn {
@@ -81,14 +85,20 @@
 }
 
 .section-panel-close {
-  width: 1.85rem;
-  height: 1.85rem;
+  position: relative;
+  z-index: 2;
+  width: 2.1rem;
+  height: 2.1rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   color: var(--text-muted);
   flex-shrink: 0;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1;
+  pointer-events: auto;
+  cursor: pointer;
+  /* Expand hit target without growing layout too much */
+  touch-action: manipulation;
 }
 
 .section-panel-close:hover {
