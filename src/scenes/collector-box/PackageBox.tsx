@@ -92,18 +92,18 @@ export function PackageBox({
           <meshStandardMaterial map={textures.front} roughness={0.65} side={THREE.DoubleSide} />
         </mesh>
         
-        {/* Clickable areas for navigation */}
+        {/* Clickable areas for navigation - larger hit targets */}
         <mesh position={[-0.6, -0.9, WALL + 0.01]} onClick={(e) => { e.stopPropagation(); onClickAbout(); }}>
-          <planeGeometry args={[0.4, 0.2]} />
-          <meshBasicMaterial transparent opacity={0} />
+          <planeGeometry args={[0.5, 0.25]} />
+          <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
         </mesh>
         <mesh position={[0, -0.9, WALL + 0.01]} onClick={(e) => { e.stopPropagation(); onClickWorks(); }}>
-          <planeGeometry args={[0.4, 0.2]} />
-          <meshBasicMaterial transparent opacity={0} />
+          <planeGeometry args={[0.5, 0.25]} />
+          <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[0.6, -0.9, WALL + 0.01]} onClick={(e) => { e.stopPropagation(); onClickStudio(); }}>
-          <planeGeometry args={[0.5, 0.2]} />
-          <meshBasicMaterial transparent opacity={0} />
+        <mesh position={[0.65, -0.9, WALL + 0.01]} onClick={(e) => { e.stopPropagation(); onClickStudio(); }}>
+          <planeGeometry args={[0.65, 0.25]} />
+          <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
         </mesh>
       </group>
 
@@ -113,18 +113,19 @@ export function PackageBox({
           <boxGeometry args={[BOX_SIZE, BOX_SIZE, WALL]} />
           <meshStandardMaterial map={textures.back} roughness={0.65} />
         </mesh>
-        {/* Work card clickable areas - positioned outside the wall */}
+        {/* Work card clickable areas - positioned outside and facing camera */}
         {[0, 1, 2, 3, 4].map((i) => (
           <mesh
             key={i}
             position={[0, 0.65 - i * 0.3, -WALL - 0.01]}
+            rotation={[0, Math.PI, 0]}
             onClick={(e) => {
               e.stopPropagation()
               onClickWork(i)
             }}
           >
             <planeGeometry args={[2, 0.25]} />
-            <meshBasicMaterial transparent opacity={0} />
+            <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
           </mesh>
         ))}
       </group>

@@ -10,6 +10,7 @@ import { PackageBox } from './PackageBox'
 type BoxWorldProps = SceneProps & {
   lowPower: boolean
   onShowFrontButton?: (show: boolean) => void
+  returnToFrontTrigger?: number
 }
 
 type TargetFace = 'front' | 'back' | 'left' | 'right' | null
@@ -27,6 +28,7 @@ export function BoxWorld({
   lowPower,
   onSwitchScene,
   onShowFrontButton,
+  returnToFrontTrigger,
 }: BoxWorldProps) {
   const { gl } = useThree()
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
@@ -40,16 +42,6 @@ export function BoxWorld({
   const rotationStart = useRef(new THREE.Euler(0, 0, 0))
   const dragTarget = useRef<'box' | 'figure' | null>(null)
   
-  // Track if we're away from hero angle for FRONT button
-  useEffect(() => {
-    const isNearHero = 
-      Math.abs(targetRotation.current.y - HERO_ROTATION.y) < 0.2 &&
-      Math.abs(targetRotation.current.x - HERO_ROTATION.x) < 0.2
-    if (onShowFrontButton) {
-      onShowFrontButton(!isNearHero)
-    }
-  }, [targetRotation, onShowFrontButton])
-
   const preset = getPalette(theme)
 
   useEffect(() => {
@@ -196,6 +188,13 @@ export function BoxWorld({
       window.open(url, '_blank', 'noopener,noreferrer')
     }
   }, [])
+
+  // Handle return to front trigger
+  useEffect(() => {
+    if (returnToFrontTrigger && returnToFrontTrigger > 0) {
+      rotateTo('front')
+    }
+  }, [returnToFrontTrigger, rotateTo])
 
   const handleEnterStudio = useCallback(() => {
     if (onSwitchScene) {
