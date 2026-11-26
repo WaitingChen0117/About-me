@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { getPalette } from '../../themes/palettes'
 import type { SceneProps } from '../types'
@@ -9,6 +9,7 @@ import { PackageBox } from './PackageBox'
 
 type BoxWorldProps = SceneProps & {
   lowPower: boolean
+  onShowFrontButton?: (show: boolean) => void
 }
 
 type TargetFace = 'front' | 'back' | 'left' | 'right' | null
@@ -24,6 +25,8 @@ const WORK_URLS = [
 export function BoxWorld({
   theme,
   lowPower,
+  onSwitchScene,
+  onShowFrontButton,
 }: BoxWorldProps) {
   const { gl } = useThree()
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
@@ -37,7 +40,15 @@ export function BoxWorld({
   const rotationStart = useRef(new THREE.Euler(0, 0, 0))
   const dragTarget = useRef<'box' | 'figure' | null>(null)
   
-  const [showFrontButton, setShowFrontButton] = useState(false)
+  // Track if we're away from hero angle for FRONT button
+  useEffect(() => {
+    const isNearHero = 
+      Math.abs(targetRotation.current.y - HERO_ROTATION.y) < 0.2 &&
+      Math.abs(targetRotation.current.x - HERO_ROTATION.x) < 0.2
+    if (onShowFrontButton) {
+      onShowFrontButton(!isNearHero)
+    }
+  }, [targetRotation, onShowFrontButton])
 
   const preset = getPalette(theme)
 
@@ -51,16 +62,16 @@ export function BoxWorld({
   const rotateTo = useCallback((face: TargetFace) => {
     if (!face) {
       targetRotation.current.set(HERO_ROTATION.x, HERO_ROTATION.y, 0)
-      setShowFrontButton(false)
+      if (onShowFrontButton) onShowFrontButton(false)
       return
     }
 
-    setShowFrontButton(true)
+    if (onShowFrontButton) onShowFrontButton(true)
 
     switch (face) {
       case 'front':
         targetRotation.current.set(HERO_ROTATION.x, HERO_ROTATION.y, 0)
-        setShowFrontButton(false)
+        if (onShowFrontButton) onShowFrontButton(false)
         break
       case 'back':
         targetRotation.current.set(0, Math.PI, 0)
@@ -72,7 +83,7 @@ export function BoxWorld({
         targetRotation.current.set(0, -Math.PI / 2, 0)
         break
     }
-  }, [])
+  }, [onShowFrontButton])
 
   const handlePointerDown = useCallback((e: PointerEvent, target: 'box' | 'figure') => {
     isDragging.current = true
@@ -97,11 +108,13 @@ export function BoxWorld({
         0.5,
       )
       
-      // Show front button if rotated away from hero
-      const isNearHero = 
-        Math.abs(targetRotation.current.y - HERO_ROTATION.y) < 0.2 &&
-        Math.abs(targetRotation.current.x - HERO_ROTATION.x) < 0.2
-      setShowFrontButton(!isNearHero)
+      // Update front button visibility
+      if (onShowFrontButton) {
+        const isNearHero = 
+          Math.abs(targetRotation.current.y - HERO_ROTATION.y) < 0.2 &&
+          Math.abs(targetRotation.current.x - HERO_ROTATION.x) < 0.2
+        onShowFrontButton(!isNearHero)
+      }
     } else if (dragTarget.current === 'figure' && figureGroup.current) {
       // Squash/tilt figure (spring effect)
       const tiltX = deltaX * 0.001
@@ -184,7 +197,19 @@ export function BoxWorld({
     }
   }, [])
 
-  // Removed unused function
+  const handleEnterStudio = useCallback(() => {
+    if (onSwitchScene) {
+      onSwitchScene('ops-deck')
+    }
+  }, [onSwitchScene])
+  
+  const handleClickAbout = useCallback(() => {
+    rotateTo('left')
+  }, [rotateTo])
+  
+  const handleClickWorks = useCallback(() => {
+    rotateTo('back')
+  }, [rotateTo])
 
   return (
     <>
@@ -197,22 +222,27 @@ export function BoxWorld({
         far={100}
       />
 
-      {/* Lighting */}
-      <ambientLight intensity={preset.lights.ambient * 0.7} />
+      {/* Lighting - brighter to show interior */}
+      <ambientLight intensity={preset.lights.ambient * 1.2} />
       <directionalLight
         position={[5, 8, 5]}
-        intensity={preset.lights.keyIntensity * 0.5}
+        intensity={preset.lights.keyIntensity * 0.8}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 2048}
         shadow-mapSize-height={lowPower ? 512 : 2048}
       />
-      <directionalLight position={[-3, 4, -3]} intensity={preset.lights.fillIntensity * 0.3} />
+      <directionalLight position={[-3, 4, -3]} intensity={preset.lights.fillIntensity * 0.5} />
+      {/* Interior fill light */}
+      <pointLight position={[0, 0, 0]} intensity={0.8} distance={3} decay={2} />
 
       {/* Box with figure */}
       <group ref={boxGroup}>
         <PackageBox
           onPointerDown={(e: any) => handlePointerDown(e, 'box')}
           onClickWork={handleWorkClick}
+          onClickAbout={handleClickAbout}
+          onClickWorks={handleClickWorks}
+          onClickStudio={handleEnterStudio}
           lowPower={lowPower}
         />
         
@@ -230,15 +260,11 @@ export function BoxWorld({
         <meshBasicMaterial color="#0d1117" />
       </mesh>
 
-      {/* HTML overlay for FRONT button */}
-      {showFrontButton && (
-        <group position={[0, -2, 0]}>
-          <mesh onClick={() => rotateTo('front')}>
-            <planeGeometry args={[1, 0.3]} />
-            <meshBasicMaterial transparent opacity={0} />
-          </mesh>
-        </group>
-      )}
+      {/* Background field */}
+      <mesh position={[0, 0, -10]} receiveShadow={false}>
+        <planeGeometry args={[50, 50]} />
+        <meshBasicMaterial color="#0d1117" />
+      </mesh>
     </>
   )
 }

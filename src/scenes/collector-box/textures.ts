@@ -5,8 +5,9 @@ const BRAND = {
   accent: '#5a7fa5', // blue accent
   accentDark: '#3d5571',
   bg: '#0d1117',
-  text: '#f4f4f6',
-  textDim: '#a8adb5',
+  text: '#1a1a1c', // darker for better contrast on kraft
+  textDim: '#4a4a4c',
+  textLight: '#f4f4f6',
   cardboard: '#e8d8c8',
 }
 
@@ -25,7 +26,7 @@ export function createFrontTexture(): THREE.CanvasTexture {
   ctx.fillRect(0, 0, 1024, 140)
 
   // Brand name in header
-  ctx.fillStyle = BRAND.text
+  ctx.fillStyle = BRAND.textLight
   ctx.font = 'bold 72px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -38,12 +39,12 @@ export function createFrontTexture(): THREE.CanvasTexture {
 
   // Window area label (above actual window)
   ctx.fillStyle = BRAND.text
-  ctx.font = 'bold 56px Arial, sans-serif'
+  ctx.font = 'bold 60px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText('SENIOR FRONTEND', 512, 240)
 
   // Subtitle
-  ctx.font = '32px Arial, sans-serif'
+  ctx.font = '36px Arial, sans-serif'
   ctx.fillStyle = BRAND.textDim
   ctx.fillText('Product UI · Agent Systems', 512, 290)
 
@@ -80,15 +81,15 @@ export function createBackTexture(): THREE.CanvasTexture {
   // Header
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(0, 0, 1024, 120)
-  ctx.fillStyle = BRAND.text
+  ctx.fillStyle = BRAND.textLight
   ctx.font = 'bold 56px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText('COLLECTION', 512, 70)
 
   // Subtitle
-  ctx.font = '28px Arial, sans-serif'
-  ctx.fillStyle = BRAND.textDim
-  ctx.fillText('作品收藏 · Public Works', 512, 160)
+  ctx.font = '32px Arial, sans-serif'
+  ctx.fillStyle = BRAND.text
+  ctx.fillText('作品收藏 · Public Works', 512, 170)
 
   // Work cards
   const works = [
@@ -127,14 +128,14 @@ export function createLeftTexture(): THREE.CanvasTexture {
   // Header
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(0, 0, 1024, 120)
-  ctx.fillStyle = BRAND.text
+  ctx.fillStyle = BRAND.textLight
   ctx.font = 'bold 56px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText('ABOUT', 512, 70)
 
   // Bio content
   ctx.fillStyle = BRAND.text
-  ctx.font = '32px Arial, sans-serif'
+  ctx.font = 'bold 36px Arial, sans-serif'
   ctx.textAlign = 'left'
   
   const bio = [
@@ -184,34 +185,28 @@ export function createRightTexture(): THREE.CanvasTexture {
   // Top edition marker
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(0, 0, 1024, 100)
-  ctx.fillStyle = BRAND.text
+  ctx.fillStyle = BRAND.textLight
   ctx.font = 'bold 60px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText('#01', 512, 60)
 
-  // Barcode area
+  // Lower frame label (not center where window is)
   ctx.fillStyle = BRAND.text
-  ctx.font = '28px monospace'
+  ctx.font = 'bold 32px monospace'
   ctx.textAlign = 'center'
-  ctx.fillText('PROFILE VIEW', 512, 200)
+  ctx.fillText('PROFILE VIEW', 512, 850)
 
-  // Fake barcode
+  // Barcode at bottom frame
   for (let i = 0; i < 40; i++) {
     const w = Math.random() > 0.5 ? 12 : 6
-    ctx.fillStyle = i % 2 === 0 ? '#000' : BRAND.cardboard
-    ctx.fillRect(200 + i * 16, 300, w, 200)
+    ctx.fillStyle = i % 2 === 0 ? BRAND.text : BRAND.cardboard
+    ctx.fillRect(200 + i * 16, 900, w, 90)
   }
 
   ctx.fillStyle = BRAND.text
-  ctx.font = '32px monospace'
+  ctx.font = '24px monospace'
   ctx.textAlign = 'center'
-  ctx.fillText('0 26 FRONTEND 2026 1', 512, 540)
-
-  // Microprint
-  ctx.font = '20px monospace'
-  ctx.fillStyle = BRAND.textDim
-  ctx.fillText('VINYL FIGURE · DEVELOPER EDITION', 512, 700)
-  ctx.fillText('Made with Three.js', 512, 740)
+  ctx.fillText('0 26 FRONTEND 2026 1', 512, 1000)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -274,13 +269,13 @@ function drawSticker(
   ctx.fill()
 
   // Border
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-  ctx.lineWidth = 3
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+  ctx.lineWidth = 4
   ctx.stroke()
 
   // Text
   ctx.fillStyle = '#fff'
-  ctx.font = 'bold 36px Arial, sans-serif'
+  ctx.font = 'bold 40px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, x, y)
@@ -297,9 +292,9 @@ function drawWorkCard(
   badge: string,
 ) {
   // Card background
-  ctx.fillStyle = 'rgba(90, 127, 165, 0.08)'
+  ctx.fillStyle = 'rgba(90, 127, 165, 0.12)'
   ctx.strokeStyle = BRAND.accent
-  ctx.lineWidth = 2
+  ctx.lineWidth = 3
   ctx.beginPath()
   ctx.roundRect(x - w / 2, y - h / 2, w, h, 8)
   ctx.fill()
@@ -307,25 +302,25 @@ function drawWorkCard(
 
   // Title
   ctx.fillStyle = BRAND.text
-  ctx.font = 'bold 36px Arial, sans-serif'
+  ctx.font = 'bold 40px Arial, sans-serif'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.fillText(title, x - w / 2 + 30, y - h / 2 + 20)
 
   // Subtitle
-  ctx.font = '24px Arial, sans-serif'
+  ctx.font = '28px Arial, sans-serif'
   ctx.fillStyle = BRAND.textDim
-  ctx.fillText(subtitle, x - w / 2 + 30, y - h / 2 + 65)
+  ctx.fillText(subtitle, x - w / 2 + 30, y - h / 2 + 68)
 
   // Badge
   const badgeColor = badge === 'LIVE' ? '#48bb78' : '#718096'
   ctx.fillStyle = badgeColor
   ctx.beginPath()
-  ctx.roundRect(x + w / 2 - 100, y - h / 2 + 30, 80, 40, 6)
+  ctx.roundRect(x + w / 2 - 110, y - h / 2 + 30, 90, 45, 6)
   ctx.fill()
   ctx.fillStyle = '#fff'
-  ctx.font = 'bold 20px Arial, sans-serif'
+  ctx.font = 'bold 24px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(badge, x + w / 2 - 60, y - h / 2 + 50)
+  ctx.fillText(badge, x + w / 2 - 65, y - h / 2 + 52)
 }

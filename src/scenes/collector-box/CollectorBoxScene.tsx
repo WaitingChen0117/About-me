@@ -8,6 +8,7 @@ import './CollectorBox.css'
 export function CollectorBoxScene(props: SceneProps) {
   const { lowPower } = useDeviceProfile()
   const [loaded, setLoaded] = useState(false)
+  const [showFrontButton, setShowFrontButton] = useState(false)
 
   const dpr: [number, number] = lowPower ? [1, 1] : [1, 2]
 
@@ -40,9 +41,18 @@ export function CollectorBoxScene(props: SceneProps) {
           }}
         >
           <Suspense fallback={null}>
-            <BoxWorld {...props} lowPower={lowPower} />
+            <BoxWorld {...props} lowPower={lowPower} onShowFrontButton={setShowFrontButton} />
           </Suspense>
         </Canvas>
+        
+        {showFrontButton && (
+          <button className="front-button" onClick={() => {
+            setShowFrontButton(false)
+            // Trigger return to front - will be handled by BoxWorld
+          }}>
+            ↺ FRONT
+          </button>
+        )}
       </div>
     </div>
   )
