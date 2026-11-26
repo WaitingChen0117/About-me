@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { SoftBox } from '../primitives'
 import type { ThemeMode } from '../types'
 import { getPalette } from '../../themes/palettes'
 import type { DeckPalette } from './themeColors'
@@ -65,10 +66,9 @@ function BackWallShelves({ palette }: { palette: DeckPalette }) {
   return (
     <group>
       {shelfYs.map((y) => (
-        <mesh key={y} position={[0, y, -4.05]} castShadow receiveShadow>
-          <boxGeometry args={[7.2, 0.06, 0.28]} />
+        <SoftBox key={y} args={[7.2, 0.06, 0.28]} radius={0.02} position={[0, y, -4.05]} castShadow receiveShadow>
           <meshStandardMaterial color={palette.wood} roughness={0.72} metalness={0.05} />
-        </mesh>
+        </SoftBox>
       ))}
       {shelfItems.map((item, i) => {
         const color =
@@ -84,8 +84,13 @@ function BackWallShelves({ palette }: { palette: DeckPalette }) {
                   ? palette.panel
                   : palette.metal
         return (
-          <mesh key={i} position={[item.x, item.y, -3.95]} castShadow>
-            <boxGeometry args={[item.w, item.h, item.d]} />
+          <SoftBox
+            key={i}
+            args={[item.w, item.h, item.d]}
+            radius={item.kind === 'book' ? 0.012 : 0.02}
+            position={[item.x, item.y, -3.95]}
+            castShadow
+          >
             <meshStandardMaterial
               color={color}
               emissive={item.kind === 'book' && i % 4 === 0 ? palette.accent : '#000000'}
@@ -93,7 +98,7 @@ function BackWallShelves({ palette }: { palette: DeckPalette }) {
               roughness={item.kind === 'frame' ? 0.45 : 0.7}
               metalness={item.kind === 'box' ? 0.15 : 0.06}
             />
-          </mesh>
+          </SoftBox>
         )
       })}
     </group>

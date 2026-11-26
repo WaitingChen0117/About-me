@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
+import { SoftBox, SoftMonitor } from '../primitives'
 import type { HotspotDef } from '../types'
 import type { SkylinePalette } from './themeColors'
 
@@ -136,32 +137,28 @@ function SkylineHotspotShape({
       // Window-side identity card stand
       return (
         <group>
-          <mesh position={[0, 0.55, 0]} castShadow>
-            <boxGeometry args={[0.12, 1.1, 0.12]} />
+          <SoftBox args={[0.12, 1.1, 0.12]} radius={0.025} position={[0, 0.55, 0]} castShadow>
             <meshStandardMaterial color={palette.metal} roughness={metalRough} metalness={0.45} />
-          </mesh>
-          <mesh position={[0, 1.2, 0.08]} castShadow>
-            <boxGeometry args={[0.72, 0.95, 0.05]} />
+          </SoftBox>
+          <SoftBox args={[0.72, 0.95, 0.05]} radius={0.03} position={[0, 1.2, 0.08]} castShadow>
             <meshStandardMaterial color={palette.panel} roughness={0.55} metalness={0.08} />
-          </mesh>
-          <mesh position={[0, 1.35, 0.12]}>
-            <boxGeometry args={[0.55, 0.42, 0.02]} />
+          </SoftBox>
+          <SoftBox args={[0.55, 0.42, 0.02]} radius={0.015} position={[0, 1.35, 0.12]}>
             <meshStandardMaterial
               color={palette.screen}
               emissive={palette.accent}
               emissiveIntensity={emissive}
               roughness={0.28}
             />
-          </mesh>
-          <mesh position={[0, 0.95, 0.12]}>
-            <boxGeometry args={[0.48, 0.18, 0.02]} />
+          </SoftBox>
+          <SoftBox args={[0.48, 0.18, 0.02]} radius={0.012} position={[0, 0.95, 0.12]}>
             <meshStandardMaterial
               color={palette.accent2}
               emissive={palette.accent2}
               emissiveIntensity={emissive * 0.5}
               roughness={0.4}
             />
-          </mesh>
+          </SoftBox>
         </group>
       )
     case 'experience':
@@ -199,20 +196,23 @@ function SkylineHotspotShape({
       // Projection screen on right bay — emissive face so focus never reads as a black slab
       return (
         <group>
-          <mesh position={[0, 1.35, 0]} castShadow>
-            <boxGeometry args={[0.08, 1.9, 1.55]} />
+          <SoftBox args={[0.08, 1.9, 1.55]} radius={0.03} position={[0, 1.35, 0]} castShadow>
             <meshStandardMaterial color={palette.metal} roughness={metalRough} metalness={0.45} />
-          </mesh>
-          <mesh position={[-0.06, 1.35, 0]}>
-            <boxGeometry args={[0.04, 1.7, 1.35]} />
-            <meshStandardMaterial
-              color={palette.screen}
-              emissive={palette.accent2}
-              emissiveIntensity={Math.max(0.35, emissive + 0.2)}
-              roughness={0.22}
+          </SoftBox>
+          <group position={[-0.06, 1.35, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <SoftMonitor
+              width={1.35}
+              height={1.7}
+              depth={0.04}
+              bezel={0.06}
+              frameColor={palette.metal}
+              screenColor={palette.screen}
+              glow={palette.accent2}
+              emissive={Math.max(0.35, emissive + 0.2)}
+              metalRough={metalRough}
+              castShadow={false}
             />
-          </mesh>
-          {/* Soft projected wash on floor */}
+          </group>
           <mesh position={[-0.55, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[1.1, 1.4]} />
             <meshBasicMaterial
@@ -222,10 +222,9 @@ function SkylineHotspotShape({
               depthWrite={false}
             />
           </mesh>
-          <mesh position={[0, 2.35, 0]} castShadow>
-            <boxGeometry args={[0.18, 0.08, 1.6]} />
+          <SoftBox args={[0.18, 0.08, 1.6]} radius={0.025} position={[0, 2.35, 0]} castShadow>
             <meshStandardMaterial color={palette.metal} metalness={0.5} roughness={0.35} />
-          </mesh>
+          </SoftBox>
         </group>
       )
     case 'projects':
@@ -354,31 +353,34 @@ function SkylineHotspotShape({
       // Wall intercom / entry panel
       return (
         <group>
-          <mesh position={[0, 1.05, 0]} castShadow>
-            <boxGeometry args={[0.45, 0.85, 0.12]} />
+          <SoftBox args={[0.45, 0.85, 0.12]} radius={0.035} position={[0, 1.05, 0]} castShadow>
             <meshStandardMaterial color={palette.metal} roughness={metalRough} metalness={0.5} />
-          </mesh>
-          <mesh position={[0, 1.2, 0.08]}>
-            <boxGeometry args={[0.32, 0.28, 0.03]} />
-            <meshStandardMaterial
-              color={palette.screen}
-              emissive={palette.accent2}
-              emissiveIntensity={emissive}
-              roughness={0.25}
+          </SoftBox>
+          <group position={[0, 1.2, 0.08]}>
+            <SoftMonitor
+              width={0.32}
+              height={0.28}
+              depth={0.03}
+              bezel={0.04}
+              frameColor={palette.metal}
+              screenColor={palette.screen}
+              glow={palette.accent2}
+              emissive={emissive}
+              metalRough={metalRough}
+              castShadow={false}
             />
-          </mesh>
+          </group>
           <mesh position={[0, 0.85, 0.08]}>
-            <cylinderGeometry args={[0.08, 0.08, 0.05, 12]} />
+            <cylinderGeometry args={[0.08, 0.08, 0.05, 14]} />
             <meshStandardMaterial
               color={palette.accent}
               emissive={palette.accent}
               emissiveIntensity={emissive}
             />
           </mesh>
-          <mesh position={[0, 0.55, 0]} castShadow>
-            <boxGeometry args={[0.55, 0.08, 0.18]} />
+          <SoftBox args={[0.55, 0.08, 0.18]} radius={0.025} position={[0, 0.55, 0]} castShadow>
             <meshStandardMaterial color={palette.metal} metalness={0.45} roughness={0.4} />
-          </mesh>
+          </SoftBox>
         </group>
       )
     default:

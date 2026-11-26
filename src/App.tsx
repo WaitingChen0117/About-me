@@ -1,8 +1,15 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { AvatarChat } from './components/AvatarChat'
+import { OperatorSwitcher } from './components/OperatorSwitcher'
 import { PaletteSwitcher } from './components/PaletteSwitcher'
 import { SectionPanel } from './components/SectionPanel'
 import type { SectionId } from './content/sections'
+import {
+  DEFAULT_OPERATOR_LOOK,
+  readStoredOperatorLook,
+  storeOperatorLook,
+  type OperatorLookId,
+} from './scenes/ops-deck/operatorLooks'
 import { defaultSceneId, getScene, switchableScenes } from './scenes/registry'
 import type { CameraCommand, SceneId, ThemeMode } from './scenes/types'
 import {
@@ -35,6 +42,9 @@ export default function App() {
   const [theme, setTheme] = useState<ThemeMode>(
     () => readStoredPaletteId() ?? DEFAULT_PALETTE_ID,
   )
+  const [operatorLook, setOperatorLook] = useState<OperatorLookId>(
+    () => readStoredOperatorLook() ?? DEFAULT_OPERATOR_LOOK,
+  )
   const [activeSection, setActiveSection] = useState<SectionId | null>(null)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [operatorTarget, setOperatorTarget] = useState<SectionId | null>(null)
@@ -58,6 +68,10 @@ export default function App() {
     document.documentElement.setAttribute('data-scene', sceneId)
     storePaletteId(theme)
   }, [theme, sceneId])
+
+  useEffect(() => {
+    storeOperatorLook(operatorLook)
+  }, [operatorLook])
 
   const scene = getScene(sceneId)
   const Scene = scene.Component
@@ -230,6 +244,7 @@ export default function App() {
             ))}
           </div>
           <PaletteSwitcher value={theme} onChange={setTheme} />
+          <OperatorSwitcher value={operatorLook} onChange={setOperatorLook} />
           <button
             type="button"
             className="chip-btn"
@@ -263,6 +278,7 @@ export default function App() {
             onCameraArrive={onCameraArrive}
             flyLock={flyLock}
             labelsAway={Boolean(activeSection)}
+            operatorLook={operatorLook}
           />
         </Suspense>
         {hintVisible ? <div className="hint-toast">{hintLabel}</div> : null}

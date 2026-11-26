@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
+import { SoftBox, SoftMonitor } from '../primitives'
 import type { HotspotDef } from '../types'
 import type { DeckPalette } from './themeColors'
 
@@ -187,18 +188,15 @@ function AboutMonitors({
   return (
     <group>
       {/* Weighted stand base */}
-      <mesh position={[0, 0.76, 0.02]} castShadow receiveShadow>
-        <boxGeometry args={[0.72, 0.05, 0.36]} />
+      <SoftBox args={[0.72, 0.05, 0.36]} radius={0.02} position={[0, 0.76, 0.02]} castShadow receiveShadow>
         <meshStandardMaterial color={palette.metal} roughness={metalRough} metalness={0.42} />
-      </mesh>
-      <mesh position={[0, 0.9, 0.0]} castShadow>
-        <boxGeometry args={[0.1, 0.28, 0.08]} />
+      </SoftBox>
+      <SoftBox args={[0.1, 0.28, 0.08]} radius={0.015} position={[0, 0.9, 0.0]} castShadow>
         <meshStandardMaterial color={palette.metal} roughness={0.48} metalness={0.35} />
-      </mesh>
-      <mesh position={[0, 1.08, -0.02]} castShadow>
-        <boxGeometry args={[0.55, 0.06, 0.08]} />
+      </SoftBox>
+      <SoftBox args={[0.55, 0.06, 0.08]} radius={0.015} position={[0, 1.08, -0.02]} castShadow>
         <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.4} />
-      </mesh>
+      </SoftBox>
 
       <MonitorPanel
         position={[-0.7, 1.28, 0]}
@@ -249,24 +247,20 @@ function AboutMonitors({
       </mesh>
 
       {/* Keyboard with key-cap suggestion */}
-      <mesh position={[0, 0.78, 0.52]} castShadow>
-        <boxGeometry args={[1.2, 0.045, 0.4]} />
+      <SoftBox args={[1.2, 0.045, 0.4]} radius={0.02} position={[0, 0.78, 0.52]} castShadow>
         <meshStandardMaterial color={palette.panel} roughness={panelRough} metalness={0.1} />
-      </mesh>
-      <mesh position={[0, 0.81, 0.52]}>
-        <boxGeometry args={[1.08, 0.02, 0.3]} />
+      </SoftBox>
+      <SoftBox args={[1.08, 0.02, 0.3]} radius={0.01} position={[0, 0.81, 0.52]}>
         <meshStandardMaterial color={palette.metal} roughness={0.55} metalness={0.15} />
-      </mesh>
+      </SoftBox>
 
       {/* Mouse + pad */}
-      <mesh position={[0.78, 0.765, 0.55]} receiveShadow>
-        <boxGeometry args={[0.32, 0.012, 0.38]} />
+      <SoftBox args={[0.32, 0.012, 0.38]} radius={0.01} position={[0.78, 0.765, 0.55]} receiveShadow>
         <meshStandardMaterial color={palette.fabric} roughness={0.92} metalness={0.02} />
-      </mesh>
-      <mesh position={[0.78, 0.79, 0.55]} castShadow>
-        <boxGeometry args={[0.12, 0.04, 0.2]} />
+      </SoftBox>
+      <SoftBox args={[0.12, 0.04, 0.2]} radius={0.018} position={[0.78, 0.79, 0.55]} castShadow>
         <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.3} />
-      </mesh>
+      </SoftBox>
 
       {/* Cable drop under desk lip */}
       <mesh position={[-0.35, 0.55, 0.15]} rotation={[0.2, 0, 0.15]}>
@@ -298,41 +292,35 @@ function MonitorPanel({
   breathName: string
   uiBars: [number, number, number, number][]
 }) {
-  const bezel = 0.07
   return (
     <group position={position}>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[width, height, 0.07]} />
-        <meshStandardMaterial color={palette.metal} roughness={metalRough} metalness={0.42} />
-      </mesh>
-      <mesh name={breathName} position={[0, 0, 0.042]}>
-        <boxGeometry args={[width - bezel, height - bezel, 0.02]} />
-        <meshStandardMaterial
-          color={palette.screen}
-          emissive={glow}
-          emissiveIntensity={emissive}
-          roughness={0.18}
-          metalness={0.04}
-        />
-      </mesh>
-      {uiBars.map(([x, y, w, h], i) => (
-        <mesh key={i} position={[x, y, 0.055]}>
-          <boxGeometry args={[w, h, 0.008]} />
-          <meshStandardMaterial
-            color={i % 2 ? palette.accent2 : palette.panel}
-            emissive={i % 3 === 0 ? glow : palette.accent2}
-            emissiveIntensity={emissive * (i % 3 === 0 ? 0.55 : 0.22)}
-            roughness={0.4}
-            transparent
-            opacity={0.85}
-          />
+      <SoftMonitor
+        width={width}
+        height={height}
+        frameColor={palette.metal}
+        screenColor={palette.screen}
+        glow={glow}
+        emissive={emissive}
+        metalRough={metalRough}
+        breathName={breathName}
+      >
+        {uiBars.map(([x, y, w, h], i) => (
+          <SoftBox key={i} args={[w, h, 0.008]} radius={0.01} position={[x, y, 0.058]}>
+            <meshStandardMaterial
+              color={i % 2 ? palette.accent2 : palette.panel}
+              emissive={i % 3 === 0 ? glow : palette.accent2}
+              emissiveIntensity={emissive * (i % 3 === 0 ? 0.55 : 0.22)}
+              roughness={0.4}
+              transparent
+              opacity={0.85}
+            />
+          </SoftBox>
+        ))}
+        <mesh position={[0, -(height / 2) + 0.04, 0.045]}>
+          <boxGeometry args={[width * 0.35, 0.02, 0.01]} />
+          <meshStandardMaterial color={palette.panel} roughness={0.5} metalness={0.2} />
         </mesh>
-      ))}
-      {/* Bottom chin / logo strip */}
-      <mesh position={[0, -(height / 2) + 0.04, 0.04]}>
-        <boxGeometry args={[width * 0.35, 0.02, 0.01]} />
-        <meshStandardMaterial color={palette.panel} roughness={0.5} metalness={0.2} />
-      </mesh>
+      </SoftMonitor>
     </group>
   )
 }

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { SectionId } from '../content/sections'
-
+import type { OperatorLookId } from './ops-deck/operatorLooks'
 import type { PaletteId } from '../themes/palettes'
 
 export type SceneId = 'ops-deck' | 'craft-lab' | 'skyline-terminal'
@@ -70,6 +70,8 @@ export type SceneProps = {
   flyLock: boolean
   /** Hide world labels while panel is open */
   labelsAway: boolean
+  /** KayKit GLB or beautified procedural vinyl */
+  operatorLook: OperatorLookId
 }
 
 export type SceneModule = {

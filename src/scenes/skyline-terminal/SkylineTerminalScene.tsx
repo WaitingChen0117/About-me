@@ -52,6 +52,7 @@ export function SkylineTerminalScene({
   onCameraArrive,
   flyLock,
   labelsAway,
+  operatorLook,
 }: SceneProps) {
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
   const reducedMotion = usePrefersReducedMotion()
@@ -133,6 +134,7 @@ export function SkylineTerminalScene({
               isTouch={isTouch}
               reducedMotion={reducedMotion}
               homeView={homeView}
+              operatorLook={operatorLook}
             />
           </Suspense>
         </Canvas>

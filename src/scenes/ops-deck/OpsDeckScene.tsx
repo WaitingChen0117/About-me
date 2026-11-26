@@ -48,6 +48,7 @@ export function OpsDeckScene({
   onCameraArrive,
   flyLock,
   labelsAway,
+  operatorLook,
 }: SceneProps) {
   const { lowPower, isTouch, isNarrow } = useDeviceProfile()
   const reducedMotion = usePrefersReducedMotion()
@@ -138,6 +139,7 @@ export function OpsDeckScene({
               reducedMotion={reducedMotion}
               homeView={homeView}
               selectSectionRef={selectSectionRef}
+              operatorLook={operatorLook}
             />
           </Suspense>
         </Canvas>
