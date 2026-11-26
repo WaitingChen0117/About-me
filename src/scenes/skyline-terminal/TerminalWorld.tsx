@@ -13,6 +13,7 @@ import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
 import { Operator3D, type FreeWalkCommand } from '../ops-deck/Operator3D'
+import { SoftBox, SoftColumn, SoftMonitor } from '../primitives'
 import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import {
@@ -244,42 +245,45 @@ export function TerminalWorld({
         <TerminalShell palette={palette} theme={theme} lowPower={lowPower} />
         <CitySkyline palette={palette} theme={theme} lowPower={lowPower} />
 
-        {/* Console desk facing the window */}
-        <mesh position={[0.15, 0.32, -1.15]} receiveShadow castShadow>
-          <boxGeometry args={[3.6, 0.64, 1.35]} />
-          <meshStandardMaterial color={palette.desk} roughness={0.68} metalness={0.12} />
-        </mesh>
-        <mesh position={[0.15, 0.66, -1.15]} receiveShadow>
-          <boxGeometry args={[3.7, 0.05, 1.4]} />
-          <meshStandardMaterial color={palette.panel} roughness={0.55} metalness={0.18} />
-        </mesh>
-        {/* Dual terminal screens on desk */}
-        <mesh position={[-0.55, 1.15, -1.45]} castShadow rotation={[0.08, 0.12, 0]}>
-          <boxGeometry args={[1.15, 0.72, 0.06]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
-        </mesh>
-        <mesh position={[-0.55, 1.15, -1.4]} rotation={[0.08, 0.12, 0]}>
-          <boxGeometry args={[1.0, 0.58, 0.03]} />
+        {/* Console desk — soft chassis + inset top + kick */}
+        <SoftBox args={[3.6, 0.64, 1.35]} radius={0.05} position={[0.15, 0.32, -1.15]} receiveShadow castShadow>
+          <meshStandardMaterial color={palette.desk} roughness={0.62} metalness={0.14} />
+        </SoftBox>
+        <SoftBox args={[3.72, 0.055, 1.42]} radius={0.03} position={[0.15, 0.665, -1.15]} receiveShadow>
+          <meshStandardMaterial color={palette.panel} roughness={0.48} metalness={0.22} />
+        </SoftBox>
+        <SoftBox args={[3.4, 0.08, 0.08]} radius={0.02} position={[0.15, 0.06, -0.52]}>
           <meshStandardMaterial
-            color={palette.screen}
+            color={palette.metal}
             emissive={palette.accent}
-            emissiveIntensity={night ? 0.55 : 0.18}
-            roughness={0.22}
+            emissiveIntensity={night ? 0.35 : 0.08}
+            roughness={0.4}
+            metalness={0.4}
           />
-        </mesh>
-        <mesh position={[0.75, 1.05, -1.5]} castShadow rotation={[0.06, -0.08, 0]}>
-          <boxGeometry args={[0.95, 0.62, 0.06]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
-        </mesh>
-        <mesh position={[0.75, 1.05, -1.45]} rotation={[0.06, -0.08, 0]}>
-          <boxGeometry args={[0.82, 0.5, 0.03]} />
-          <meshStandardMaterial
-            color={palette.screen}
-            emissive={palette.accent2}
-            emissiveIntensity={night ? 0.45 : 0.14}
-            roughness={0.22}
+        </SoftBox>
+        {/* Dual terminal screens */}
+        <group position={[-0.55, 1.15, -1.42]} rotation={[0.08, 0.12, 0]}>
+          <SoftMonitor
+            width={1.15}
+            height={0.72}
+            depth={0.07}
+            frameColor={palette.metal}
+            screenColor={palette.screen}
+            glow={palette.accent}
+            emissive={night ? 0.55 : 0.18}
           />
-        </mesh>
+        </group>
+        <group position={[0.75, 1.05, -1.47]} rotation={[0.06, -0.08, 0]}>
+          <SoftMonitor
+            width={0.95}
+            height={0.62}
+            depth={0.07}
+            frameColor={palette.metal}
+            screenColor={palette.screen}
+            glow={palette.accent2}
+            emissive={night ? 0.45 : 0.14}
+          />
+        </group>
 
         {hotspots.map((spot, i) => (
           <SkylineHotspotMesh
@@ -401,21 +405,18 @@ function TerminalShell({
         [5.35, 1.55, 0.4],
         [5.35, 1.55, 2.4],
       ].map(([x, y, z], i) => (
-        <mesh key={i} position={[x, y, z]} castShadow={!lowPower}>
-          <boxGeometry args={[0.26, 3.1, 0.26]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.5} metalness={0.4} />
-        </mesh>
+        <group key={i} position={[x, y, z]}>
+          <SoftColumn height={3.1} size={0.26} color={palette.metal} castShadow={!lowPower} />
+        </group>
       ))}
-      <mesh position={[-5.35, 3.1, 1.4]}>
-        <boxGeometry args={[0.2, 0.16, 3.2]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.45} roughness={0.4} />
-      </mesh>
-      <mesh position={[5.35, 3.1, 1.4]}>
-        <boxGeometry args={[0.2, 0.16, 3.2]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.45} roughness={0.4} />
-      </mesh>
+      <SoftBox args={[0.2, 0.16, 3.2]} radius={0.035} position={[-5.35, 3.1, 1.4]}>
+        <meshStandardMaterial color={palette.metal} metalness={0.48} roughness={0.38} />
+      </SoftBox>
+      <SoftBox args={[0.2, 0.16, 3.2]} radius={0.035} position={[5.35, 3.1, 1.4]}>
+        <meshStandardMaterial color={palette.metal} metalness={0.48} roughness={0.38} />
+      </SoftBox>
 
-      {/* Open ceiling — beams + cove only (no solid slab; keeps orbit readable) */}
+      {/* Open ceiling — soft beams + cove */}
       {[
         [-3.6, -2.2],
         [-1.2, -2.2],
@@ -425,31 +426,34 @@ function TerminalShell({
         [0, 1.2],
         [3.6, 1.2],
       ].map(([x, z], i) => (
-        <mesh key={i} position={[x, 3.35, z]} castShadow={!lowPower}>
-          <boxGeometry args={[0.16, 0.22, z < 0 ? 3.8 : 3.2]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.4} />
-        </mesh>
+        <SoftBox
+          key={i}
+          args={[0.16, 0.22, z < 0 ? 3.8 : 3.2]}
+          radius={0.035}
+          position={[x, 3.35, z]}
+          castShadow={!lowPower}
+        >
+          <meshStandardMaterial color={palette.metal} roughness={0.42} metalness={0.42} />
+        </SoftBox>
       ))}
-      <mesh position={[0, 3.42, -3.55]}>
-        <boxGeometry args={[10.2, 0.06, 0.2]} />
+      <SoftBox args={[10.2, 0.06, 0.22]} radius={0.025} position={[0, 3.42, -3.55]}>
         <meshStandardMaterial
           color={palette.metal}
           emissive={palette.accent}
           emissiveIntensity={coveGlow}
-          roughness={0.35}
-          metalness={0.4}
+          roughness={0.32}
+          metalness={0.42}
         />
-      </mesh>
-      <mesh position={[0, 3.42, 0.15]}>
-        <boxGeometry args={[9.0, 0.06, 0.16]} />
+      </SoftBox>
+      <SoftBox args={[9.0, 0.06, 0.18]} radius={0.025} position={[0, 3.42, 0.15]}>
         <meshStandardMaterial
           color={palette.metal}
           emissive={palette.glow}
           emissiveIntensity={coveGlow * 0.75}
-          roughness={0.35}
-          metalness={0.4}
+          roughness={0.32}
+          metalness={0.42}
         />
-      </mesh>
+      </SoftBox>
 
       {/* Window frame (back) — open to city */}
       <mesh position={[-5.0, 1.75, -4.2]} castShadow>
@@ -494,10 +498,9 @@ function TerminalShell({
       </mesh>
 
       {/* Window sill ledge (walkable edge stays clear via obstacles) */}
-      <mesh position={[0, 0.28, -3.85]} receiveShadow castShadow>
-        <boxGeometry args={[9.6, 0.2, 0.55]} />
-        <meshStandardMaterial color={palette.ledge} roughness={0.6} metalness={0.12} />
-      </mesh>
+      <SoftBox args={[9.6, 0.2, 0.55]} radius={0.04} position={[0, 0.28, -3.85]} receiveShadow castShadow>
+        <meshStandardMaterial color={palette.ledge} roughness={0.55} metalness={0.14} />
+      </SoftBox>
 
       {/* Floor washes */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.5]}>
@@ -545,15 +548,15 @@ function CitySkyline({
   const night = getPalette(theme).family === 'dark'
   const buildings = useMemo(
     () => [
-      { x: -4.2, w: 0.9, h: 2.8, d: 0.7, lit: true },
-      { x: -3.1, w: 0.7, h: 3.6, d: 0.6, lit: false },
-      { x: -2.1, w: 1.1, h: 2.2, d: 0.8, lit: true },
-      { x: -0.85, w: 0.8, h: 4.2, d: 0.7, lit: true },
-      { x: 0.15, w: 1.0, h: 3.1, d: 0.75, lit: false },
-      { x: 1.2, w: 0.65, h: 3.8, d: 0.55, lit: true },
-      { x: 2.15, w: 0.95, h: 2.5, d: 0.7, lit: true },
-      { x: 3.3, w: 0.75, h: 3.4, d: 0.6, lit: false },
-      { x: 4.25, w: 0.85, h: 2.9, d: 0.65, lit: true },
+      { x: -4.2, w: 0.9, h: 2.8, d: 0.7, lit: true, setback: 0.55 },
+      { x: -3.1, w: 0.7, h: 3.6, d: 0.6, lit: false, setback: 0.4 },
+      { x: -2.1, w: 1.1, h: 2.2, d: 0.8, lit: true, setback: 0.35 },
+      { x: -0.85, w: 0.8, h: 4.2, d: 0.7, lit: true, setback: 0.65 },
+      { x: 0.15, w: 1.0, h: 3.1, d: 0.75, lit: false, setback: 0.45 },
+      { x: 1.2, w: 0.65, h: 3.8, d: 0.55, lit: true, setback: 0.5 },
+      { x: 2.15, w: 0.95, h: 2.5, d: 0.7, lit: true, setback: 0.4 },
+      { x: 3.3, w: 0.75, h: 3.4, d: 0.6, lit: false, setback: 0.55 },
+      { x: 4.25, w: 0.85, h: 2.9, d: 0.65, lit: true, setback: 0.42 },
     ],
     [],
   )
@@ -578,16 +581,43 @@ function CitySkyline({
 
       {buildings.map((b, i) => (
         <group key={i} position={[b.x, b.h / 2, 0.15 - (i % 3) * 0.12]}>
-          <mesh castShadow={!lowPower}>
-            <boxGeometry args={[b.w, b.h, b.d]} />
+          <SoftBox args={[b.w, b.h, b.d]} radius={0.04} castShadow={!lowPower}>
             <meshStandardMaterial
               color={palette.building}
-              roughness={0.85}
-              metalness={0.08}
+              roughness={0.82}
+              metalness={0.1}
               emissive={b.lit ? palette.buildingLit : palette.accent2}
               emissiveIntensity={b.lit ? (night ? 0.45 : 0.08) : night ? 0.08 : 0}
             />
-          </mesh>
+          </SoftBox>
+          {/* Upper setback massing */}
+          <SoftBox
+            args={[b.w * 0.72, b.h * b.setback, b.d * 0.75]}
+            radius={0.03}
+            position={[0, b.h * 0.5 + (b.h * b.setback) * 0.35, -0.04]}
+            castShadow={!lowPower}
+          >
+            <meshStandardMaterial
+              color={palette.building}
+              roughness={0.8}
+              metalness={0.12}
+              emissive={palette.buildingLit}
+              emissiveIntensity={b.lit && night ? 0.25 : 0}
+            />
+          </SoftBox>
+          {/* Antenna / roof spur on taller towers */}
+          {b.h > 3.2 && (
+            <mesh position={[0, b.h * 0.5 + b.h * b.setback * 0.85, 0]}>
+              <cylinderGeometry args={[0.02, 0.025, 0.35, 6]} />
+              <meshStandardMaterial
+                color={palette.metal}
+                emissive={palette.accent}
+                emissiveIntensity={night ? 0.4 : 0.08}
+                metalness={0.5}
+                roughness={0.35}
+              />
+            </mesh>
+          )}
           {/* Window rows */}
           {!lowPower &&
             Array.from({ length: Math.floor(b.h / 0.45) }, (_, row) => (

@@ -13,6 +13,7 @@ import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
 import { Operator3D, type FreeWalkCommand } from '../ops-deck/Operator3D'
+import { SoftBox, SoftColumn, SoftMonitor } from '../primitives'
 import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import {
@@ -244,34 +245,52 @@ export function LabWorld({
       <group ref={labGroup}>
         <WorkshopShell palette={palette} theme={theme} lowPower={lowPower} />
 
-        {/* Central workbench island */}
-        <mesh position={[0.2, 0.2, 0.15]} receiveShadow castShadow>
-          <boxGeometry args={[4.8, 0.4, 2.8]} />
-          <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.08} />
-        </mesh>
-        <mesh position={[0.2, 0.42, 0.15]} receiveShadow>
-          <boxGeometry args={[4.9, 0.05, 2.9]} />
-          <meshStandardMaterial color={palette.desk} roughness={0.62} metalness={0.12} />
-        </mesh>
+        {/* Central workbench island — beveled slab + edge rail */}
+        <SoftBox args={[4.8, 0.4, 2.8]} radius={0.06} position={[0.2, 0.2, 0.15]} receiveShadow castShadow>
+          <meshStandardMaterial color={palette.wood} roughness={0.68} metalness={0.1} />
+        </SoftBox>
+        <SoftBox args={[4.95, 0.06, 2.95]} radius={0.035} position={[0.2, 0.43, 0.15]} receiveShadow>
+          <meshStandardMaterial color={palette.desk} roughness={0.55} metalness={0.14} />
+        </SoftBox>
+        {/* Undershelf + tool peg strip */}
+        <SoftBox args={[4.4, 0.05, 2.4]} radius={0.02} position={[0.2, 0.05, 0.15]}>
+          <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
+        </SoftBox>
+        <SoftBox args={[3.6, 0.04, 0.08]} radius={0.015} position={[0.2, 0.48, -1.15]}>
+          <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.45} />
+        </SoftBox>
 
-        {/* Pendant fixtures over bench — theme-linked emissive */}
+        {/* Pendant fixtures — flared shade + glow ring */}
         {[
           [-1.1, 2.85, 0.1],
           [1.4, 2.85, 0.1],
         ].map(([x, y, z], i) => (
           <group key={i} position={[x, y, z]}>
             <mesh>
-              <cylinderGeometry args={[0.04, 0.04, 0.55, 8]} />
-              <meshStandardMaterial color={palette.metal} metalness={0.5} roughness={0.35} />
+              <cylinderGeometry args={[0.035, 0.035, 0.55, 12]} />
+              <meshStandardMaterial color={palette.metal} metalness={0.55} roughness={0.32} />
             </mesh>
             <mesh position={[0, -0.38, 0]}>
-              <cylinderGeometry args={[0.22, 0.28, 0.16, 16]} />
+              <cylinderGeometry args={[0.2, 0.3, 0.18, 20]} />
               <meshStandardMaterial
                 color={palette.metal}
                 emissive={palette.accent}
                 emissiveIntensity={duty ? 0.85 : 0.16}
-                roughness={0.35}
-                metalness={0.4}
+                roughness={0.32}
+                metalness={0.42}
+              />
+            </mesh>
+            <mesh position={[0, -0.48, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.12, 0.22, 24]} />
+              <meshStandardMaterial
+                color={palette.accent}
+                emissive={palette.accent}
+                emissiveIntensity={duty ? 0.55 : 0.12}
+                roughness={0.4}
+                metalness={0.2}
+                transparent
+                opacity={0.85}
+                side={THREE.DoubleSide}
               />
             </mesh>
           </group>
@@ -422,21 +441,19 @@ function WorkshopShell({
         />
       </mesh>
 
-      {/* Right side — semi-open: columns + beam instead of full wall */}
+      {/* Right side — soft columns + beam */}
       {[
         [5.35, 1.55, -3.2],
         [5.35, 1.55, -0.6],
         [5.35, 1.55, 2.0],
       ].map(([x, y, z], i) => (
-        <mesh key={i} position={[x, y, z]} castShadow>
-          <boxGeometry args={[0.28, 3.1, 0.28]} />
-          <meshStandardMaterial color={palette.metal} roughness={0.5} metalness={0.4} />
-        </mesh>
+        <group key={i} position={[x, y, z]}>
+          <SoftColumn height={3.1} size={0.28} color={palette.metal} />
+        </group>
       ))}
-      <mesh position={[5.35, 3.05, -0.6]}>
-        <boxGeometry args={[0.22, 0.18, 6.0]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.45} roughness={0.4} />
-      </mesh>
+      <SoftBox args={[0.22, 0.18, 6.0]} radius={0.04} position={[5.35, 3.05, -0.6]}>
+        <meshStandardMaterial color={palette.metal} metalness={0.48} roughness={0.38} />
+      </SoftBox>
       {/* Partial rear-right panel */}
       <mesh position={[5.35, 1.4, -2.0]} receiveShadow>
         <boxGeometry args={[0.1, 2.8, 2.2]} />
@@ -444,26 +461,24 @@ function WorkshopShell({
       </mesh>
 
       {/* Ceiling cove strip */}
-      <mesh position={[0, 3.3, -2.6]}>
-        <boxGeometry args={[9.5, 0.05, 0.2]} />
+      <SoftBox args={[9.5, 0.06, 0.22]} radius={0.025} position={[0, 3.3, -2.6]}>
         <meshStandardMaterial
           color={palette.metal}
           emissive={palette.accent}
           emissiveIntensity={coveGlow}
-          roughness={0.35}
-          metalness={0.4}
+          roughness={0.32}
+          metalness={0.42}
         />
-      </mesh>
-      <mesh position={[0, 3.3, 0.4]}>
-        <boxGeometry args={[8.5, 0.05, 0.18]} />
+      </SoftBox>
+      <SoftBox args={[8.5, 0.06, 0.2]} radius={0.025} position={[0, 3.3, 0.4]}>
         <meshStandardMaterial
           color={palette.metal}
           emissive={palette.glow}
           emissiveIntensity={coveGlow * 0.85}
-          roughness={0.35}
-          metalness={0.4}
+          roughness={0.32}
+          metalness={0.42}
         />
-      </mesh>
+      </SoftBox>
 
       {/* Floor zone washes — kept on lite for room read */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, -3.4]}>
@@ -550,37 +565,37 @@ function AssistMonitor({
         document.body.style.cursor = 'auto'
       }}
     >
-      <mesh position={[0, 0.55, 0]} castShadow>
-        <boxGeometry args={[0.95, 0.72, 0.08]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
-      </mesh>
-      <mesh position={[0, 0.55, 0.05]}>
-        <boxGeometry args={[0.82, 0.58, 0.03]} />
-        <meshStandardMaterial
-          color={palette.screen}
-          emissive={palette.accent2}
-          emissiveIntensity={
-            open || hovered ? (duty ? 0.38 : 0.24) : duty ? 0.16 : 0.08
-          }
-          roughness={0.22}
+      <group position={[0, 0.55, 0]}>
+        <SoftMonitor
+          width={0.95}
+          height={0.72}
+          depth={0.08}
+          frameColor={palette.metal}
+          screenColor={palette.screen}
+          glow={palette.accent2}
+          emissive={open || hovered ? (duty ? 0.38 : 0.24) : duty ? 0.16 : 0.08}
+          metalRough={0.4}
         />
-      </mesh>
-      <mesh position={[0, 0.12, 0.05]} castShadow>
-        <boxGeometry args={[0.35, 0.12, 0.25]} />
+      </group>
+      <SoftBox args={[0.35, 0.12, 0.25]} radius={0.03} position={[0, 0.12, 0.05]} castShadow>
         <meshStandardMaterial color={palette.panel} roughness={0.55} />
-      </mesh>
+      </SoftBox>
       <mesh position={[-0.55, 0.7, -0.05]} castShadow>
-        <cylinderGeometry args={[0.04, 0.04, 0.7, 8]} />
+        <cylinderGeometry args={[0.04, 0.04, 0.7, 12]} />
         <meshStandardMaterial color={palette.metal} metalness={0.5} roughness={0.35} />
       </mesh>
-      <mesh position={[-0.55, 1.05, 0.15]} castShadow>
-        <boxGeometry args={[0.22, 0.08, 0.35]} />
+      <SoftBox
+        args={[0.22, 0.08, 0.35]}
+        radius={0.025}
+        position={[-0.55, 1.05, 0.15]}
+        castShadow
+      >
         <meshStandardMaterial
           color={palette.accent}
           emissive={palette.accent}
           emissiveIntensity={open ? (duty ? 0.35 : 0.18) : duty ? 0.14 : 0.06}
         />
-      </mesh>
+      </SoftBox>
       {(open || hovered) && (
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.55, 0.68, 32]} />

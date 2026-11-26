@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
 import { SceneCameraRig } from '../camera/SceneCameraRig'
 import { WorldLabels } from '../labels/WorldLabels'
+import { SoftBox } from '../primitives'
 import { getPalette } from '../../themes/palettes'
 import type { CameraCommand, CameraView, HotspotDef, ThemeMode } from '../types'
 import {
@@ -504,7 +505,7 @@ export function DeckWorld({
         <meshStandardMaterial color={palette.floor} roughness={0.92} metalness={0.03} />
       </mesh>
 
-      {/* Area rug under desk */}
+      {/* Area rug under desk — soft rounded feel via layered planes */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.004, 0.35]} receiveShadow>
         <planeGeometry args={[5.4, 4.2]} />
         <meshStandardMaterial
@@ -513,6 +514,15 @@ export function DeckWorld({
           metalness={0.02}
           transparent
           opacity={dark ? 0.55 : 0.72}
+        />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.006, 0.35]}>
+        <planeGeometry args={[5.05, 3.85]} />
+        <meshBasicMaterial
+          color={dark ? palette.accent2 : palette.wood}
+          transparent
+          opacity={dark ? 0.06 : 0.08}
+          depthWrite={false}
         />
       </mesh>
 
@@ -527,30 +537,35 @@ export function DeckWorld({
       <group ref={roomGroup}>
         <StudioShell palette={palette} theme={theme} lowPower={lowPower} />
 
-        {/* Main desk surface */}
-        <mesh position={[0.1, 0.72, -0.35]} receiveShadow castShadow>
-          <boxGeometry args={[4.6, 0.08, 2.0]} />
-          <meshStandardMaterial color={palette.desk} roughness={0.55} metalness={0.08} />
-        </mesh>
-        {/* Desk edge trim */}
-        <mesh position={[0.1, 0.68, -0.35]} receiveShadow>
-          <boxGeometry args={[4.7, 0.04, 2.1]} />
+        {/* Main desk — beveled top + apron + footed legs */}
+        <SoftBox args={[4.6, 0.09, 2.0]} radius={0.04} position={[0.1, 0.725, -0.35]} receiveShadow castShadow>
+          <meshStandardMaterial color={palette.desk} roughness={0.5} metalness={0.1} />
+        </SoftBox>
+        <SoftBox args={[4.72, 0.05, 2.12]} radius={0.03} position={[0.1, 0.675, -0.35]} receiveShadow>
+          <meshStandardMaterial color={palette.wood} roughness={0.58} metalness={0.08} />
+        </SoftBox>
+        {/* Front cable apron */}
+        <SoftBox args={[4.2, 0.22, 0.06]} radius={0.02} position={[0.1, 0.55, 0.62]}>
           <meshStandardMaterial color={palette.wood} roughness={0.62} metalness={0.06} />
-        </mesh>
-        {/* Desk legs */}
+        </SoftBox>
         {[
           [-2.0, 0.34, -1.15],
           [2.2, 0.34, -1.15],
           [-2.0, 0.34, 0.45],
           [2.2, 0.34, 0.45],
         ].map(([x, y, z], i) => (
-          <mesh key={i} position={[x, y, z]} castShadow>
-            <boxGeometry args={[0.1, 0.68, 0.1]} />
-            <meshStandardMaterial color={palette.metal} roughness={0.5} metalness={0.3} />
-          </mesh>
+          <group key={i} position={[x, y, z]}>
+            <SoftBox args={[0.1, 0.62, 0.1]} radius={0.02} castShadow>
+              <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.38} />
+            </SoftBox>
+            <mesh position={[0, -0.32, 0]} castShadow>
+              <cylinderGeometry args={[0.07, 0.08, 0.05, 12]} />
+              <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.45} />
+            </mesh>
+          </group>
         ))}
 
-        {/* Task chair — click to sit; seat+back swivel with seated look-at */}
+        {/* Task chair — finer pedestal, casters, lumbar, armrests */}
         <group
           position={CHAIR_POSITION}
           onClick={(e) => {
@@ -568,32 +583,74 @@ export function DeckWorld({
             document.body.style.cursor = 'auto'
           }}
         >
-          {/* Fixed pedestal + base (does not yaw) */}
-          <mesh position={[0, 0.2, 0]} castShadow>
-            <cylinderGeometry args={[0.06, 0.08, 0.35, 10]} />
-            <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.4} />
+          <mesh position={[0, 0.22, 0]} castShadow>
+            <cylinderGeometry args={[0.055, 0.075, 0.38, 14]} />
+            <meshStandardMaterial color={palette.metal} roughness={0.35} metalness={0.48} />
           </mesh>
           <mesh position={[0, 0.05, 0]} castShadow>
-            <cylinderGeometry args={[0.32, 0.32, 0.05, 16]} />
-            <meshStandardMaterial color={palette.metal} roughness={0.45} metalness={0.35} />
+            <cylinderGeometry args={[0.3, 0.3, 0.04, 20]} />
+            <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.42} />
           </mesh>
-          {/* Swivel: cushion + backrest turn with the seated operator; idle faces aisle */}
+          {/* Five caster arms */}
+          {[0, 1, 2, 3, 4].map((i) => {
+            const a = (i / 5) * Math.PI * 2
+            return (
+              <group key={i} rotation={[0, a, 0]}>
+                <mesh position={[0.22, 0.05, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+                  <cylinderGeometry args={[0.018, 0.022, 0.28, 8]} />
+                  <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.45} />
+                </mesh>
+                <mesh position={[0.36, 0.04, 0]} castShadow>
+                  <sphereGeometry args={[0.045, 12, 10]} />
+                  <meshStandardMaterial color={palette.panel} roughness={0.55} metalness={0.2} />
+                </mesh>
+              </group>
+            )
+          })}
           <group ref={chairSwivelRef} rotation={[0, CHAIR_REST_SWIVEL, 0]}>
-            <mesh position={[0, 0.42, 0]} castShadow>
-              <boxGeometry args={[0.72, 0.08, 0.68]} />
+            <SoftBox
+              args={[0.74, 0.09, 0.7]}
+              radius={0.04}
+              position={[0, 0.42, 0]}
+              castShadow
+            >
               <meshStandardMaterial
                 color={palette.fabric}
-                roughness={0.88}
+                roughness={0.86}
                 metalness={0.04}
                 emissive={palette.accent}
                 emissiveIntensity={chairHovered || seated ? 0.12 : 0}
               />
-            </mesh>
-            {/* Backrest on local +Z; at REST_SWIVEL (−π) backrest faces desk, seat opens to +Z aisle */}
-            <mesh position={[0, 0.85, 0.28]} castShadow>
-              <boxGeometry args={[0.7, 0.75, 0.08]} />
+            </SoftBox>
+            {/* Seat side bolsters */}
+            <mesh position={[-0.34, 0.48, 0]} castShadow>
+              <capsuleGeometry args={[0.04, 0.42, 4, 10]} />
               <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
             </mesh>
+            <mesh position={[0.34, 0.48, 0]} castShadow>
+              <capsuleGeometry args={[0.04, 0.42, 4, 10]} />
+              <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
+            </mesh>
+            {/* Backrest + lumbar pillow */}
+            <SoftBox args={[0.7, 0.78, 0.09]} radius={0.04} position={[0, 0.88, 0.28]} castShadow>
+              <meshStandardMaterial color={palette.fabric} roughness={0.88} metalness={0.04} />
+            </SoftBox>
+            <mesh position={[0, 0.72, 0.22]} castShadow>
+              <capsuleGeometry args={[0.08, 0.35, 6, 12]} />
+              <meshStandardMaterial color={palette.fabric} roughness={0.9} metalness={0.03} />
+            </mesh>
+            {/* Armrests */}
+            {([-1, 1] as const).map((side) => (
+              <group key={side} position={[side * 0.4, 0.55, 0.02]}>
+                <mesh castShadow>
+                  <cylinderGeometry args={[0.025, 0.028, 0.28, 10]} />
+                  <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.45} />
+                </mesh>
+                <SoftBox args={[0.08, 0.05, 0.38]} radius={0.02} position={[0, 0.16, -0.02]} castShadow>
+                  <meshStandardMaterial color={palette.fabric} roughness={0.85} metalness={0.05} />
+                </SoftBox>
+              </group>
+            ))}
           </group>
           {(chairHovered || seated) && (
             <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -715,7 +772,7 @@ function StudioShell({
 
   return (
     <group>
-      {/* Back wall */}
+      {/* Back wall + recessed panel lines */}
       <mesh position={[0, 1.7, -4.35]} receiveShadow castShadow>
         <boxGeometry args={[11.2, 3.4, 0.16]} />
         <meshStandardMaterial
@@ -726,22 +783,31 @@ function StudioShell({
           emissiveIntensity={wallEmissive}
         />
       </mesh>
+      {!lowPower &&
+        [-3.2, -1.05, 1.05, 3.2].map((x) => (
+          <mesh key={x} position={[x, 1.7, -4.25]}>
+            <boxGeometry args={[0.03, 2.8, 0.02]} />
+            <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.06} />
+          </mesh>
+        ))}
+      {/* Crown molding */}
+      <SoftBox args={[11.0, 0.1, 0.14]} radius={0.02} position={[0, 3.28, -4.2]}>
+        <meshStandardMaterial color={palette.wood} roughness={0.62} metalness={0.08} />
+      </SoftBox>
       {/* Rear shelf ledge */}
-      <mesh position={[0, 0.55, -3.95]} receiveShadow castShadow>
-        <boxGeometry args={[8.2, 0.1, 0.55]} />
-        <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.05} />
-      </mesh>
-      <mesh position={[0, 0.28, -3.95]} castShadow>
-        <boxGeometry args={[8.0, 0.5, 0.45]} />
-        <meshStandardMaterial color={palette.desk} roughness={0.65} metalness={0.06} />
-      </mesh>
+      <SoftBox args={[8.2, 0.1, 0.55]} radius={0.03} position={[0, 0.55, -3.95]} receiveShadow castShadow>
+        <meshStandardMaterial color={palette.wood} roughness={0.68} metalness={0.06} />
+      </SoftBox>
+      <SoftBox args={[8.0, 0.5, 0.45]} radius={0.03} position={[0, 0.28, -3.95]} castShadow>
+        <meshStandardMaterial color={palette.desk} roughness={0.62} metalness={0.07} />
+      </SoftBox>
 
       {/* Left wall */}
       <mesh position={[-5.45, 1.6, -0.4]} receiveShadow castShadow>
         <boxGeometry args={[0.14, 3.2, 8.2]} />
         <meshStandardMaterial color={palette.wall} roughness={0.9} metalness={0.03} />
       </mesh>
-      {/* Window pane */}
+      {/* Window pane + thicker frame with sill */}
       <mesh position={[-5.36, 1.9, -1.0]}>
         <boxGeometry args={[0.06, 1.4, 2.8]} />
         <meshStandardMaterial
@@ -754,15 +820,20 @@ function StudioShell({
           opacity={dark ? 0.85 : 0.55}
         />
       </mesh>
-      {/* Window frame */}
-      <mesh position={[-5.38, 1.9, -1.0]}>
-        <boxGeometry args={[0.04, 1.55, 3.0]} />
-        <meshStandardMaterial color={palette.wood} roughness={0.6} metalness={0.08} />
-      </mesh>
+      <SoftBox args={[0.06, 1.6, 3.05]} radius={0.015} position={[-5.39, 1.9, -1.0]}>
+        <meshStandardMaterial color={palette.wood} roughness={0.55} metalness={0.1} />
+      </SoftBox>
       <mesh position={[-5.37, 1.9, -1.0]}>
-        <boxGeometry args={[0.05, 0.06, 2.8]} />
+        <boxGeometry args={[0.05, 0.05, 2.8]} />
         <meshStandardMaterial color={palette.wood} roughness={0.55} metalness={0.08} />
       </mesh>
+      <mesh position={[-5.37, 1.2, -1.0]}>
+        <boxGeometry args={[0.05, 0.05, 2.8]} />
+        <meshStandardMaterial color={palette.wood} roughness={0.55} metalness={0.08} />
+      </mesh>
+      <SoftBox args={[0.12, 0.08, 3.1]} radius={0.02} position={[-5.32, 1.12, -1.0]}>
+        <meshStandardMaterial color={palette.wood} roughness={0.6} metalness={0.08} />
+      </SoftBox>
 
       {/* Right wall — partial open */}
       <mesh position={[5.45, 1.55, -1.6]} receiveShadow>
@@ -774,31 +845,28 @@ function StudioShell({
         <meshStandardMaterial color={palette.wood} roughness={0.7} metalness={0.05} />
       </mesh>
       {/* Doorway frame */}
-      <mesh position={[5.45, 2.95, 1.35]}>
-        <boxGeometry args={[0.18, 0.18, 2.4]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.35} roughness={0.45} />
-      </mesh>
-      <mesh position={[5.45, 1.4, 0.25]}>
-        <boxGeometry args={[0.18, 3.0, 0.18]} />
-        <meshStandardMaterial color={palette.metal} metalness={0.35} roughness={0.45} />
-      </mesh>
+      <SoftBox args={[0.2, 0.18, 2.4]} radius={0.03} position={[5.45, 2.95, 1.35]}>
+        <meshStandardMaterial color={palette.metal} metalness={0.4} roughness={0.42} />
+      </SoftBox>
+      <SoftBox args={[0.2, 3.0, 0.2]} radius={0.03} position={[5.45, 1.4, 0.25]}>
+        <meshStandardMaterial color={palette.metal} metalness={0.4} roughness={0.42} />
+      </SoftBox>
 
-      {/* Ceiling strip lights */}
+      {/* Ceiling strip lights — rounded housings */}
       {[
         [0, 3.25, -2.6],
         [0, 3.25, 0.1],
         [0, 3.25, 2.0],
       ].map(([x, y, z], i) => (
-        <mesh key={i} position={[x, y, z]}>
-          <boxGeometry args={[8.5, 0.05, 0.18]} />
+        <SoftBox key={i} args={[8.5, 0.06, 0.2]} radius={0.025} position={[x, y, z]}>
           <meshStandardMaterial
             color={palette.metal}
             emissive={dark ? palette.accent : palette.lamp}
             emissiveIntensity={coveEmissive * (i === 1 ? 1.2 : 0.8)}
-            roughness={0.4}
-            metalness={0.35}
+            roughness={0.38}
+            metalness={0.38}
           />
-        </mesh>
+        </SoftBox>
       ))}
 
       {/* Soft floor wash bands (subtle — no ops grid) */}

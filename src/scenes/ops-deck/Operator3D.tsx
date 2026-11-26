@@ -223,8 +223,13 @@ export function Operator3D({
   const armR = useRef<THREE.Group>(null)
   const torso = useRef<THREE.Mesh>(null)
   const marker = useRef<THREE.Mesh>(null)
+  const eyeLidL = useRef<THREE.Mesh>(null)
+  const eyeLidR = useRef<THREE.Mesh>(null)
+  const breathRoot = useRef<THREE.Group>(null)
   /** 0 = standing legs, 1 = explicit L-sit leg meshes */
   const sitAmountRef = useRef(0)
+  const blinkT = useRef(3.2)
+  const blinkPhase = useRef(0)
 
   const publishSeatYaw = (yaw: number) => {
     if (seatYawRef) seatYawRef.current = yaw
@@ -811,6 +816,28 @@ export function Operator3D({
       const mat = torso.current.material as THREE.MeshStandardMaterial
       mat.emissiveIntensity = hovered || walking ? 0.08 : 0.02
     }
+
+    // Idle breath + occasional blink (skip heavy sit/walk phases).
+    const idle =
+      !isWalking &&
+      seatPhase.current === 'none' &&
+      sitAmountRef.current < 0.05
+    if (breathRoot.current) {
+      const breath = idle ? 1 + Math.sin(performance.now() * 0.0022) * 0.012 : 1
+      breathRoot.current.scale.set(1, breath, 1)
+    }
+    blinkT.current -= delta
+    if (blinkT.current <= 0) {
+      blinkPhase.current = 1
+      blinkT.current = 2.6 + Math.random() * 3.4
+    }
+    if (blinkPhase.current > 0) {
+      blinkPhase.current = Math.max(0, blinkPhase.current - delta * 9)
+    }
+    const lid = blinkPhase.current > 0.5 ? (1 - blinkPhase.current) * 2 : blinkPhase.current * 2
+    const lidScaleY = 1 - Math.min(1, lid) * 0.92
+    if (eyeLidL.current) eyeLidL.current.scale.y = lidScaleY
+    if (eyeLidR.current) eyeLidR.current.scale.y = lidScaleY
   })
 
   return (
@@ -831,18 +858,22 @@ export function Operator3D({
         document.body.style.cursor = 'auto'
       }}
     >
-      {/* Pop-Mart / blind-box operator from turnaround sheet */}
-      <ChibiFigure
-        materials={materials}
-        torsoRef={torso}
-        armL={armL}
-        armR={armR}
-        legL={legL}
-        legR={legR}
-        calfL={calfL}
-        calfR={calfR}
-        sitAmountRef={sitAmountRef}
-      />
+      {/* Pop-Mart / blind-box operator — higher-fidelity procedural turnaround */}
+      <group ref={breathRoot}>
+        <ChibiFigure
+          materials={materials}
+          torsoRef={torso}
+          armL={armL}
+          armR={armR}
+          legL={legL}
+          legR={legR}
+          calfL={calfL}
+          calfR={calfR}
+          sitAmountRef={sitAmountRef}
+          eyeLidL={eyeLidL}
+          eyeLidR={eyeLidR}
+        />
+      </group>
 
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
         <ringGeometry args={[0.18, 0.28, 24]} />
@@ -919,6 +950,8 @@ function ChibiFigure({
   calfL,
   calfR,
   sitAmountRef,
+  eyeLidL,
+  eyeLidR,
 }: {
   materials: FigMats
   torsoRef: RefObject<THREE.Mesh | null>
@@ -929,6 +962,8 @@ function ChibiFigure({
   calfL: RefObject<THREE.Group | null>
   calfR: RefObject<THREE.Group | null>
   sitAmountRef: MutableRefObject<number>
+  eyeLidL: RefObject<THREE.Mesh | null>
+  eyeLidR: RefObject<THREE.Mesh | null>
 }) {
   const standLegs = useRef<THREE.Group>(null)
   const sitLegs = useRef<THREE.Group>(null)
@@ -947,45 +982,77 @@ function ChibiFigure({
 
   return (
     <group>
-      {/* —— Head (oversized vinyl ball) —— */}
+      {/* —— Head (oversized vinyl ball, denser segments) —— */}
       <group position={[0, 0.94, 0]}>
         <mesh castShadow material={m.skin}>
-          <sphereGeometry args={[0.24, 28, 22]} />
+          <sphereGeometry args={[0.245, 40, 32]} />
+        </mesh>
+        {/* Soft cheek volume */}
+        <mesh position={[-0.14, -0.04, 0.14]} scale={[0.7, 0.55, 0.55]} material={m.skin}>
+          <sphereGeometry args={[0.08, 16, 12]} />
+        </mesh>
+        <mesh position={[0.14, -0.04, 0.14]} scale={[0.7, 0.55, 0.55]} material={m.skin}>
+          <sphereGeometry args={[0.08, 16, 12]} />
+        </mesh>
+        {/* Blush discs */}
+        <mesh position={[-0.13, -0.035, 0.2]} scale={[1, 0.55, 0.35]}>
+          <sphereGeometry args={[0.04, 12, 10]} />
+          <meshStandardMaterial color="#e8a090" roughness={0.85} transparent opacity={0.45} depthWrite={false} />
+        </mesh>
+        <mesh position={[0.13, -0.035, 0.2]} scale={[1, 0.55, 0.35]}>
+          <sphereGeometry args={[0.04, 12, 10]} />
+          <meshStandardMaterial color="#e8a090" roughness={0.85} transparent opacity={0.45} depthWrite={false} />
         </mesh>
 
         {/* Ears */}
-        <mesh position={[-0.225, 0.015, -0.02]} castShadow material={m.skin}>
-          <sphereGeometry args={[0.042, 12, 10]} />
+        <mesh position={[-0.232, 0.02, -0.02]} castShadow material={m.skin}>
+          <sphereGeometry args={[0.048, 16, 14]} />
         </mesh>
-        <mesh position={[0.225, 0.015, -0.02]} castShadow material={m.skin}>
-          <sphereGeometry args={[0.042, 12, 10]} />
+        <mesh position={[0.232, 0.02, -0.02]} castShadow material={m.skin}>
+          <sphereGeometry args={[0.048, 16, 14]} />
+        </mesh>
+        <mesh position={[-0.232, 0.02, -0.01]} scale={[0.7, 0.7, 0.45]} material={m.skin}>
+          <sphereGeometry args={[0.028, 10, 8]} />
+        </mesh>
+        <mesh position={[0.232, 0.02, -0.01]} scale={[0.7, 0.7, 0.45]} material={m.skin}>
+          <sphereGeometry args={[0.028, 10, 8]} />
         </mesh>
 
-        {/* Eyes — kept clear of bangs so round glasses read */}
-        <mesh position={[-0.078, 0.01, 0.2]} material={m.eyeWhite}>
-          <sphereGeometry args={[0.042, 12, 10]} />
-        </mesh>
-        <mesh position={[0.078, 0.01, 0.2]} material={m.eyeWhite}>
-          <sphereGeometry args={[0.042, 12, 10]} />
-        </mesh>
-        <mesh position={[-0.078, 0.006, 0.232]} material={m.eye}>
-          <sphereGeometry args={[0.026, 12, 10]} />
-        </mesh>
-        <mesh position={[0.078, 0.006, 0.232]} material={m.eye}>
-          <sphereGeometry args={[0.026, 12, 10]} />
-        </mesh>
-        <mesh position={[-0.066, 0.018, 0.25]}>
-          <sphereGeometry args={[0.007, 8, 6]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-        <mesh position={[0.09, 0.018, 0.25]}>
-          <sphereGeometry args={[0.007, 8, 6]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+        {/* Eyes — lids scale for blink */}
+        <group position={[-0.078, 0.01, 0.2]}>
+          <mesh material={m.eyeWhite}>
+            <sphereGeometry args={[0.044, 16, 14]} />
+          </mesh>
+          <mesh position={[0, 0, 0.032]} material={m.eye}>
+            <sphereGeometry args={[0.027, 14, 12]} />
+          </mesh>
+          <mesh position={[0.012, 0.012, 0.048]}>
+            <sphereGeometry args={[0.008, 8, 6]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh ref={eyeLidL} position={[0, 0.01, 0.01]} scale={[1.05, 1, 1.05]} material={m.skin}>
+            <sphereGeometry args={[0.046, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+          </mesh>
+        </group>
+        <group position={[0.078, 0.01, 0.2]}>
+          <mesh material={m.eyeWhite}>
+            <sphereGeometry args={[0.044, 16, 14]} />
+          </mesh>
+          <mesh position={[0, 0, 0.032]} material={m.eye}>
+            <sphereGeometry args={[0.027, 14, 12]} />
+          </mesh>
+          <mesh position={[0.012, 0.012, 0.048]}>
+            <sphereGeometry args={[0.008, 8, 6]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh ref={eyeLidR} position={[0, 0.01, 0.01]} scale={[1.05, 1, 1.05]} material={m.skin}>
+            <sphereGeometry args={[0.046, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+          </mesh>
+        </group>
 
         {/* Tiny mouth */}
-        <mesh position={[0, -0.06, 0.225]} material={m.glasses}>
-          <sphereGeometry args={[0.012, 8, 6]} />
+        <mesh position={[0, -0.062, 0.228]} scale={[1.2, 0.55, 0.7]} material={m.glasses}>
+          <sphereGeometry args={[0.014, 10, 8]} />
         </mesh>
 
         <Glasses materials={m} />
@@ -994,99 +1061,119 @@ function ChibiFigure({
 
       {/* —— Oversized black hoodie torso —— */}
       <mesh ref={torsoRef} position={[0, 0.52, 0]} castShadow material={m.hoodie}>
-        <capsuleGeometry args={[0.2, 0.22, 8, 16]} />
+        <capsuleGeometry args={[0.205, 0.24, 10, 20]} />
       </mesh>
-      {/* Extra bulk for oversized silhouette */}
-      <mesh position={[0, 0.58, 0.02]} castShadow material={m.hoodie}>
-        <sphereGeometry args={[0.24, 20, 16]} />
+      <mesh position={[0, 0.58, 0.03]} castShadow material={m.hoodie}>
+        <sphereGeometry args={[0.245, 28, 22]} />
+      </mesh>
+      {/* Shoulder pads */}
+      <mesh position={[-0.2, 0.68, 0]} scale={[0.7, 0.55, 0.75]} castShadow material={m.hoodie}>
+        <sphereGeometry args={[0.12, 16, 12]} />
+      </mesh>
+      <mesh position={[0.2, 0.68, 0]} scale={[0.7, 0.55, 0.75]} castShadow material={m.hoodie}>
+        <sphereGeometry args={[0.12, 16, 12]} />
       </mesh>
       {/* Hoodie hem rib */}
-      <mesh position={[0, 0.34, 0]} castShadow material={m.hoodie}>
-        <cylinderGeometry args={[0.21, 0.2, 0.06, 20]} />
+      <mesh position={[0, 0.335, 0]} castShadow material={m.hoodie}>
+        <cylinderGeometry args={[0.215, 0.2, 0.07, 24]} />
       </mesh>
-      {/* Kangaroo pocket */}
-      <mesh position={[0, 0.46, 0.17]} castShadow material={m.hoodie}>
-        <boxGeometry args={[0.22, 0.12, 0.06]} />
+      {/* Kangaroo pocket + stitch line */}
+      <mesh position={[0, 0.46, 0.175]} castShadow material={m.hoodie}>
+        <boxGeometry args={[0.24, 0.13, 0.065]} />
       </mesh>
-      {/* Hood on back */}
-      <mesh position={[0, 0.7, -0.12]} castShadow material={m.hoodie}>
-        <sphereGeometry args={[0.14, 16, 12]} />
+      <mesh position={[0, 0.5, 0.21]}>
+        <boxGeometry args={[0.22, 0.008, 0.01]} />
+        <meshStandardMaterial color={FIG.hoodieSoft} roughness={0.9} metalness={0.02} />
+      </mesh>
+      {/* Hood on back + drawstrings */}
+      <mesh position={[0, 0.72, -0.13]} castShadow material={m.hoodie}>
+        <sphereGeometry args={[0.15, 20, 16]} />
+      </mesh>
+      <mesh position={[0, 0.78, -0.02]} castShadow material={m.hoodie}>
+        <torusGeometry args={[0.12, 0.035, 10, 20, Math.PI]} />
+      </mesh>
+      <mesh position={[-0.04, 0.55, 0.22]} rotation={[0.15, 0, 0.08]} material={m.logo}>
+        <cylinderGeometry args={[0.006, 0.006, 0.22, 6]} />
+      </mesh>
+      <mesh position={[0.04, 0.55, 0.22]} rotation={[0.15, 0, -0.08]} material={m.logo}>
+        <cylinderGeometry args={[0.006, 0.006, 0.22, 6]} />
+      </mesh>
+      <mesh position={[-0.04, 0.44, 0.23]} material={m.logo}>
+        <sphereGeometry args={[0.012, 8, 6]} />
+      </mesh>
+      <mesh position={[0.04, 0.44, 0.23]} material={m.logo}>
+        <sphereGeometry args={[0.012, 8, 6]} />
       </mesh>
 
-      {/* White rabbit chest logo (wearer's left = +X when facing +Z) */}
-      <group position={[0.1, 0.62, 0.22]}>
+      {/* White rabbit chest logo */}
+      <group position={[0.1, 0.62, 0.225]}>
         <mesh material={m.logo}>
-          <sphereGeometry args={[0.028, 12, 10]} />
+          <sphereGeometry args={[0.03, 14, 12]} />
         </mesh>
-        <mesh position={[-0.016, 0.038, 0]} rotation={[0, 0, 0.35]} material={m.logo}>
-          <capsuleGeometry args={[0.008, 0.03, 4, 8]} />
+        <mesh position={[-0.018, 0.04, 0]} rotation={[0, 0, 0.35]} material={m.logo}>
+          <capsuleGeometry args={[0.009, 0.032, 4, 8]} />
         </mesh>
-        <mesh position={[0.016, 0.038, 0]} rotation={[0, 0, -0.35]} material={m.logo}>
-          <capsuleGeometry args={[0.008, 0.03, 4, 8]} />
-        </mesh>
-      </group>
-
-      {/* —— Arms (short, chunky hoodie sleeves) —— */}
-      <group ref={armL} position={[-0.26, 0.58, 0]}>
-        <mesh position={[0, -0.12, 0]} castShadow material={m.hoodie}>
-          <capsuleGeometry args={[0.07, 0.14, 6, 12]} />
-        </mesh>
-        <mesh position={[0, -0.24, 0]} castShadow material={m.hoodie}>
-          <cylinderGeometry args={[0.065, 0.06, 0.05, 12]} />
-        </mesh>
-        <mesh position={[0, -0.28, 0.01]} castShadow material={m.skin}>
-          <sphereGeometry args={[0.045, 12, 10]} />
-        </mesh>
-      </group>
-      <group ref={armR} position={[0.26, 0.58, 0]}>
-        <mesh position={[0, -0.12, 0]} castShadow material={m.hoodie}>
-          <capsuleGeometry args={[0.07, 0.14, 6, 12]} />
-        </mesh>
-        <mesh position={[0, -0.24, 0]} castShadow material={m.hoodie}>
-          <cylinderGeometry args={[0.065, 0.06, 0.05, 12]} />
-        </mesh>
-        <mesh position={[0, -0.28, 0.01]} castShadow material={m.skin}>
-          <sphereGeometry args={[0.045, 12, 10]} />
+        <mesh position={[0.018, 0.04, 0]} rotation={[0, 0, -0.35]} material={m.logo}>
+          <capsuleGeometry args={[0.009, 0.032, 4, 8]} />
         </mesh>
       </group>
 
-      {/* —— Standing / walk legs (hidden when fully seated) —— */}
+      {/* —— Arms —— */}
+      <group ref={armL} position={[-0.27, 0.58, 0]}>
+        <mesh position={[0, -0.12, 0]} castShadow material={m.hoodie}>
+          <capsuleGeometry args={[0.072, 0.15, 8, 14]} />
+        </mesh>
+        <mesh position={[0, -0.25, 0]} castShadow material={m.hoodie}>
+          <cylinderGeometry args={[0.068, 0.058, 0.055, 14]} />
+        </mesh>
+        <mesh position={[0, -0.295, 0.01]} castShadow material={m.skin}>
+          <sphereGeometry args={[0.048, 14, 12]} />
+        </mesh>
+      </group>
+      <group ref={armR} position={[0.27, 0.58, 0]}>
+        <mesh position={[0, -0.12, 0]} castShadow material={m.hoodie}>
+          <capsuleGeometry args={[0.072, 0.15, 8, 14]} />
+        </mesh>
+        <mesh position={[0, -0.25, 0]} castShadow material={m.hoodie}>
+          <cylinderGeometry args={[0.068, 0.058, 0.055, 14]} />
+        </mesh>
+        <mesh position={[0, -0.295, 0.01]} castShadow material={m.skin}>
+          <sphereGeometry args={[0.048, 14, 12]} />
+        </mesh>
+      </group>
+
+      {/* —— Standing / walk legs —— */}
       <group ref={standLegs}>
         <group ref={legL} position={[-0.09, 0.32, 0]}>
           <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
-            <capsuleGeometry args={[0.075, 0.12, 6, 12]} />
+            <capsuleGeometry args={[0.078, 0.125, 8, 14]} />
           </mesh>
           <group ref={calfL} position={[0, CALF_Y_STAND, 0]}>
             <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
-              <capsuleGeometry args={[0.068, 0.06, 6, 12]} />
+              <capsuleGeometry args={[0.07, 0.065, 8, 14]} />
             </mesh>
-            <mesh position={[0, -0.14, 0]} castShadow material={m.pants}>
-              <cylinderGeometry args={[0.062, 0.052, 0.04, 12]} />
+            <mesh position={[0, -0.145, 0]} castShadow material={m.pants}>
+              <cylinderGeometry args={[0.064, 0.052, 0.045, 14]} />
             </mesh>
             <Sneaker materials={m} yOffset={-0.2} />
           </group>
         </group>
         <group ref={legR} position={[0.09, 0.32, 0]}>
           <mesh position={[0, -0.1, 0]} castShadow material={m.pants}>
-            <capsuleGeometry args={[0.075, 0.12, 6, 12]} />
+            <capsuleGeometry args={[0.078, 0.125, 8, 14]} />
           </mesh>
           <group ref={calfR} position={[0, CALF_Y_STAND, 0]}>
             <mesh position={[0, -0.08, 0]} castShadow material={m.pants}>
-              <capsuleGeometry args={[0.068, 0.06, 6, 12]} />
+              <capsuleGeometry args={[0.07, 0.065, 8, 14]} />
             </mesh>
-            <mesh position={[0, -0.14, 0]} castShadow material={m.pants}>
-              <cylinderGeometry args={[0.062, 0.052, 0.04, 12]} />
+            <mesh position={[0, -0.145, 0]} castShadow material={m.pants}>
+              <cylinderGeometry args={[0.064, 0.052, 0.045, 14]} />
             </mesh>
             <Sneaker materials={m} yOffset={-0.2} />
           </group>
         </group>
       </group>
 
-      {/*
-        Explicit L-sit legs in character space (no nested Euler):
-        hip → horizontal thigh along +Z (front) → knee at seat edge →
-        vertical calf down −Y → feet near floor / pedestal.
-      */}
       <group ref={sitLegs} visible={false}>
         <SitLeg materials={m} side={-1} />
         <SitLeg materials={m} side={1} />
@@ -1152,67 +1239,87 @@ function SitLeg({ materials: m, side }: { materials: FigMats; side: number }) {
 }
 
 function Glasses({ materials: m }: { materials: FigMats }) {
-  // Torus defaults to XY plane (faces +Z) — do not tilt flat or rims read as a mustache
-  const r = 0.062
-  const tube = 0.015
-  const z = 0.238
+  const r = 0.064
+  const tube = 0.014
+  const z = 0.242
   const y = 0.012
   return (
     <group>
       <mesh position={[-0.078, y, z]} material={m.glasses}>
-        <torusGeometry args={[r, tube, 12, 32]} />
+        <torusGeometry args={[r, tube, 14, 40]} />
       </mesh>
       <mesh position={[0.078, y, z]} material={m.glasses}>
-        <torusGeometry args={[r, tube, 12, 32]} />
+        <torusGeometry args={[r, tube, 14, 40]} />
+      </mesh>
+      {/* Soft lens discs */}
+      <mesh position={[-0.078, y, z + 0.002]}>
+        <circleGeometry args={[0.052, 24]} />
+        <meshStandardMaterial color="#9eb8c8" transparent opacity={0.18} roughness={0.15} metalness={0.05} depthWrite={false} />
+      </mesh>
+      <mesh position={[0.078, y, z + 0.002]}>
+        <circleGeometry args={[0.052, 24]} />
+        <meshStandardMaterial color="#9eb8c8" transparent opacity={0.18} roughness={0.15} metalness={0.05} depthWrite={false} />
       </mesh>
       <mesh position={[0, y + 0.006, z]} material={m.glasses}>
-        <boxGeometry args={[0.032, 0.012, 0.012]} />
+        <boxGeometry args={[0.034, 0.012, 0.012]} />
       </mesh>
-      <mesh position={[-0.14, y, 0.1]} rotation={[0, 0.22, 0]} material={m.glasses}>
-        <boxGeometry args={[0.014, 0.012, 0.2]} />
+      <mesh position={[-0.145, y, 0.1]} rotation={[0, 0.22, 0]} material={m.glasses}>
+        <boxGeometry args={[0.014, 0.012, 0.22]} />
       </mesh>
-      <mesh position={[0.14, y, 0.1]} rotation={[0, -0.22, 0]} material={m.glasses}>
-        <boxGeometry args={[0.014, 0.012, 0.2]} />
+      <mesh position={[0.145, y, 0.1]} rotation={[0, -0.22, 0]} material={m.glasses}>
+        <boxGeometry args={[0.014, 0.012, 0.22]} />
+      </mesh>
+      {/* Temple tips */}
+      <mesh position={[-0.2, y - 0.01, -0.02]} rotation={[0.2, 0.1, 0]} material={m.glasses}>
+        <boxGeometry args={[0.012, 0.01, 0.06]} />
+      </mesh>
+      <mesh position={[0.2, y - 0.01, -0.02]} rotation={[0.2, -0.1, 0]} material={m.glasses}>
+        <boxGeometry args={[0.012, 0.01, 0.06]} />
       </mesh>
     </group>
   )
 }
 
 function Hair({ materials: m }: { materials: FigMats }) {
-  // Crown + side waves only — keep forehead / glasses clear (no heavy bangs)
-  const locks: Array<[number, number, number, number]> = [
-    [0, 0.2, -0.04, 0.2],
-    [0, 0.16, -0.14, 0.175],
-    [-0.13, 0.16, -0.06, 0.145],
-    [0.13, 0.16, -0.06, 0.145],
-    [-0.17, 0.1, 0.0, 0.115],
-    [0.17, 0.1, 0.0, 0.115],
-    [-0.12, 0.14, 0.08, 0.1],
-    [0.12, 0.14, 0.08, 0.1],
-    [0, 0.18, 0.06, 0.12],
-    [-0.21, 0.02, -0.02, 0.1],
-    [0.21, 0.02, -0.02, 0.1],
-    [-0.19, -0.04, -0.1, 0.09],
-    [0.19, -0.04, -0.1, 0.09],
-    [-0.16, 0.08, 0.1, 0.08],
-    [0.16, 0.08, 0.1, 0.08],
-    // Soft high fringe — sits above glasses, not over lenses
-    [-0.07, 0.14, 0.16, 0.06],
-    [0.07, 0.14, 0.16, 0.06],
-    [0, 0.15, 0.17, 0.055],
+  // Crown + layered side waves — denser silhouette, forehead stays clear of lenses
+  const locks: Array<[number, number, number, number, number, number, number]> = [
+    // x y z r sx sy sz
+    [0, 0.205, -0.04, 0.205, 1.15, 0.9, 1.08],
+    [0, 0.165, -0.15, 0.18, 1.1, 0.85, 1.05],
+    [-0.14, 0.17, -0.07, 0.15, 1.05, 0.9, 1],
+    [0.14, 0.17, -0.07, 0.15, 1.05, 0.9, 1],
+    [-0.18, 0.11, 0.0, 0.12, 1, 1, 1],
+    [0.18, 0.11, 0.0, 0.12, 1, 1, 1],
+    [-0.13, 0.15, 0.08, 0.105, 1, 0.95, 1],
+    [0.13, 0.15, 0.08, 0.105, 1, 0.95, 1],
+    [0, 0.19, 0.055, 0.125, 1.08, 0.88, 1],
+    [-0.22, 0.03, -0.02, 0.105, 1, 1.05, 1],
+    [0.22, 0.03, -0.02, 0.105, 1, 1.05, 1],
+    [-0.2, -0.05, -0.1, 0.095, 1, 1.1, 1],
+    [0.2, -0.05, -0.1, 0.095, 1, 1.1, 1],
+    [-0.17, 0.08, 0.1, 0.085, 1, 1, 1],
+    [0.17, 0.08, 0.1, 0.085, 1, 1, 1],
+    [-0.08, 0.145, 0.165, 0.062, 1.1, 0.7, 1],
+    [0.08, 0.145, 0.165, 0.062, 1.1, 0.7, 1],
+    [0, 0.155, 0.175, 0.058, 1.15, 0.65, 1],
+    [-0.1, 0.02, -0.18, 0.09, 1, 1, 1],
+    [0.1, 0.02, -0.18, 0.09, 1, 1, 1],
+    [0, 0.06, -0.2, 0.11, 1.15, 0.85, 1],
+    [-0.24, -0.02, 0.05, 0.08, 0.9, 1.1, 0.9],
+    [0.24, -0.02, 0.05, 0.08, 0.9, 1.1, 0.9],
   ]
 
   return (
     <group>
-      {locks.map(([x, y, z, r], i) => (
+      {locks.map(([x, y, z, r, sx, sy, sz], i) => (
         <mesh
           key={i}
           position={[x, y, z]}
           castShadow
           material={i % 3 === 0 ? m.hairDeep : m.hair}
-          scale={i < 4 ? [1.12, 0.88, 1.05] : [1, 1, 1]}
+          scale={[sx, sy, sz]}
         >
-          <sphereGeometry args={[r, 14, 12]} />
+          <sphereGeometry args={[r, 16, 14]} />
         </mesh>
       ))}
     </group>
@@ -1220,29 +1327,38 @@ function Hair({ materials: m }: { materials: FigMats }) {
 }
 
 function Sneaker({ materials: m, yOffset = -0.26 }: { materials: FigMats; yOffset?: number }) {
-  // Chunkier high-tops so red / white / blue read at room scale
   return (
     <group position={[0, yOffset, 0.03]} scale={[1.15, 1.1, 1.2]}>
-      <mesh position={[0, -0.01, 0.02]} castShadow material={m.sole}>
-        <boxGeometry args={[0.13, 0.04, 0.22]} />
+      <mesh position={[0, -0.012, 0.02]} castShadow material={m.sole}>
+        <boxGeometry args={[0.135, 0.042, 0.23]} />
       </mesh>
-      <mesh position={[0.055, 0.03, 0.0]} castShadow material={m.blue}>
-        <boxGeometry args={[0.04, 0.07, 0.16]} />
+      {/* Midsole stripe */}
+      <mesh position={[0, 0.012, 0.02]} material={m.sole}>
+        <boxGeometry args={[0.138, 0.012, 0.225]} />
       </mesh>
-      <mesh position={[-0.055, 0.03, 0.0]} castShadow material={m.blue}>
-        <boxGeometry args={[0.04, 0.07, 0.16]} />
+      <mesh position={[0.056, 0.032, 0.0]} castShadow material={m.blue}>
+        <boxGeometry args={[0.042, 0.075, 0.165]} />
       </mesh>
-      <mesh position={[0, 0.025, 0.1]} castShadow material={m.red}>
-        <boxGeometry args={[0.12, 0.055, 0.07]} />
+      <mesh position={[-0.056, 0.032, 0.0]} castShadow material={m.blue}>
+        <boxGeometry args={[0.042, 0.075, 0.165]} />
       </mesh>
-      <mesh position={[0, 0.045, -0.085]} castShadow material={m.red}>
-        <boxGeometry args={[0.12, 0.09, 0.055]} />
+      <mesh position={[0, 0.028, 0.105]} castShadow material={m.red}>
+        <boxGeometry args={[0.125, 0.058, 0.075]} />
       </mesh>
-      <mesh position={[0, 0.06, 0.02]} material={m.sole}>
-        <boxGeometry args={[0.055, 0.022, 0.11]} />
+      <mesh position={[0, 0.05, -0.09]} castShadow material={m.red}>
+        <boxGeometry args={[0.125, 0.1, 0.06]} />
       </mesh>
-      <mesh position={[0, 0.02, 0.125]} material={m.red}>
-        <sphereGeometry args={[0.048, 10, 8]} />
+      <mesh position={[0, 0.065, 0.02]} material={m.sole}>
+        <boxGeometry args={[0.058, 0.022, 0.115]} />
+      </mesh>
+      {/* Lace eyelets */}
+      {[-0.04, 0, 0.04].map((z, i) => (
+        <mesh key={i} position={[0, 0.07, z]} material={m.glasses}>
+          <cylinderGeometry args={[0.008, 0.008, 0.01, 6]} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.022, 0.13]} material={m.red}>
+        <sphereGeometry args={[0.05, 12, 10]} />
       </mesh>
     </group>
   )

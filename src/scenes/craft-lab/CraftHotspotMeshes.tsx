@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import type { SectionId } from '../../content/sections'
+import { SoftBox, SoftMonitor } from '../primitives'
 import type { HotspotDef } from '../types'
 import type { LabPalette } from './themeColors'
 
@@ -187,72 +188,68 @@ function CraftHotspotShape({
       // Main timeline desk / canvas table (MiniCut vibe)
       return (
         <group>
-          <mesh position={[0, 0.42, 0]} castShadow receiveShadow>
-            <boxGeometry args={[2.6, 0.08, 1.35]} />
+          <SoftBox args={[2.6, 0.08, 1.35]} radius={0.03} position={[0, 0.42, 0]} castShadow receiveShadow>
             <meshStandardMaterial color={palette.wood} roughness={woodRough} metalness={0.04} />
-          </mesh>
-          <mesh position={[0, 0.48, 0]} receiveShadow>
-            <boxGeometry args={[2.35, 0.03, 1.1]} />
+          </SoftBox>
+          <SoftBox args={[2.35, 0.03, 1.1]} radius={0.015} position={[0, 0.48, 0]} receiveShadow>
             <meshStandardMaterial
               color={palette.canvas}
               emissive={palette.accent}
               emissiveIntensity={emissive * 0.45}
               roughness={0.65}
             />
-          </mesh>
-          {/* ruler / timeline strip */}
-          <mesh position={[0, 0.52, -0.42]}>
-            <boxGeometry args={[2.1, 0.02, 0.12]} />
+          </SoftBox>
+          <SoftBox args={[2.1, 0.02, 0.12]} radius={0.01} position={[0, 0.52, -0.42]}>
             <meshStandardMaterial color={palette.metal} roughness={0.4} metalness={0.35} />
-          </mesh>
+          </SoftBox>
           {[-0.7, -0.25, 0.2, 0.65].map((x, i) => (
-            <mesh key={x} position={[x, 0.55, -0.15]}>
-              <boxGeometry args={[0.28, 0.04, 0.35]} />
+            <SoftBox key={x} args={[0.28, 0.04, 0.35]} radius={0.012} position={[x, 0.55, -0.15]}>
               <meshStandardMaterial
                 color={i === 1 ? palette.accent : palette.panel}
                 emissive={i === 1 ? palette.accent : palette.accent2}
                 emissiveIntensity={i === 1 ? emissive : emissive * 0.4}
                 roughness={0.4}
               />
-            </mesh>
+            </SoftBox>
           ))}
-          {/* playhead */}
-          <mesh position={[0.05, 0.58, -0.42]}>
-            <boxGeometry args={[0.04, 0.12, 0.18]} />
+          <SoftBox args={[0.04, 0.12, 0.18]} radius={0.01} position={[0.05, 0.58, -0.42]}>
             <meshStandardMaterial
               color={palette.tape}
               emissive={palette.tape}
               emissiveIntensity={emissive + 0.15}
             />
-          </mesh>
+          </SoftBox>
         </group>
       )
     case 'projects':
       // Prototype lightbox / rack
       return (
         <group>
-          <mesh position={[0, 0.95, 0]} castShadow>
-            <boxGeometry args={[1.05, 1.55, 0.55]} />
+          <SoftBox args={[1.05, 1.55, 0.55]} radius={0.045} position={[0, 0.95, 0]} castShadow>
             <meshStandardMaterial color={palette.metal} roughness={metalRough} metalness={0.48} />
-          </mesh>
-          <mesh position={[0, 0.95, 0.22]}>
-            <boxGeometry args={[0.85, 1.25, 0.06]} />
-            <meshStandardMaterial
-              color={palette.screen}
-              emissive={palette.accent2}
-              emissiveIntensity={emissive}
-              roughness={0.25}
+          </SoftBox>
+          <group position={[0, 0.95, 0.22]}>
+            <SoftMonitor
+              width={0.85}
+              height={1.25}
+              depth={0.06}
+              bezel={0.08}
+              frameColor={palette.metal}
+              screenColor={palette.screen}
+              glow={palette.accent2}
+              emissive={emissive}
+              metalRough={metalRough}
+              castShadow={false}
             />
-          </mesh>
+          </group>
           {[0.4, 0.75, 1.1, 1.45].map((y, i) => (
-            <mesh key={y} position={[0.52, y, 0]}>
-              <boxGeometry args={[0.05, 0.1, 0.28]} />
+            <SoftBox key={y} args={[0.05, 0.1, 0.28]} radius={0.012} position={[0.52, y, 0]}>
               <meshStandardMaterial
                 color={i % 2 ? palette.accent : palette.ok}
                 emissive={i % 2 ? palette.accent : palette.ok}
                 emissiveIntensity={emissive}
               />
-            </mesh>
+            </SoftBox>
           ))}
         </group>
       )
