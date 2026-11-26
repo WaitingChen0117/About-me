@@ -2,227 +2,106 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #f5e6d3 0%, #e8d4c0 50%, #d4c4b0 100%);
+  background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 100%);
   overflow: hidden;
 }
 
-.collector-hud {
+.box-poster {
   position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.collector-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.collector-logo {
-  width: 2.5rem;
-  height: 2.5rem;
+  inset: 0;
   display: grid;
   place-items: center;
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #5a7fa5;
-  background: rgba(255, 255, 255, 0.5);
-  border: 2px solid #5a7fa5;
-  border-radius: 0.3rem;
-  backdrop-filter: blur(4px);
+  z-index: 10;
+  background: #0d1117;
+  transition: opacity 0.3s ease;
 }
 
-.collector-title {
+.box-poster-content {
+  text-align: center;
+}
+
+.poster-box {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #e8d8c8 0%, #d4c4b0 100%);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.poster-window {
+  width: 180px;
+  height: 220px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.poster-label {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #2d3748;
-  letter-spacing: -0.01em;
 }
 
-.collector-subtitle {
+.poster-subtitle {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: #718096;
-  letter-spacing: 0.03em;
-  margin-top: 0.1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .collector-canvas-wrap {
   position: relative;
   width: 100%;
   height: 100%;
+  transition: opacity 0.5s ease;
 }
 
-.box-face-label {
-  min-width: 200px;
-  padding: 1rem;
+.front-button {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.5rem;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid #5a7fa5;
-  border-radius: 0.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  user-select: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  backface-visibility: hidden;
-}
-
-.box-face-label:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-}
-
-.face-title {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
   font-weight: 700;
   color: #2d3748;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 0.3rem;
-}
-
-.face-subtitle {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #718096;
-  letter-spacing: 0.02em;
-}
-
-.box-face-label.back {
-  min-width: 320px;
-  padding: 1.2rem;
-}
-
-.works-shelf {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.work-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(90, 127, 165, 0.08);
-  border: 1px solid #5a7fa5;
-  border-radius: 0.3rem;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #2d3748;
   cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
-  text-align: left;
-  width: 100%;
 }
 
-.work-item:hover {
-  background: rgba(90, 127, 165, 0.15);
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.work-index {
-  font-weight: 700;
-  color: #5a7fa5;
-  min-width: 2rem;
-}
-
-.work-title {
-  flex: 1;
-  font-weight: 500;
-}
-
-.work-badge {
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.2rem;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.work-badge.live {
-  background: #48bb78;
-  color: white;
-}
-
-.work-badge.gh {
-  background: #718096;
-  color: white;
-}
-
-.enter-arrow {
-  font-size: 2rem;
-  color: #5a7fa5;
-  margin-top: 0.5rem;
-  animation: arrowBounce 1.5s ease-in-out infinite;
-}
-
-@keyframes arrowBounce {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(8px);
-  }
-}
-
-.box-face-label.right {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(90, 127, 165, 0.1));
-}
-
-.box-face-label.right:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(90, 127, 165, 0.2));
+.front-button:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 720px) {
-  .collector-hud {
-    top: 1rem;
-    left: 1rem;
+  .poster-box {
+    width: 240px;
+    height: 240px;
   }
 
-  .collector-logo {
-    width: 2rem;
-    height: 2rem;
-    font-size: 1.5rem;
+  .poster-window {
+    width: 140px;
+    height: 180px;
   }
 
-  .collector-title {
-    font-size: 0.95rem;
+  .poster-label {
+    font-size: 1.2rem;
   }
 
-  .collector-subtitle {
-    font-size: 0.58rem;
-  }
-
-  .box-face-label {
-    min-width: 160px;
-    padding: 0.8rem;
-  }
-
-  .face-title {
-    font-size: 1.1rem;
-  }
-
-  .face-subtitle {
-    font-size: 0.65rem;
-  }
-
-  .box-face-label.back {
-    min-width: 280px;
-    padding: 1rem;
-  }
-
-  .work-item {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.68rem;
+  .poster-subtitle {
+    font-size: 0.6rem;
   }
 }
