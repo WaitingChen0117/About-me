@@ -79,6 +79,13 @@ button {
     radial-gradient(700px 400px at 18% 100%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 55%);
 }
 
+.app-shell[data-scene='skyline-terminal']::before {
+  opacity: 0.48;
+  background:
+    radial-gradient(ellipse 88% 68% at 50% 30%, transparent 40%, rgba(0, 0, 0, 0.36) 100%),
+    radial-gradient(720px 380px at 70% 8%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 55%);
+}
+
 .top-bar {
   position: relative;
   z-index: 20;

@@ -1,6 +1,7 @@
 import { lazy } from 'react'
 import { craftLabHotspots } from './craft-lab/hotspots'
 import { opsDeckHotspots } from './ops-deck/hotspots'
+import { skylineHotspots } from './skyline-terminal/hotspots'
 import type { SceneId, SceneModule } from './types'
 
 const OpsDeckScene = lazy(async () => {
@@ -13,9 +14,13 @@ const CraftLabScene = lazy(async () => {
   return { default: mod.CraftLabScene }
 })
 
+const SkylineTerminalScene = lazy(async () => {
+  const mod = await import('./skyline-terminal/SkylineTerminalScene')
+  return { default: mod.SkylineTerminalScene }
+})
+
 /**
- * Scene registry — A (ops-deck = programmer studio) + B (craft-lab).
- * skyline-terminal remains reserved for a later pack.
+ * Scene registry — A (ops-deck) + B (craft-lab) + C (skyline-terminal).
  * Scene id stays `ops-deck` for routing stability; UX copy says 工作室.
  */
 export const scenes: SceneModule[] = [
@@ -33,6 +38,13 @@ export const scenes: SceneModule[] = [
     Component: CraftLabScene,
     hotspots: craftLabHotspots,
   },
+  {
+    id: 'skyline-terminal',
+    label: '城市夜景终端',
+    description: '高处落地窗前的个人终端：窗外城市网格，窗内控制台与信息流隐喻。',
+    Component: SkylineTerminalScene,
+    hotspots: skylineHotspots,
+  },
 ]
 
 export const defaultSceneId: SceneId = 'ops-deck'
@@ -45,13 +57,11 @@ export function getScene(id: SceneId): SceneModule {
   return found
 }
 
-/** Reserved scene ids — do not delete. */
+/** Known scene ids — keep for routing / future packs. */
 export const reservedSceneIds: SceneId[] = [
   'ops-deck',
   'craft-lab',
   'skyline-terminal',
 ]
 
-export const switchableScenes: SceneModule[] = scenes.filter(
-  (s) => s.id === 'ops-deck' || s.id === 'craft-lab',
-)
+export const switchableScenes: SceneModule[] = scenes

@@ -66,6 +66,41 @@ export const CRAFT_WALK_OBSTACLES: WalkObstacle[] = [
   { minX: 3.55, maxX: 4.75, minZ: -1.95, maxZ: -1.15 },
 ]
 
+/** Skyline Terminal (Scene C) — lounge floor inside window bay. */
+export const SKYLINE_WALK_BOUNDS: WalkRect = {
+  minX: -4.55,
+  maxX: 4.55,
+  minZ: -3.45,
+  maxZ: 3.4,
+}
+
+/**
+ * Scene C solid props — console desk + sill ledge + side furniture.
+ * Desk front clipped so the aisle south of the console stays walkable.
+ */
+export const SKYLINE_WALK_OBSTACLES: WalkObstacle[] = [
+  // Console desk (center ~0.15,-1.15 · 3.7×1.4)
+  { minX: -1.7, maxX: 2.0, minZ: -1.85, maxZ: -0.45 },
+  // Window sill ledge
+  { minX: -4.8, maxX: 4.8, minZ: -4.15, maxZ: -3.55 },
+  // About ID stand
+  { minX: -2.65, maxX: -2.05, minZ: -3.7, maxZ: -3.2 },
+  // Experience light strip on sill (already covered by ledge; keep narrow pad)
+  { minX: -1.1, maxX: 1.35, minZ: -3.95, maxZ: -3.5 },
+  // Projects city-node pedestal
+  { minX: 1.75, maxX: 2.55, minZ: -3.55, maxZ: -2.95 },
+  // Works projection screen base
+  { minX: 3.7, maxX: 4.55, minZ: -2.35, maxZ: -0.95 },
+  // Articles bookshelf terminal
+  { minX: -4.55, maxX: -3.85, minZ: 0.05, maxZ: 1.05 },
+  // Hobbies ledge
+  { minX: -3.5, maxX: -2.6, minZ: 2.5, maxZ: 3.1 },
+  // Contact intercom
+  { minX: 3.55, maxX: 4.2, minZ: 2.55, maxZ: 3.15 },
+  // Dialogue orb base
+  { minX: 1.25, maxX: 1.85, minZ: 0.9, maxZ: 1.4 },
+]
+
 const _v = new THREE.Vector3()
 
 function clampToRect(x: number, z: number, rect: WalkRect): { x: number; z: number } {

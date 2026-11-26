@@ -220,6 +220,52 @@
   --shadow: 0 16px 40px rgba(40, 40, 45, 0.12);
 }
 
+/*
+ * Skyline Terminal — city-glass chrome on top of the active preset.
+ * Dark: ink / silver city night; light: mist dawn over the skyline.
+ */
+[data-scene='skyline-terminal'][data-theme='ink-monitor'],
+[data-scene='skyline-terminal'][data-theme='harbor-console'],
+[data-scene='skyline-terminal'][data-theme='void-signal'] {
+  --bg-deep: #061018;
+  --bg-deck: #0c1218;
+  --bg-panel: color-mix(in srgb, var(--harbor-slate) 90%, transparent);
+  --bg-panel-solid: var(--harbor-slate);
+  --bg-elevated: #1e2a34;
+  --line: color-mix(in srgb, var(--silver-mist) 18%, transparent);
+  --line-strong: color-mix(in srgb, var(--acid-lime) 36%, transparent);
+  --text: var(--frost-white);
+  --text-muted: var(--silver-mist);
+  --text-dim: var(--muted-steel);
+  --accent: var(--acid-lime);
+  --accent-2: var(--silver-mist);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--acid-lime) 11%, transparent);
+  --scan: color-mix(in srgb, var(--silver-mist) 4%, transparent);
+  --shadow: 0 18px 56px rgba(0, 0, 0, 0.58);
+}
+
+[data-scene='skyline-terminal'][data-theme='warm-paper'],
+[data-scene='skyline-terminal'][data-theme='ash-daylight'],
+[data-scene='skyline-terminal'][data-theme='sage-atelier'] {
+  --bg-deep: var(--sky-mist);
+  --bg-deck: #e4ecf2;
+  --bg-panel: color-mix(in srgb, var(--frost-white) 94%, transparent);
+  --bg-panel-solid: var(--frost-white);
+  --bg-elevated: var(--cool-ash);
+  --line: color-mix(in srgb, var(--charcoal-ink) 12%, transparent);
+  --line-strong: color-mix(in srgb, var(--harbor-slate) 40%, transparent);
+  --text: var(--charcoal-ink);
+  --text-muted: #3a4650;
+  --text-dim: #6a7680;
+  --accent: var(--harbor-slate);
+  --accent-2: var(--muted-steel);
+  --accent-warm: var(--warn-amber);
+  --glow: color-mix(in srgb, var(--harbor-slate) 8%, transparent);
+  --scan: color-mix(in srgb, var(--sky-mist) 45%, transparent);
+  --shadow: 0 16px 40px rgba(36, 56, 68, 0.14);
+}
+
 /* Legacy aliases (if anything still sets duty/bright) */
 [data-theme='duty'] {
   --bg-deep: var(--ink-teal);

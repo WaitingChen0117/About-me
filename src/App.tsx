@@ -61,8 +61,27 @@ export default function App() {
 
   const scene = getScene(sceneId)
   const Scene = scene.Component
-  const isCraft = sceneId === 'craft-lab'
   const palette = getPalette(theme)
+
+  const sceneChipLabel = (id: SceneId) => {
+    if (id === 'ops-deck') return 'A · 工作室'
+    if (id === 'craft-lab') return 'B · 工坊'
+    return 'C · 终端'
+  }
+
+  const loadingLabel =
+    sceneId === 'craft-lab'
+      ? '加载工坊…'
+      : sceneId === 'skyline-terminal'
+        ? '加载终端…'
+        : '加载工作室…'
+
+  const hintLabel =
+    sceneId === 'craft-lab'
+      ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 副屏提问'
+      : sceneId === 'skyline-terminal'
+        ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 对话球提问'
+        : '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 桌面分身提问'
 
   const issueCamera = useCallback((nextFocus: SectionId | null) => {
     setFlyLock(true)
@@ -206,7 +225,7 @@ export default function App() {
                 title={s.description}
                 onClick={() => switchScene(s.id)}
               >
-                {s.id === 'ops-deck' ? 'A · 工作室' : 'B · 工坊'}
+                {sceneChipLabel(s.id)}
               </button>
             ))}
           </div>
@@ -225,9 +244,7 @@ export default function App() {
       <main className="scene-stage">
         <Suspense
           fallback={
-            <div className="scene-loading">
-              {isCraft ? '加载工坊…' : '加载工作室…'}
-            </div>
+            <div className="scene-loading">{loadingLabel}</div>
           }
         >
           <Scene
@@ -248,13 +265,7 @@ export default function App() {
             labelsAway={Boolean(activeSection)}
           />
         </Suspense>
-        {hintVisible ? (
-          <div className="hint-toast">
-            {isCraft
-              ? '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 副屏提问'
-              : '拖拽环视 · 点物件或铭牌开板块 · 派遣助手 · 桌面分身提问'}
-          </div>
-        ) : null}
+        {hintVisible ? <div className="hint-toast">{hintLabel}</div> : null}
       </main>
 
       {activeSection ? (
