@@ -96,7 +96,7 @@ export function BoxWorld({
       // Orbit camera around box - box follows drag direction
       targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
       targetRotation.current.x = THREE.MathUtils.clamp(
-        rotationStart.current.x - deltaY * 0.005,
+        rotationStart.current.x + deltaY * 0.005,
         -0.5,
         0.5,
       )
