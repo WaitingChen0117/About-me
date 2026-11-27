@@ -2,11 +2,11 @@ import { PerspectiveCamera } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { getPalette } from '../../themes/palettes'
 import type { SceneProps } from '../types'
 import { FigureInBox, type FigureInBoxHandle, type DragPart } from './FigureInBox'
 import { PackageBox } from './PackageBox'
 import { CoffeeSpill, type SpillBurst } from './CoffeeSpill'
+import { FRONT_ROTATION, HERO_CAMERA } from './boxLayout'
 
 type BoxWorldProps = SceneProps & {
   lowPower: boolean
@@ -33,8 +33,8 @@ export function BoxWorld({
 }: BoxWorldProps) {
   const { gl } = useThree()
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
-  const targetRotation = useRef(new THREE.Euler(0, 0, 0))
-  const currentRotation = useRef(new THREE.Euler(0, 0, 0))
+  const targetRotation = useRef(new THREE.Euler(FRONT_ROTATION.x, FRONT_ROTATION.y, 0))
+  const currentRotation = useRef(new THREE.Euler(FRONT_ROTATION.x, FRONT_ROTATION.y, 0))
   const boxGroup = useRef<THREE.Group>(null)
   
   // Figure outer wrapper for body drag (position/scale/tilt)
@@ -54,15 +54,12 @@ export function BoxWorld({
   const _flickWorld = useRef(new THREE.Vector3())
   const _boxQuat = useRef(new THREE.Quaternion())
   
-  const preset = getPalette(theme)
-
   useEffect(() => {
-    gl.toneMappingExposure = lowPower ? preset.lights.exposureLite : preset.lights.exposure
-  }, [gl, theme, lowPower, preset.lights])
+    gl.toneMappingExposure = lowPower ? 1.0 : 1.15
+    gl.setClearColor(0x000000, 0)
+  }, [gl, lowPower])
 
-  // Front-facing angle: figure straight-on to camera
-  // Camera at [3, 1.5, 4] → need Y rotation ~0.64 to face it
-  const FRONT_ROTATION = { y: 0.64, x: 0 }
+  // Designed product-shot rest pose (front window + thin right sliver).
 
   const rotateTo = useCallback((face: TargetFace) => {
     if (!face) {
@@ -275,7 +272,7 @@ export function BoxWorld({
 
   useFrame((_, delta) => {
     if (cameraRef.current) {
-      cameraRef.current.lookAt(0, 0, 0)
+      cameraRef.current.lookAt(...HERO_CAMERA.lookAt)
     }
     
     if (boxGroup.current) {
@@ -329,22 +326,34 @@ export function BoxWorld({
       <PerspectiveCamera
         ref={cameraRef}
         makeDefault
-        position={[3, 1.5, 4]}
-        fov={35}
+        position={HERO_CAMERA.position}
+        fov={HERO_CAMERA.fov}
         near={0.1}
         far={100}
       />
 
-      <ambientLight intensity={preset.lights.ambient * 1.2} />
+      <ambientLight intensity={0.42} />
+      <hemisphereLight args={['#f3ebe3', '#1a1c20', 0.55]} />
       <directionalLight
-        position={[5, 8, 5]}
-        intensity={preset.lights.keyIntensity * 0.8}
+        position={[2.4, 3.6, 4.4]}
+        intensity={1.45}
         castShadow={!lowPower}
         shadow-mapSize-width={lowPower ? 512 : 2048}
         shadow-mapSize-height={lowPower ? 512 : 2048}
+        shadow-bias={-0.0002}
       />
-      <directionalLight position={[-3, 4, -3]} intensity={preset.lights.fillIntensity * 0.5} />
-      <pointLight position={[0, 0, 0]} intensity={0.8} distance={3} decay={2} />
+      <directionalLight position={[-3.2, 2.2, 2.4]} intensity={0.38} color="#c9d6e4" />
+      <directionalLight position={[0.4, 2.8, -3.2]} intensity={0.28} color="#e8d8c8" />
+      <spotLight
+        position={[0.15, 2.1, 2.2]}
+        angle={0.48}
+        penumbra={0.7}
+        intensity={1.15}
+        distance={8}
+        color="#fff4ea"
+        castShadow={!lowPower}
+      />
+      <pointLight position={[0, 0.35, 0.25]} intensity={0.55} distance={2.1} decay={2} color="#f0e6d8" />
 
       <group ref={boxGroup}>
         <PackageBox
@@ -369,10 +378,6 @@ export function BoxWorld({
         <CoffeeSpill burst={spillBurst} />
       </group>
 
-      <mesh position={[0, 0, -8]} receiveShadow={false}>
-        <planeGeometry args={[50, 50]} />
-        <meshBasicMaterial color="#0d1117" depthWrite={false} />
-      </mesh>
     </>
   )
 }

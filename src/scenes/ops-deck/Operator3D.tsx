@@ -272,29 +272,30 @@ export function Operator3D({
     if (armR.current) armR.current.rotation.x = 0
   }
 
+  const vinyl = collectorMode
   const materials = useMemo(
     () => ({
       skin: new THREE.MeshStandardMaterial({
         color: FIG.skin,
-        roughness: 0.82,
-        metalness: 0.02,
+        roughness: vinyl ? 0.42 : 0.82,
+        metalness: vinyl ? 0.05 : 0.02,
       }),
       hair: new THREE.MeshStandardMaterial({
         color: FIG.hair,
-        roughness: 0.92,
+        roughness: vinyl ? 0.68 : 0.92,
         metalness: 0.0,
       }),
       hairDeep: new THREE.MeshStandardMaterial({
         color: FIG.hairDeep,
-        roughness: 0.94,
+        roughness: vinyl ? 0.7 : 0.94,
         metalness: 0.0,
       }),
       hoodie: new THREE.MeshStandardMaterial({
         color: FIG.hoodie,
-        roughness: 0.88,
-        metalness: 0.04,
+        roughness: vinyl ? 0.52 : 0.88,
+        metalness: vinyl ? 0.06 : 0.04,
         emissive: new THREE.Color(FIG.hoodieSoft),
-        emissiveIntensity: 0.02,
+        emissiveIntensity: vinyl ? 0.04 : 0.02,
       }),
       pants: new THREE.MeshStandardMaterial({
         color: FIG.pants,
@@ -333,11 +334,11 @@ export function Operator3D({
       }),
       eyeWhite: new THREE.MeshStandardMaterial({
         color: '#f7f4f0',
-        roughness: 0.45,
+        roughness: vinyl ? 0.32 : 0.45,
         metalness: 0.02,
       }),
     }),
-    [],
+    [vinyl],
   )
 
   useEffect(() => {
@@ -910,10 +911,12 @@ export function Operator3D({
         sitAmountRef={sitAmountRef}
       />
 
-      <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
-        <ringGeometry args={[0.18, 0.28, 24]} />
-        <meshBasicMaterial color={palette.accent} transparent opacity={0.14} depthWrite={false} />
-      </mesh>
+      {!collectorMode && (
+        <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+          <ringGeometry args={[0.18, 0.28, 24]} />
+          <meshBasicMaterial color={palette.accent} transparent opacity={0.14} depthWrite={false} />
+        </mesh>
+      )}
 
       {!collectorMode && (hovered || walking || seated) && (
         <Html position={[0, seated ? 1.28 : 1.42, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>

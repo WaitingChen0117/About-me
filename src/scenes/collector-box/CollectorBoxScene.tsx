@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react'
 import { useDeviceProfile } from '../../lib/device-profile'
 import type { SceneProps } from '../types'
 import { BoxWorld } from './BoxWorld'
+import { HERO_CAMERA } from './boxLayout'
 import './CollectorBox.css'
 
 export function CollectorBoxScene(props: SceneProps) {
@@ -31,14 +32,16 @@ export function CollectorBoxScene(props: SceneProps) {
         <Canvas
           shadows={!lowPower}
           dpr={dpr}
-          camera={{ position: [3, 1.5, 4], fov: 35, near: 0.1, far: 100 }}
+          camera={{ position: HERO_CAMERA.position, fov: HERO_CAMERA.fov, near: 0.1, far: 100 }}
           gl={{
             antialias: !lowPower,
             powerPreference: lowPower ? 'low-power' : 'high-performance',
-            alpha: false,
+            alpha: true,
+            premultipliedAlpha: false,
           }}
-          onCreated={() => {
-            setTimeout(() => setLoaded(true), 100)
+          onCreated={({ gl }) => {
+            gl.setClearColor(0x000000, 0)
+            setTimeout(() => setLoaded(true), 120)
           }}
         >
           <Suspense fallback={null}>

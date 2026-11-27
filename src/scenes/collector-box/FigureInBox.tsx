@@ -8,6 +8,7 @@ import {
 } from '../ops-deck/Operator3D'
 import * as THREE from 'three'
 import { CoffeeCup, Laptop } from './CollectorProps'
+import { FIGURE } from './boxLayout'
 
 export type DragPart = 'body' | 'head' | 'foot-left' | 'foot-right' | 'cup' | 'laptop' | null
 
@@ -206,7 +207,7 @@ export const FigureInBox = forwardRef<FigureInBoxHandle, FigureInBoxProps>(
     }
 
     return (
-      <group position={[0, -1.05, 0]} scale={0.85} userData={{ restY: -1.05 }}>
+      <group position={[0, FIGURE.y, FIGURE.z]} scale={FIGURE.scale} userData={{ restY: FIGURE.y }}>
         <group ref={bodyLeanGroupRef}>
           <mesh
             position={[0, 0.64, 0]}

@@ -5,6 +5,7 @@
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { BOX, FRONT_WINDOW, NICHE_FLOOR_Y, RIGHT_WINDOW } from './boxLayout'
 
 type Droplet = {
   id: number
@@ -31,14 +32,15 @@ type CoffeeSpillProps = {
   burst: SpillBurst | null
 }
 
-/** Interior floor / wall planes of PackageBox (BOX_SIZE=2.4, WALL=0.08). */
-const FLOOR_Y = -1.12
-const CEIL_Y = 1.12
-const WALL = 1.16
-const FRONT_WIN_X = 0.8
-const FRONT_WIN_Y = 0.9
-const RIGHT_WIN_Z = 0.65
-const RIGHT_WIN_Y = 0.8
+
+const FLOOR_Y = NICHE_FLOOR_Y + 0.004
+const CEIL_Y = BOX.h / 2 - BOX.wall
+const WALL_X = BOX.w / 2 - BOX.wall / 2
+const WALL_Z = BOX.d / 2 - BOX.wall / 2
+const FRONT_WIN_X = FRONT_WINDOW.w / 2
+const FRONT_WIN_Y = FRONT_WINDOW.h / 2
+const RIGHT_WIN_Z = RIGHT_WINDOW.w / 2
+const RIGHT_WIN_Y = RIGHT_WINDOW.h / 2
 
 function wallRotation(nx: number, ny: number, _nz: number): [number, number, number] {
   if (ny > 0.5) return [-Math.PI / 2, 0, 0]
@@ -127,29 +129,29 @@ export function CoffeeSpill({ burst }: CoffeeSpillProps) {
         pos.y = CEIL_Y - 0.004
         return land(0, -1, 0, 0.05 + Math.random() * 0.05)
       }
-      if (pos.x <= -WALL) {
-        pos.x = -WALL + 0.004
+      if (pos.x <= -WALL_X) {
+        pos.x = -WALL_X + 0.004
         return land(1, 0, 0, 0.05 + Math.random() * 0.07)
       }
-      if (pos.x >= WALL) {
+      if (pos.x >= WALL_X) {
         if (inRightWindow(pos)) {
           // Flew out the right window — just drop the droplet.
           changed = true
           return { ...d, position: pos, velocity: vel, age, landed: true }
         }
-        pos.x = WALL - 0.004
+        pos.x = WALL_X - 0.004
         return land(-1, 0, 0, 0.05 + Math.random() * 0.07)
       }
-      if (pos.z <= -WALL) {
-        pos.z = -WALL + 0.004
+      if (pos.z <= -WALL_Z) {
+        pos.z = -WALL_Z + 0.004
         return land(0, 0, 1, 0.05 + Math.random() * 0.07)
       }
-      if (pos.z >= WALL) {
+      if (pos.z >= WALL_Z) {
         if (inFrontWindow(pos)) {
           changed = true
           return { ...d, position: pos, velocity: vel, age, landed: true }
         }
-        pos.z = WALL - 0.004
+        pos.z = WALL_Z - 0.004
         return land(0, 0, -1, 0.05 + Math.random() * 0.07)
       }
 
