@@ -84,7 +84,14 @@ export function PackageBox({
   const rightFrameShape = useMemo(() => createWindowFrame(1.3, 1.6), [])
 
   return (
-    <group>
+    <group
+      onPointerOver={() => {
+        document.body.style.cursor = 'grab'
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto'
+      }}
+    >
       {/* Front wall with window opening */}
       <group position={[0, 0, hs]}>
         <mesh castShadow receiveShadow onPointerDown={onPointerDown}>

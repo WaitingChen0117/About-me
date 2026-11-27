@@ -82,6 +82,7 @@ export function BoxWorld({
     dragTarget.current = target
     dragStart.current = { x: e.clientX, y: e.clientY }
     rotationStart.current.copy(currentRotation.current)
+    document.body.style.cursor = target === 'box' ? 'grabbing' : 'grabbing'
     e.stopPropagation()
   }, [])
 
@@ -92,10 +93,10 @@ export function BoxWorld({
     const deltaY = e.clientY - dragStart.current.y
 
     if (dragTarget.current === 'box') {
-      // Orbit camera around box
-      targetRotation.current.y = rotationStart.current.y - deltaX * 0.005
+      // Orbit camera around box - box follows drag direction
+      targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
       targetRotation.current.x = THREE.MathUtils.clamp(
-        rotationStart.current.x + deltaY * 0.005,
+        rotationStart.current.x - deltaY * 0.005,
         -0.5,
         0.5,
       )
@@ -137,6 +138,7 @@ export function BoxWorld({
       springBack()
     }
     
+    document.body.style.cursor = 'auto'
     isDragging.current = false
     dragTarget.current = null
   }, [])
@@ -253,16 +255,10 @@ export function BoxWorld({
         </group>
       </group>
 
-      {/* Background field */}
+      {/* Background field - single stable plane */}
       <mesh position={[0, 0, -8]} receiveShadow={false}>
         <planeGeometry args={[50, 50]} />
-        <meshBasicMaterial color="#0d1117" />
-      </mesh>
-
-      {/* Background field */}
-      <mesh position={[0, 0, -10]} receiveShadow={false}>
-        <planeGeometry args={[50, 50]} />
-        <meshBasicMaterial color="#0d1117" />
+        <meshBasicMaterial color="#0d1117" depthWrite={false} />
       </mesh>
     </>
   )

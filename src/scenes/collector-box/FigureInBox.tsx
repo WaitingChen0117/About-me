@@ -10,8 +10,36 @@ type FigureInBoxProps = {
 export function FigureInBox({ onPointerDown }: FigureInBoxProps) {
   const introRef = useRef(1)
   
+  // Create a wrapper that intercepts all pointer events before they reach Operator3D
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation()
+    document.body.style.cursor = 'grab'
+  }
+  
+  const handlePointerOut = (e: any) => {
+    e.stopPropagation()
+    document.body.style.cursor = 'auto'
+  }
+  
+  const handlePointerDownWrapper = (e: any) => {
+    e.stopPropagation()
+    onPointerDown(e)
+  }
+  
   return (
-    <group position={[0, -1.05, 0]} scale={0.85} onPointerDown={onPointerDown}>
+    <group position={[0, -1.05, 0]} scale={0.85}>
+      {/* Invisible hit box to intercept all pointer events */}
+      <mesh
+        onPointerDown={handlePointerDownWrapper}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+        onPointerMove={(e) => e.stopPropagation()}
+      >
+        <boxGeometry args={[1.2, 2.5, 1.2]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+      
+      {/* Operator3D sits behind the hit box, its own events are blocked */}
       <Operator3D
         hotspots={[]}
         target={null}
