@@ -171,15 +171,15 @@ export function BoxWorld({
 
   const handlePointerUp = useCallback(() => {
     // Check for coffee spill on cup release
-    if (dragTarget.current === 'cup' && figureHandleRef.current && cupVelocityBuffer.current.length > 3) {
+    if (dragTarget.current === 'cup' && figureHandleRef.current && cupVelocityBuffer.current.length >= 1) {
       // Calculate average velocity over last frames
       const avgVx = cupVelocityBuffer.current.reduce((sum, v) => sum + v.vx, 0) / cupVelocityBuffer.current.length
       const avgVy = cupVelocityBuffer.current.reduce((sum, v) => sum + v.vy, 0) / cupVelocityBuffer.current.length
       const speed = Math.sqrt(avgVx * avgVx + avgVy * avgVy)
       
-      // Trigger spill if flicked fast enough
-      if (speed > 8) {
-        const spillDir = new THREE.Vector3(avgVx * 0.015, -avgVy * 0.015, 0)
+      // Trigger spill if flicked fast enough (lowered threshold for low-FPS environments)
+      if (speed > 3) {
+        const spillDir = new THREE.Vector3(avgVx * 0.02, -avgVy * 0.02, 0)
         figureHandleRef.current.triggerSpill(spillDir)
       }
     }

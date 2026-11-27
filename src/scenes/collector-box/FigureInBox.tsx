@@ -26,7 +26,6 @@ export const FigureInBox = forwardRef<FigureInBoxHandle, FigureInBoxProps>(
     const operatorGroupRef = useRef<THREE.Group>(null)
     const cupRef = useRef<THREE.Group>(null)
     const laptopRef = useRef<THREE.Group>(null)
-    const headPivotRef = useRef<THREE.Group>(null)
     
     // Part motion state
     const [headTilt, setHeadTilt] = useState({ x: 0, y: 0 })
@@ -152,7 +151,7 @@ export const FigureInBox = forwardRef<FigureInBoxHandle, FigureInBoxProps>(
     
     return (
       <group position={[0, -1.05, 0]} scale={0.85} userData={{ restY: -1.05 }}>
-        {/* Body lean pivot - affects whole figure slightly when foot is dragged */}
+        {/* Body lean pivot - affects ENTIRE figure including props */}
         <group rotation={[bodyLean.z, 0, bodyLean.x]}>
           
           {/* Body hit box for torso drag */}
@@ -167,19 +166,16 @@ export const FigureInBox = forwardRef<FigureInBoxHandle, FigureInBoxProps>(
             <meshBasicMaterial transparent opacity={0} />
           </mesh>
           
-          {/* Head pivot group */}
-          <group ref={headPivotRef} position={[0, 1.05, 0]} rotation={[headTilt.x, headTilt.y, 0]}>
-            {/* Head hit box */}
-            <mesh
-              position={[0, -0.1, 0]}
-              onPointerDown={(e) => handlePointerDownWrapper(e, 'head')}
-              onPointerOver={handlePointerOver}
-              onPointerOut={handlePointerOut}
-            >
-              <sphereGeometry args={[0.25, 16, 16]} />
-              <meshBasicMaterial transparent opacity={0} />
-            </mesh>
-          </group>
+          {/* Head hit box - positioned over character's head */}
+          <mesh
+            position={[0, 0.95, 0]}
+            onPointerDown={(e) => handlePointerDownWrapper(e, 'head')}
+            onPointerOver={handlePointerOver}
+            onPointerOut={handlePointerOut}
+          >
+            <sphereGeometry args={[0.25, 16, 16]} />
+            <meshBasicMaterial transparent opacity={0} />
+          </mesh>
           
           {/* Foot hit boxes */}
           <mesh
@@ -203,6 +199,11 @@ export const FigureInBox = forwardRef<FigureInBoxHandle, FigureInBoxProps>(
           </mesh>
           
           {/* Operator3D - actual visible character */}
+          {/* Note: Head tilt state exists but doesn't affect rendering yet.
+               Operator3D is a procedural chibi with no exposed bone hierarchy.
+               Full head rotation would require modifying Operator3D internals or
+               adding a separate head mesh overlay. For now, head drag provides
+               tactile feedback via the hit box, but visual tilt is a TODO. */}
           <group ref={operatorGroupRef}>
             <Operator3D
               hotspots={[]}
