@@ -40,7 +40,7 @@ export function BoxWorld({
   const isDragging = useRef(false)
   const dragStart = useRef({ x: 0, y: 0 })
   const rotationStart = useRef(new THREE.Euler(0, 0, 0))
-  const dragTarget = useRef<'box' | 'figure' | null>(null)
+  const dragTarget = useRef<'box' | 'body' | 'head' | 'cup' | 'laptop' | null>(null)
   
   const preset = getPalette(theme)
 
@@ -78,12 +78,12 @@ export function BoxWorld({
     }
   }, [onShowFrontButton])
 
-  const handlePointerDown = useCallback((e: PointerEvent, target: 'box' | 'figure') => {
+  const handlePointerDown = useCallback((e: PointerEvent, target: 'box' | 'body' | 'head' | 'cup' | 'laptop') => {
     isDragging.current = true
     dragTarget.current = target
     dragStart.current = { x: e.clientX, y: e.clientY }
     rotationStart.current.copy(currentRotation.current)
-    document.body.style.cursor = target === 'box' ? 'grabbing' : 'grabbing'
+    document.body.style.cursor = 'grabbing'
     e.stopPropagation()
   }, [])
 
@@ -111,7 +111,9 @@ export function BoxWorld({
           Math.abs(targetRotation.current.x - FRONT_ROTATION.x) < 0.2
         onShowFrontButton(!isNearFront)
       }
-    } else if (dragTarget.current === 'figure' && figureGroup.current) {
+    } else if ((dragTarget.current === 'body' || dragTarget.current === 'head' || 
+                dragTarget.current === 'cup' || dragTarget.current === 'laptop') && 
+                figureGroup.current) {
       // Drag figure inside cavity like a vinyl toy
       // Convert screen delta to 3D movement (constrained to cavity)
       const moveX = deltaX * 0.002
@@ -139,7 +141,9 @@ export function BoxWorld({
   }, [])
 
   const handlePointerUp = useCallback(() => {
-    if (dragTarget.current === 'figure' && figureGroup.current) {
+    if ((dragTarget.current === 'body' || dragTarget.current === 'head' || 
+         dragTarget.current === 'cup' || dragTarget.current === 'laptop') && 
+        figureGroup.current) {
       // Spring back to rest position with vinyl toy bounce
       const restY = -1.05 // FigureInBox base Y position
       
@@ -286,7 +290,7 @@ export function BoxWorld({
         
         <FigureInBox
           ref={figureGroup}
-          onPointerDown={(e: any) => handlePointerDown(e, 'figure')}
+          onPointerDown={(e: any, part: any) => handlePointerDown(e, part || 'body')}
           theme={theme}
         />
       </group>
