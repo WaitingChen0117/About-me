@@ -61,6 +61,8 @@ type Props = {
   introRef: MutableRefObject<number>
   /** Override spawn / idle position (defaults to Ops Deck home). */
   home?: [number, number, number]
+  /** Collector-box mode: disable studio UI (hover labels, tooltips). */
+  collectorMode?: boolean
   /** Optional CSS class for the hover tip bubble. */
   tipClassName?: string
   /** Camera / panel focus — turn to face this hotspot while idle */
@@ -163,6 +165,7 @@ export function Operator3D({
   palette,
   introRef,
   home = OPERATOR_HOME,
+  collectorMode = false,
   tipClassName = 'ops-html-tip',
   lookAtId = null,
   freeWalk = null,
@@ -822,13 +825,17 @@ export function Operator3D({
         onTap()
       }}
       onPointerOver={(e) => {
-        e.stopPropagation()
-        setHovered(true)
-        document.body.style.cursor = 'pointer'
+        if (!collectorMode) {
+          e.stopPropagation()
+          setHovered(true)
+          document.body.style.cursor = 'pointer'
+        }
       }}
       onPointerOut={() => {
-        setHovered(false)
-        document.body.style.cursor = 'auto'
+        if (!collectorMode) {
+          setHovered(false)
+          document.body.style.cursor = 'auto'
+        }
       }}
     >
       {/* Pop-Mart / blind-box operator from turnaround sheet */}
@@ -849,7 +856,7 @@ export function Operator3D({
         <meshBasicMaterial color={palette.accent} transparent opacity={0.14} depthWrite={false} />
       </mesh>
 
-      {(hovered || walking || seated) && (
+      {!collectorMode && (hovered || walking || seated) && (
         <Html position={[0, seated ? 1.28 : 1.42, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
           <div className={tipClassName}>
             {seated ? '就座中' : walking ? '巡航中' : '派遣巡视'}

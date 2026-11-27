@@ -279,12 +279,11 @@ export function BoxWorld({
           lowPower={lowPower}
         />
         
-        <group ref={figureGroup}>
-          <FigureInBox
-            onPointerDown={(e: any) => handlePointerDown(e, 'figure')}
-            theme={theme}
-          />
-        </group>
+        <FigureInBox
+          ref={figureGroup}
+          onPointerDown={(e: any) => handlePointerDown(e, 'figure')}
+          theme={theme}
+        />
       </group>
 
       {/* Background field - single stable plane */}
