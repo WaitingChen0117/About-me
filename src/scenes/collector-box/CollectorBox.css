@@ -1,0 +1,112 @@
+.collector-box-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #0d1117;
+  background-image: radial-gradient(rgba(90, 127, 165, 0.22) 1px, transparent 1.15px);
+  background-size: 18px 18px;
+  background-position: 0 0;
+}
+
+.box-poster {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 10;
+  background-color: #0d1117;
+  background-image: radial-gradient(rgba(90, 127, 165, 0.22) 1px, transparent 1.15px);
+  background-size: 18px 18px;
+  transition: opacity 0.3s ease;
+}
+
+.box-poster-content {
+  text-align: center;
+}
+
+.poster-box {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #e8d8c8 0%, #d4c4b0 100%);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.poster-window {
+  width: 180px;
+  height: 220px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.poster-label {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.poster-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #718096;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.collector-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.5s ease;
+}
+
+.front-button {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #5a7fa5;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2d3748;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.front-button:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 720px) {
+  .poster-box {
+    width: 240px;
+    height: 240px;
+  }
+
+  .poster-window {
+    width: 140px;
+    height: 180px;
+  }
+
+  .poster-label {
+    font-size: 1.2rem;
+  }
+
+  .poster-subtitle {
+    font-size: 0.6rem;
+  }
+}

@@ -1,0 +1,383 @@
+import { PerspectiveCamera } from '@react-three/drei'
+import { useFrame, useThree } from '@react-three/fiber'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import * as THREE from 'three'
+import type { SceneProps } from '../types'
+import { FigureInBox, type FigureInBoxHandle, type DragPart } from './FigureInBox'
+import { PackageBox } from './PackageBox'
+import { CoffeeSpill, type SpillBurst } from './CoffeeSpill'
+import { FRONT_ROTATION, HERO_CAMERA } from './boxLayout'
+
+type BoxWorldProps = SceneProps & {
+  lowPower: boolean
+  onShowFrontButton?: (show: boolean) => void
+  returnToFrontTrigger?: number
+}
+
+type TargetFace = 'front' | 'back' | 'left' | 'right' | null
+
+const WORK_URLS = [
+  { href: 'https://waitingchen0117.github.io/mini-cut/', gh: 'https://github.com/WaitingChen0117/mini-cut' },
+  { gh: 'https://github.com/WaitingChen0117/collab-table-demo' },
+  { gh: 'https://github.com/WaitingChen0117/agent-workbench' },
+  { gh: 'https://github.com/WaitingChen0117/Full-Stack' },
+  { href: 'https://waitingchen0117.github.io/', gh: 'https://github.com/WaitingChen0117' },
+]
+
+export function BoxWorld({
+  theme,
+  lowPower,
+  onSwitchScene,
+  onShowFrontButton,
+  returnToFrontTrigger,
+}: BoxWorldProps) {
+  const { gl } = useThree()
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null)
+  const targetRotation = useRef(new THREE.Euler(FRONT_ROTATION.x, FRONT_ROTATION.y, 0))
+  const currentRotation = useRef(new THREE.Euler(FRONT_ROTATION.x, FRONT_ROTATION.y, 0))
+  const boxGroup = useRef<THREE.Group>(null)
+  
+  // Figure outer wrapper for body drag (position/scale/tilt)
+  const figureWrapperRef = useRef<THREE.Group>(null)
+  // Figure inner handle for part motion (head/arms/feet)
+  const figureHandleRef = useRef<FigureInBoxHandle>(null)
+  
+  const isDragging = useRef(false)
+  const dragStart = useRef({ x: 0, y: 0 })
+  const dragLast = useRef({ x: 0, y: 0 })
+  const rotationStart = useRef(new THREE.Euler(0, 0, 0))
+  const dragTarget = useRef<DragPart | 'box' | null>(null)
+  const cupVelocityBuffer = useRef<Array<{ vx: number; vy: number; time: number }>>([])
+  const [spillBurst, setSpillBurst] = useState<SpillBurst | null>(null)
+  const _flickRight = useRef(new THREE.Vector3())
+  const _flickUp = useRef(new THREE.Vector3())
+  const _flickWorld = useRef(new THREE.Vector3())
+  const _boxQuat = useRef(new THREE.Quaternion())
+  
+  useEffect(() => {
+    gl.toneMappingExposure = lowPower ? 1.0 : 1.15
+    gl.setClearColor(0x000000, 0)
+  }, [gl, lowPower])
+
+  // Designed product-shot rest pose (front window + thin right sliver).
+
+  const rotateTo = useCallback((face: TargetFace) => {
+    if (!face) {
+      targetRotation.current.set(FRONT_ROTATION.x, FRONT_ROTATION.y, 0)
+      if (onShowFrontButton) onShowFrontButton(false)
+      return
+    }
+
+    if (onShowFrontButton) onShowFrontButton(true)
+
+    switch (face) {
+      case 'front':
+        targetRotation.current.set(FRONT_ROTATION.x, FRONT_ROTATION.y, 0)
+        if (onShowFrontButton) onShowFrontButton(false)
+        break
+      case 'back':
+        targetRotation.current.set(0, Math.PI, 0)
+        break
+      case 'left':
+        targetRotation.current.set(0, Math.PI / 2, 0)
+        break
+      case 'right':
+        targetRotation.current.set(0, -Math.PI / 2, 0)
+        break
+    }
+  }, [onShowFrontButton])
+
+  const handlePointerDown = useCallback((e: PointerEvent, target: DragPart | 'box') => {
+    isDragging.current = true
+    dragTarget.current = target
+    dragStart.current = { x: e.clientX, y: e.clientY }
+    dragLast.current = { x: e.clientX, y: e.clientY }
+    rotationStart.current.copy(currentRotation.current)
+    cupVelocityBuffer.current = []
+    document.body.style.cursor = 'grabbing'
+    e.stopPropagation()
+  }, [])
+
+  const handlePointerMove = useCallback((e: PointerEvent) => {
+    if (!isDragging.current || !dragTarget.current) return
+
+    const deltaX = e.clientX - dragStart.current.x
+    const deltaY = e.clientY - dragStart.current.y
+    const frameDeltaX = e.clientX - dragLast.current.x
+    const frameDeltaY = e.clientY - dragLast.current.y
+
+    if (dragTarget.current === 'box') {
+      // Orbit camera around box
+      targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
+      targetRotation.current.x = THREE.MathUtils.clamp(
+        rotationStart.current.x - deltaY * 0.005,
+        -0.5,
+        0.5,
+      )
+      
+      if (onShowFrontButton) {
+        const isNearFront = 
+          Math.abs(targetRotation.current.y - FRONT_ROTATION.y) < 0.2 &&
+          Math.abs(targetRotation.current.x - FRONT_ROTATION.x) < 0.2
+        onShowFrontButton(!isNearFront)
+      }
+    } else if (dragTarget.current === 'body' && figureWrapperRef.current) {
+      // Body drag: move whole figure inside cavity
+      const moveX = deltaX * 0.002
+      const moveY = -deltaY * 0.002
+      
+      const constrainedX = THREE.MathUtils.clamp(moveX, -0.8, 0.8)
+      const constrainedY = THREE.MathUtils.clamp(moveY, -0.6, 0.6)
+      
+      figureWrapperRef.current.position.x = constrainedX
+      figureWrapperRef.current.position.y = constrainedY
+      
+      // Vinyl toy tilt
+      const tiltX = deltaX * 0.0008
+      const tiltZ = deltaY * 0.0008
+      figureWrapperRef.current.rotation.x = tiltZ
+      figureWrapperRef.current.rotation.z = -tiltX
+      
+      // Squash when moved far
+      const dist = Math.sqrt(constrainedX * constrainedX + constrainedY * constrainedY)
+      const squash = Math.max(0.92, 1 - dist * 0.08)
+      figureWrapperRef.current.scale.setScalar(squash)
+      
+    } else if (figureHandleRef.current && (
+      dragTarget.current === 'head' || 
+      dragTarget.current === 'cup' || 
+      dragTarget.current === 'laptop' ||
+      dragTarget.current === 'foot-left' ||
+      dragTarget.current === 'foot-right'
+    )) {
+      // Part-specific motion through the handle interface
+      figureHandleRef.current.applyPartMotion(dragTarget.current, {
+        x: frameDeltaX,
+        y: frameDeltaY,
+      })
+      
+      // Track cup velocity for spill detection
+      if (dragTarget.current === 'cup') {
+        cupVelocityBuffer.current.push({
+          vx: frameDeltaX,
+          vy: frameDeltaY,
+          time: Date.now(),
+        })
+        // Keep only last 200ms
+        const now = Date.now()
+        cupVelocityBuffer.current = cupVelocityBuffer.current.filter(v => now - v.time < 200)
+      }
+    }
+    
+    dragLast.current = { x: e.clientX, y: e.clientY }
+  }, [onShowFrontButton])
+
+  const handlePointerUp = useCallback(() => {
+    // Check for coffee spill on cup release (flick / shake)
+    if (dragTarget.current === 'cup' && figureHandleRef.current && cupVelocityBuffer.current.length >= 1) {
+      const buf = cupVelocityBuffer.current
+      const avgVx = buf.reduce((sum, v) => sum + v.vx, 0) / buf.length
+      const avgVy = buf.reduce((sum, v) => sum + v.vy, 0) / buf.length
+      const peakPixel = buf.reduce((m, v) => Math.max(m, Math.hypot(v.vx, v.vy)), 0)
+      const pixelSpeed = Math.max(Math.hypot(avgVx, avgVy), peakPixel * 0.8)
+      const cupVel = figureHandleRef.current.getCupWorldVelocity()
+      const worldSpeed = cupVel.length()
+
+      if (pixelSpeed > 2.5 || worldSpeed > 0.25) {
+        const origin = figureHandleRef.current.getCupWorldPosition()
+        const cam = cameraRef.current
+        if (cam) {
+          _flickRight.current.set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize()
+          _flickUp.current.set(0, 1, 0)
+          _flickWorld.current
+            .copy(_flickRight.current)
+            .multiplyScalar(avgVx)
+            .addScaledVector(_flickUp.current, -avgVy)
+        } else {
+          _flickWorld.current.set(avgVx, -avgVy, 0)
+        }
+
+        // Pixel flick → box-local impulse, plus the measured 3D cup velocity.
+        if (_flickWorld.current.lengthSq() > 1e-6) {
+          _flickWorld.current.normalize().multiplyScalar(Math.max(3.2, pixelSpeed * 0.16))
+        }
+        _flickWorld.current.addScaledVector(cupVel, 1.8)
+        _flickWorld.current.y += 2.2
+
+        if (boxGroup.current) {
+          boxGroup.current.worldToLocal(origin)
+          boxGroup.current.getWorldQuaternion(_boxQuat.current)
+          _flickWorld.current.applyQuaternion(_boxQuat.current.invert())
+        }
+
+        setSpillBurst({
+          id: Date.now(),
+          origin,
+          velocity: _flickWorld.current.clone(),
+        })
+      }
+    }
+
+    // Reset part motion on release (springs back in FigureInBox)
+    if (dragTarget.current && dragTarget.current !== 'box' && dragTarget.current !== 'body' && figureHandleRef.current) {
+      figureHandleRef.current.resetPartMotion(dragTarget.current)
+    }
+    
+    // Spring body drag back to rest
+    if (dragTarget.current === 'body' && figureWrapperRef.current) {
+      const springBack = () => {
+        if (!figureWrapperRef.current) return
+        
+        figureWrapperRef.current.position.x *= 0.88
+        figureWrapperRef.current.position.y *= 0.88
+        figureWrapperRef.current.rotation.x *= 0.85
+        figureWrapperRef.current.rotation.z *= 0.85
+        figureWrapperRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.2)
+        
+        if (Math.abs(figureWrapperRef.current.position.x) > 0.01 ||
+            Math.abs(figureWrapperRef.current.position.y) > 0.01 ||
+            Math.abs(figureWrapperRef.current.rotation.x) > 0.01 || 
+            Math.abs(figureWrapperRef.current.rotation.z) > 0.01) {
+          requestAnimationFrame(springBack)
+        } else {
+          figureWrapperRef.current.position.set(0, 0, 0)
+          figureWrapperRef.current.rotation.set(0, 0, 0)
+          figureWrapperRef.current.scale.setScalar(1)
+        }
+      }
+      springBack()
+    }
+    
+    document.body.style.cursor = 'auto'
+    isDragging.current = false
+    dragTarget.current = null
+    cupVelocityBuffer.current = []
+  }, [])
+
+  useEffect(() => {
+    const canvas = gl.domElement
+    const onPointerMove = (e: PointerEvent) => handlePointerMove(e)
+    const onPointerUp = () => handlePointerUp()
+    
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', onPointerUp)
+    canvas.addEventListener('pointercancel', onPointerUp)
+    
+    return () => {
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('pointercancel', onPointerUp)
+    }
+  }, [gl, handlePointerMove, handlePointerUp])
+
+  useFrame((_, delta) => {
+    if (cameraRef.current) {
+      cameraRef.current.lookAt(...HERO_CAMERA.lookAt)
+    }
+    
+    if (boxGroup.current) {
+      currentRotation.current.x = THREE.MathUtils.damp(
+        currentRotation.current.x,
+        targetRotation.current.x,
+        6,
+        delta,
+      )
+      currentRotation.current.y = THREE.MathUtils.damp(
+        currentRotation.current.y,
+        targetRotation.current.y,
+        6,
+        delta,
+      )
+      boxGroup.current.rotation.copy(currentRotation.current)
+    }
+  })
+
+  const handleWorkClick = useCallback((index: number) => {
+    const work = WORK_URLS[index]
+    if (!work) return
+    const url = work.href || work.gh
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (returnToFrontTrigger && returnToFrontTrigger > 0) {
+      rotateTo('front')
+    }
+  }, [returnToFrontTrigger, rotateTo])
+
+  const handleEnterStudio = useCallback(() => {
+    if (onSwitchScene) {
+      onSwitchScene('ops-deck')
+    }
+  }, [onSwitchScene])
+  
+  const handleClickAbout = useCallback(() => {
+    rotateTo('left')
+  }, [rotateTo])
+  
+  const handleClickWorks = useCallback(() => {
+    rotateTo('back')
+  }, [rotateTo])
+
+  return (
+    <>
+      <PerspectiveCamera
+        ref={cameraRef}
+        makeDefault
+        position={HERO_CAMERA.position}
+        fov={HERO_CAMERA.fov}
+        near={0.1}
+        far={100}
+      />
+
+      <ambientLight intensity={0.42} />
+      <hemisphereLight args={['#f3ebe3', '#1a1c20', 0.55]} />
+      <directionalLight
+        position={[2.4, 3.6, 4.4]}
+        intensity={1.45}
+        castShadow={!lowPower}
+        shadow-mapSize-width={lowPower ? 512 : 2048}
+        shadow-mapSize-height={lowPower ? 512 : 2048}
+        shadow-bias={-0.0002}
+      />
+      <directionalLight position={[-3.2, 2.2, 2.4]} intensity={0.38} color="#c9d6e4" />
+      <directionalLight position={[0.4, 2.8, -3.2]} intensity={0.28} color="#e8d8c8" />
+      <spotLight
+        position={[0.15, 2.1, 2.2]}
+        angle={0.48}
+        penumbra={0.7}
+        intensity={1.15}
+        distance={8}
+        color="#fff4ea"
+        castShadow={!lowPower}
+      />
+      <pointLight position={[0, 0.35, 0.25]} intensity={0.55} distance={2.1} decay={2} color="#f0e6d8" />
+
+      <group ref={boxGroup}>
+        <PackageBox
+          onPointerDown={(e: any) => handlePointerDown(e, 'box')}
+          onClickWork={handleWorkClick}
+          onClickAbout={handleClickAbout}
+          onClickWorks={handleClickWorks}
+          onClickStudio={handleEnterStudio}
+          lowPower={lowPower}
+        />
+        
+        {/* Figure wrapper for body drag (position/scale/tilt) */}
+        <group ref={figureWrapperRef}>
+          <FigureInBox
+            ref={figureHandleRef}
+            onPointerDown={(e: any, part: any) => handlePointerDown(e, part || 'body')}
+            theme={theme}
+          />
+        </group>
+
+        {/* Spills live in box space so stains stay on the cavity, not the figure */}
+        <CoffeeSpill burst={spillBurst} />
+      </group>
+
+    </>
+  )
+}

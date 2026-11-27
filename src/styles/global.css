@@ -289,3 +289,82 @@ button {
     font-size: 1.05rem;
   }
 }
+
+
+/* —— Collector-box entry: let the product breathe —— */
+.app-shell[data-scene='collector-box'] {
+  background: #0d1117;
+}
+
+.app-shell[data-scene='collector-box']::before {
+  opacity: 0;
+}
+
+.app-shell[data-scene='collector-box'] .scene-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  height: 100dvh;
+  min-height: 0;
+}
+
+.app-shell[data-scene='collector-box'] .top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 0.65rem 0.85rem;
+  border-bottom: none;
+  background: transparent;
+  backdrop-filter: none;
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+}
+
+.app-shell[data-scene='collector-box'] .top-bar:hover,
+.app-shell[data-scene='collector-box'] .top-bar:focus-within {
+  opacity: 1;
+}
+
+.app-shell[data-scene='collector-box'] .brand-tag {
+  display: none;
+}
+
+.app-shell[data-scene='collector-box'] .brand-name {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(244, 244, 246, 0.55);
+}
+
+.app-shell[data-scene='collector-box'] .scene-switch {
+  background: rgba(13, 17, 23, 0.35);
+  border-color: rgba(244, 244, 246, 0.1);
+}
+
+.app-shell[data-scene='collector-box'] .chip-btn {
+  background: rgba(13, 17, 23, 0.28);
+  border-color: rgba(244, 244, 246, 0.1);
+  color: rgba(244, 244, 246, 0.58);
+  font-size: 0.62rem;
+}
+
+.app-shell[data-scene='collector-box'] .chip-btn[aria-pressed='true'],
+.app-shell[data-scene='collector-box'] .scene-chip[aria-pressed='true'] {
+  background: rgba(90, 127, 165, 0.18);
+  color: rgba(244, 244, 246, 0.88);
+  box-shadow: none;
+  border-color: rgba(90, 127, 165, 0.35);
+}
+
+.app-shell[data-scene='collector-box'] .hint-toast {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .app-shell[data-scene='collector-box'] .scene-stage {
+    height: 100dvh;
+  }
+}
