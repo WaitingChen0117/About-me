@@ -121,9 +121,9 @@ export function BoxWorld({
       const constrainedX = THREE.MathUtils.clamp(moveX, -0.8, 0.8)
       const constrainedY = THREE.MathUtils.clamp(moveY, -0.6, 0.6)
       
-      // Apply movement
+      // Apply movement (maintain base Y position of -1.05 from FigureInBox)
       figureGroup.current.position.x = constrainedX
-      figureGroup.current.position.y = constrainedY
+      figureGroup.current.position.y = -1.05 + constrainedY
       
       // Add squash/tilt for toy-like feel
       const tiltX = deltaX * 0.0008
@@ -140,13 +140,18 @@ export function BoxWorld({
 
   const handlePointerUp = useCallback(() => {
     if (dragTarget.current === 'figure' && figureGroup.current) {
-      // Spring back to center with vinyl toy bounce
+      // Spring back to rest position with vinyl toy bounce
+      const restY = -1.05 // FigureInBox base Y position
+      
       const springBack = () => {
         if (!figureGroup.current) return
         
-        // Spring position back to origin
+        // Spring X position back to 0
         figureGroup.current.position.x *= 0.88
-        figureGroup.current.position.y *= 0.88
+        
+        // Spring Y position back to rest (-1.05)
+        const deltaY = figureGroup.current.position.y - restY
+        figureGroup.current.position.y = restY + deltaY * 0.88
         
         // Spring rotation back
         figureGroup.current.rotation.x *= 0.85
@@ -157,12 +162,12 @@ export function BoxWorld({
         
         // Continue spring if still moving
         if (Math.abs(figureGroup.current.position.x) > 0.01 ||
-            Math.abs(figureGroup.current.position.y) > 0.01 ||
+            Math.abs(figureGroup.current.position.y - restY) > 0.01 ||
             Math.abs(figureGroup.current.rotation.x) > 0.01 || 
             Math.abs(figureGroup.current.rotation.z) > 0.01) {
           requestAnimationFrame(springBack)
         } else {
-          figureGroup.current.position.set(0, 0, 0)
+          figureGroup.current.position.set(0, restY, 0)
           figureGroup.current.rotation.set(0, 0, 0)
           figureGroup.current.scale.setScalar(1)
         }

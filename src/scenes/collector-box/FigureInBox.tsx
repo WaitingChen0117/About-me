@@ -30,7 +30,7 @@ export const FigureInBox = forwardRef<THREE.Group, FigureInBoxProps>(
     }
     
     return (
-      <group ref={ref} position={[0, -1.05, 0]} scale={0.85}>
+      <group ref={ref} position={[0, -1.05, 0]} scale={0.85} userData={{ restY: -1.05 }}>
       {/* Hit box to intercept events and enable figure dragging */}
       <mesh
         onPointerDown={handlePointerDownWrapper}
