@@ -1,9 +1,9 @@
 /**
  * Coffee spill effect for collector box
- * Original implementation - not copied from kaanses
+ * Original implementation — not copied from kaanses
  */
 import { useFrame } from '@react-three/fiber'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 type Droplet = {
@@ -12,119 +12,202 @@ type Droplet = {
   velocity: THREE.Vector3
   age: number
   landed: boolean
-  landPos?: THREE.Vector3
+}
+
+type Stain = {
+  id: number
+  pos: THREE.Vector3
+  rot: [number, number, number]
+  radius: number
+}
+
+export type SpillBurst = {
+  id: number
+  origin: THREE.Vector3
+  velocity: THREE.Vector3
 }
 
 type CoffeeSpillProps = {
-  cupPosition: THREE.Vector3
-  spillVelocity: THREE.Vector3 | null
-  onSpillComplete: () => void
+  burst: SpillBurst | null
 }
 
-export function CoffeeSpill({ cupPosition, spillVelocity, onSpillComplete }: CoffeeSpillProps) {
-  const [droplets, setDroplets] = useState<Droplet[]>([])
+/** Interior floor / wall planes of PackageBox (BOX_SIZE=2.4, WALL=0.08). */
+const FLOOR_Y = -1.12
+const CEIL_Y = 1.12
+const WALL = 1.16
+const FRONT_WIN_X = 0.8
+const FRONT_WIN_Y = 0.9
+const RIGHT_WIN_Z = 0.65
+const RIGHT_WIN_Y = 0.8
+
+function wallRotation(nx: number, ny: number, _nz: number): [number, number, number] {
+  if (ny > 0.5) return [-Math.PI / 2, 0, 0]
+  if (ny < -0.5) return [Math.PI / 2, 0, 0]
+  if (nx !== 0) return [0, Math.PI / 2, 0]
+  return [0, 0, 0]
+}
+
+function inFrontWindow(pos: THREE.Vector3) {
+  return Math.abs(pos.x) < FRONT_WIN_X && Math.abs(pos.y) < FRONT_WIN_Y
+}
+
+function inRightWindow(pos: THREE.Vector3) {
+  return Math.abs(pos.z) < RIGHT_WIN_Z && Math.abs(pos.y) < RIGHT_WIN_Y
+}
+
+export function CoffeeSpill({ burst }: CoffeeSpillProps) {
   const dropletsRef = useRef<Droplet[]>([])
-  const splashMarksRef = useRef<{ pos: THREE.Vector3; normal: THREE.Vector3 }[]>([])
-  
-  // Initialize droplets when spill starts
-  useFrame((_, delta) => {
-    if (spillVelocity && dropletsRef.current.length === 0) {
-      // Create droplets flying in the spill direction
-      const newDroplets: Droplet[] = []
-      for (let i = 0; i < 15; i++) {
-        const spread = 0.15
-        newDroplets.push({
-          id: Date.now() + i,
-          position: cupPosition.clone(),
-          velocity: new THREE.Vector3(
-            spillVelocity.x + (Math.random() - 0.5) * spread,
-            spillVelocity.y + (Math.random() - 0.5) * spread,
-            spillVelocity.z + (Math.random() - 0.5) * spread,
+  const dropletMeshes = useRef<Map<number, THREE.Mesh>>(new Map())
+  const [stains, setStains] = useState<Stain[]>([])
+  const [flying, setFlying] = useState<Droplet[]>([])
+  const lastBurstId = useRef<number | null>(null)
+  const nextId = useRef(1)
+
+  useEffect(() => {
+    if (!burst || burst.id === lastBurstId.current) return
+    lastBurstId.current = burst.id
+
+    const spawned: Droplet[] = []
+    for (let i = 0; i < 28; i++) {
+      const spread = 0.55
+      const speedJitter = 0.65 + Math.random() * 0.55
+      spawned.push({
+        id: nextId.current++,
+        position: burst.origin.clone().add(
+          new THREE.Vector3(
+            (Math.random() - 0.5) * 0.04,
+            0.02 + Math.random() * 0.03,
+            (Math.random() - 0.5) * 0.04,
           ),
-          age: 0,
-          landed: false,
-        })
-      }
-      dropletsRef.current = newDroplets
-      setDroplets(newDroplets)
-    }
-    
-    // Update droplet physics
-    if (dropletsRef.current.length > 0) {
-      let allLanded = true
-      dropletsRef.current = dropletsRef.current.map(d => {
-        if (d.landed) return d
-        
-        const newPos = d.position.clone().add(d.velocity.clone().multiplyScalar(delta))
-        const newVel = d.velocity.clone()
-        newVel.y -= 9.8 * delta // Gravity
-        
-        // Check collision with floor (y = -1.2)
-        if (newPos.y <= -1.15 && !d.landed) {
-          newPos.y = -1.15
-          splashMarksRef.current.push({
-            pos: newPos.clone(),
-            normal: new THREE.Vector3(0, 1, 0),
-          })
-          return { ...d, landed: true, landPos: newPos, age: d.age + delta }
-        }
-        
-        // Check collision with walls
-        const boxBounds = 1.1
-        if (Math.abs(newPos.x) > boxBounds || Math.abs(newPos.z) > boxBounds) {
-          const normal = new THREE.Vector3()
-          if (Math.abs(newPos.x) > boxBounds) {
-            newPos.x = Math.sign(newPos.x) * boxBounds
-            normal.x = -Math.sign(newPos.x)
-          }
-          if (Math.abs(newPos.z) > boxBounds) {
-            newPos.z = Math.sign(newPos.z) * boxBounds
-            normal.z = -Math.sign(newPos.z)
-          }
-          splashMarksRef.current.push({ pos: newPos.clone(), normal })
-          return { ...d, landed: true, landPos: newPos, age: d.age + delta }
-        }
-        
-        allLanded = false
-        return { ...d, position: newPos, velocity: newVel, age: d.age + delta }
+        ),
+        velocity: new THREE.Vector3(
+          burst.velocity.x * speedJitter + (Math.random() - 0.5) * spread,
+          burst.velocity.y * speedJitter + (Math.random() - 0.4) * spread,
+          burst.velocity.z * speedJitter + (Math.random() - 0.5) * spread,
+        ),
+        age: 0,
+        landed: false,
       })
-      
-      setDroplets([...dropletsRef.current])
-      
-      // Clean up after animation
-      if (allLanded) {
-        setTimeout(() => {
-          dropletsRef.current = []
-          setDroplets([])
-          onSpillComplete()
-        }, 3000)
+    }
+    dropletsRef.current = [...dropletsRef.current.filter((d) => !d.landed), ...spawned]
+    setFlying(dropletsRef.current.filter((d) => !d.landed))
+  }, [burst])
+
+  useFrame((_, delta) => {
+    const dt = Math.min(delta, 0.05)
+    if (dropletsRef.current.length === 0) return
+
+    const newStains: Stain[] = []
+    let changed = false
+
+    dropletsRef.current = dropletsRef.current.map((d) => {
+      if (d.landed) return d
+
+      const vel = d.velocity
+      vel.y -= 9.8 * dt
+      const pos = d.position.clone().add(vel.clone().multiplyScalar(dt))
+      const age = d.age + dt
+
+      const land = (nx: number, ny: number, nz: number, radius: number) => {
+        newStains.push({
+          id: nextId.current++,
+          pos: pos.clone(),
+          rot: wallRotation(nx, ny, nz),
+          radius,
+        })
+        changed = true
+        return { ...d, position: pos, velocity: vel, age, landed: true }
       }
+
+      if (pos.y <= FLOOR_Y) {
+        pos.y = FLOOR_Y + 0.004
+        return land(0, 1, 0, 0.06 + Math.random() * 0.08)
+      }
+      if (pos.y >= CEIL_Y) {
+        pos.y = CEIL_Y - 0.004
+        return land(0, -1, 0, 0.05 + Math.random() * 0.05)
+      }
+      if (pos.x <= -WALL) {
+        pos.x = -WALL + 0.004
+        return land(1, 0, 0, 0.05 + Math.random() * 0.07)
+      }
+      if (pos.x >= WALL) {
+        if (inRightWindow(pos)) {
+          // Flew out the right window — just drop the droplet.
+          changed = true
+          return { ...d, position: pos, velocity: vel, age, landed: true }
+        }
+        pos.x = WALL - 0.004
+        return land(-1, 0, 0, 0.05 + Math.random() * 0.07)
+      }
+      if (pos.z <= -WALL) {
+        pos.z = -WALL + 0.004
+        return land(0, 0, 1, 0.05 + Math.random() * 0.07)
+      }
+      if (pos.z >= WALL) {
+        if (inFrontWindow(pos)) {
+          changed = true
+          return { ...d, position: pos, velocity: vel, age, landed: true }
+        }
+        pos.z = WALL - 0.004
+        return land(0, 0, -1, 0.05 + Math.random() * 0.07)
+      }
+
+      if (age > 3.5) {
+        changed = true
+        return { ...d, position: pos, velocity: vel, age, landed: true }
+      }
+
+      d.position.copy(pos)
+      d.velocity.copy(vel)
+      d.age = age
+      const mesh = dropletMeshes.current.get(d.id)
+      if (mesh) mesh.position.copy(pos)
+      return d
+    })
+
+    if (newStains.length) {
+      setStains((prev) => [...prev, ...newStains].slice(-80))
+    }
+    if (changed) {
+      setFlying(dropletsRef.current.filter((d) => !d.landed))
     }
   })
-  
+
   return (
     <group>
-      {/* Flying droplets */}
-      {droplets.filter(d => !d.landed).map(d => (
-        <mesh key={d.id} position={d.position}>
-          <sphereGeometry args={[0.008, 6, 6]} />
-          <meshBasicMaterial color="#8B4513" />
+      {flying.map((d) => (
+        <mesh
+          key={d.id}
+          ref={(m) => {
+            if (m) dropletMeshes.current.set(d.id, m)
+            else dropletMeshes.current.delete(d.id)
+          }}
+          position={d.position}
+          castShadow={false}
+        >
+          <sphereGeometry args={[0.028, 8, 8]} />
+          <meshBasicMaterial color="#6B3A1E" />
         </mesh>
       ))}
-      
-      {/* Splash marks on surfaces */}
-      {splashMarksRef.current.map((mark, i) => (
+
+      {stains.map((mark) => (
         <mesh
-          key={`mark-${i}`}
+          key={mark.id}
           position={mark.pos}
-          rotation={[
-            mark.normal.y === 1 ? -Math.PI / 2 : 0,
-            0,
-            mark.normal.x !== 0 ? Math.PI / 2 : 0,
-          ]}
+          rotation={mark.rot}
+          renderOrder={2}
         >
-          <circleGeometry args={[0.025, 8]} />
-          <meshBasicMaterial color="#6B3410" transparent opacity={0.6} />
+          <circleGeometry args={[mark.radius, 12]} />
+          <meshBasicMaterial
+            color="#5A3016"
+            transparent
+            opacity={0.88}
+            depthWrite={false}
+            polygonOffset
+            polygonOffsetFactor={-2}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       ))}
     </group>

@@ -1,10 +1,13 @@
-import { forwardRef, useRef, useState, useImperativeHandle } from 'react'
+import { forwardRef, useRef, useImperativeHandle } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { ThemeMode } from '../types'
-import { Operator3D } from '../ops-deck/Operator3D'
+import {
+  Operator3D,
+  type CollectorHandles,
+  type CollectorPose,
+} from '../ops-deck/Operator3D'
 import * as THREE from 'three'
 import { CoffeeCup, Laptop } from './CollectorProps'
-import { CoffeeSpill } from './CoffeeSpill'
 
 export type DragPart = 'body' | 'head' | 'foot-left' | 'foot-right' | 'cup' | 'laptop' | null
 
@@ -15,250 +18,275 @@ type FigureInBoxProps = {
 
 export type FigureInBoxHandle = {
   applyPartMotion: (part: DragPart, delta: { x: number; y: number }) => void
-  resetPartMotion: (part: DragPart) => void
+  resetPartMotion: (part?: DragPart) => void
   getCupWorldPosition: () => THREE.Vector3
-  triggerSpill: (velocity: THREE.Vector3) => void
+  getCupWorldVelocity: () => THREE.Vector3
 }
+
+const EMPTY_POSE = (): CollectorPose => ({
+  headTiltX: 0,
+  headTiltY: 0,
+  leftArmRaise: 0,
+  rightArmRaise: 0,
+  leftFootLift: 0,
+  rightFootLift: 0,
+})
+
+const _world = new THREE.Vector3()
+const _local = new THREE.Vector3()
 
 export const FigureInBox = forwardRef<FigureInBoxHandle, FigureInBoxProps>(
   ({ onPointerDown }, ref) => {
     const introRef = useRef(1)
-    const operatorGroupRef = useRef<THREE.Group>(null)
     const cupRef = useRef<THREE.Group>(null)
     const laptopRef = useRef<THREE.Group>(null)
-    
-    // Part motion state
-    const [headTilt, setHeadTilt] = useState({ x: 0, y: 0 })
-    const [leftArmRaise, setLeftArmRaise] = useState(0)
-    const [rightArmRaise, setRightArmRaise] = useState(0)
-    const [bodyLean, setBodyLean] = useState({ x: 0, z: 0 })
-    
-    // Coffee spill state
-    const [spillVelocity, setSpillVelocity] = useState<THREE.Vector3 | null>(null)
-    const [spillActive, setSpillActive] = useState(false)
-    
-    // Last cup position for velocity calculation
-    const lastCupPos = useRef<THREE.Vector3>(new THREE.Vector3())
-    const cupVelocity = useRef<THREE.Vector3>(new THREE.Vector3())
-    
-    // Expose methods to parent
+    const cupAnchorRef = useRef<THREE.Group>(null)
+    const laptopAnchorRef = useRef<THREE.Group>(null)
+
+    const poseRef = useRef<CollectorPose>(EMPTY_POSE())
+    const handlesRef = useRef<CollectorHandles>({ head: null, handL: null, handR: null })
+    const activePartRef = useRef<DragPart>(null)
+    const bodyLeanRef = useRef({ x: 0, z: 0 })
+    const bodyLeanGroupRef = useRef<THREE.Group>(null)
+
+    const lastCupPos = useRef(new THREE.Vector3())
+    const cupVelocity = useRef(new THREE.Vector3())
+    const cupPosReady = useRef(false)
+
     useImperativeHandle(ref, () => ({
       applyPartMotion(part: DragPart, delta: { x: number; y: number }) {
-        const sensitivity = 0.8
-        
+        activePartRef.current = part
+        const pose = poseRef.current
+        const turn = 0.012
+        const lift = 0.02
+
         switch (part) {
           case 'head':
-            // Head tilts left/right and up/down
-            setHeadTilt(prev => ({
-              x: THREE.MathUtils.clamp(prev.x + delta.y * sensitivity, -0.4, 0.4),
-              y: THREE.MathUtils.clamp(prev.y + delta.x * sensitivity, -0.5, 0.5),
-            }))
+            // Drag down tilts the face down (+X); drag right yaws the head right.
+            pose.headTiltX = THREE.MathUtils.clamp(pose.headTiltX + delta.y * turn, -0.55, 0.55)
+            pose.headTiltY = THREE.MathUtils.clamp(pose.headTiltY + delta.x * turn, -0.75, 0.75)
             break
-            
           case 'cup':
-            // Right arm raises when cup is pulled up
-            setRightArmRaise(prev => 
-              THREE.MathUtils.clamp(prev - delta.y * sensitivity * 2, -0.3, 1.2)
+            pose.rightArmRaise = THREE.MathUtils.clamp(
+              pose.rightArmRaise - delta.y * lift,
+              -0.35,
+              1.35,
             )
             break
-            
           case 'laptop':
-            // Left arm raises when laptop is pulled up
-            setLeftArmRaise(prev =>
-              THREE.MathUtils.clamp(prev - delta.y * sensitivity * 2, -0.3, 1.2)
+            pose.leftArmRaise = THREE.MathUtils.clamp(
+              pose.leftArmRaise - delta.y * lift,
+              -0.35,
+              1.35,
             )
             break
-            
           case 'foot-left':
+            pose.leftFootLift = THREE.MathUtils.clamp(pose.leftFootLift - delta.y * lift, 0, 1.15)
+            bodyLeanRef.current.x = THREE.MathUtils.clamp(
+              bodyLeanRef.current.x + delta.x * 0.004,
+              -0.22,
+              0.22,
+            )
+            bodyLeanRef.current.z = THREE.MathUtils.clamp(
+              bodyLeanRef.current.z - delta.y * 0.003,
+              -0.18,
+              0.18,
+            )
+            break
           case 'foot-right':
-            // Body leans when foot is lifted
-            setBodyLean(prev => ({
-              x: THREE.MathUtils.clamp(prev.x + delta.x * 0.3, -0.2, 0.2),
-              z: THREE.MathUtils.clamp(prev.z - delta.y * 0.3, -0.2, 0.2),
-            }))
+            pose.rightFootLift = THREE.MathUtils.clamp(pose.rightFootLift - delta.y * lift, 0, 1.15)
+            bodyLeanRef.current.x = THREE.MathUtils.clamp(
+              bodyLeanRef.current.x + delta.x * 0.004,
+              -0.22,
+              0.22,
+            )
+            bodyLeanRef.current.z = THREE.MathUtils.clamp(
+              bodyLeanRef.current.z - delta.y * 0.003,
+              -0.18,
+              0.18,
+            )
             break
         }
       },
-      
-      resetPartMotion(part: DragPart) {
-        // Spring back to rest pose
-        switch (part) {
-          case 'head':
-            setHeadTilt({ x: 0, y: 0 })
-            break
-          case 'cup':
-            setRightArmRaise(0)
-            break
-          case 'laptop':
-            setLeftArmRaise(0)
-            break
-          case 'foot-left':
-          case 'foot-right':
-            setBodyLean({ x: 0, z: 0 })
-            break
-        }
+
+      resetPartMotion() {
+        activePartRef.current = null
       },
-      
+
       getCupWorldPosition() {
         if (cupRef.current) {
-          const pos = new THREE.Vector3()
-          cupRef.current.getWorldPosition(pos)
-          return pos
+          cupRef.current.getWorldPosition(_world)
+          return _world.clone()
         }
         return new THREE.Vector3()
       },
-      
-      triggerSpill(velocity: THREE.Vector3) {
-        setSpillVelocity(velocity.clone())
-        setSpillActive(true)
+
+      getCupWorldVelocity() {
+        return cupVelocity.current.clone()
       },
     }))
-    
-    // Track cup velocity for spill detection
-    useFrame(() => {
-      if (cupRef.current) {
-        const currentPos = new THREE.Vector3()
-        cupRef.current.getWorldPosition(currentPos)
-        
-        cupVelocity.current.copy(currentPos).sub(lastCupPos.current).multiplyScalar(60)
-        lastCupPos.current.copy(currentPos)
+
+    useFrame((_, dt) => {
+      const pose = poseRef.current
+      const part = activePartRef.current
+      const damp = Math.pow(0.88, dt * 60)
+
+      if (part !== 'head') {
+        pose.headTiltX *= damp
+        pose.headTiltY *= damp
+        if (Math.abs(pose.headTiltX) < 0.002) pose.headTiltX = 0
+        if (Math.abs(pose.headTiltY) < 0.002) pose.headTiltY = 0
       }
-      
-      // Spring damping for smooth return to rest
-      if (Math.abs(headTilt.x) > 0.01 || Math.abs(headTilt.y) > 0.01) {
-        setHeadTilt(prev => ({
-          x: prev.x * 0.95,
-          y: prev.y * 0.95,
-        }))
+      if (part !== 'cup') {
+        pose.rightArmRaise *= damp
+        if (Math.abs(pose.rightArmRaise) < 0.002) pose.rightArmRaise = 0
+      }
+      if (part !== 'laptop') {
+        pose.leftArmRaise *= damp
+        if (Math.abs(pose.leftArmRaise) < 0.002) pose.leftArmRaise = 0
+      }
+      if (part !== 'foot-left') {
+        pose.leftFootLift *= damp
+        if (pose.leftFootLift < 0.002) pose.leftFootLift = 0
+      }
+      if (part !== 'foot-right') {
+        pose.rightFootLift *= damp
+        if (pose.rightFootLift < 0.002) pose.rightFootLift = 0
+      }
+      if (part !== 'foot-left' && part !== 'foot-right') {
+        bodyLeanRef.current.x *= damp
+        bodyLeanRef.current.z *= damp
+        if (Math.abs(bodyLeanRef.current.x) < 0.002) bodyLeanRef.current.x = 0
+        if (Math.abs(bodyLeanRef.current.z) < 0.002) bodyLeanRef.current.z = 0
+      }
+
+      if (bodyLeanGroupRef.current) {
+        bodyLeanGroupRef.current.rotation.set(bodyLeanRef.current.z, 0, bodyLeanRef.current.x)
+      }
+
+      const { handL, handR } = handlesRef.current
+      if (handR && cupAnchorRef.current) {
+        handR.getWorldPosition(_world)
+        _local.copy(_world)
+        cupAnchorRef.current.parent?.worldToLocal(_local)
+        cupAnchorRef.current.position.copy(_local)
+      }
+      if (handL && laptopAnchorRef.current) {
+        handL.getWorldPosition(_world)
+        _local.copy(_world)
+        laptopAnchorRef.current.parent?.worldToLocal(_local)
+        laptopAnchorRef.current.position.copy(_local)
+        laptopAnchorRef.current.rotation.set(-0.35 + pose.leftArmRaise * 0.25, 0.2, 0)
+      }
+
+      if (cupRef.current) {
+        cupRef.current.getWorldPosition(_world)
+        if (cupPosReady.current) {
+          cupVelocity.current.copy(_world).sub(lastCupPos.current).multiplyScalar(1 / Math.max(dt, 1 / 120))
+        }
+        lastCupPos.current.copy(_world)
+        cupPosReady.current = true
       }
     })
-    
+
     const handlePointerOver = (e: any) => {
       e.stopPropagation()
       document.body.style.cursor = 'grab'
     }
-    
+
     const handlePointerOut = (e: any) => {
       e.stopPropagation()
       document.body.style.cursor = 'auto'
     }
-    
+
     const handlePointerDownWrapper = (e: any, part: DragPart = 'body') => {
       e.stopPropagation()
       document.body.style.cursor = 'grabbing'
       onPointerDown(e, part)
     }
-    
+
     return (
       <group position={[0, -1.05, 0]} scale={0.85} userData={{ restY: -1.05 }}>
-        {/* Body lean pivot - affects ENTIRE figure including props */}
-        <group rotation={[bodyLean.z, 0, bodyLean.x]}>
-          
-          {/* Body hit box for torso drag */}
+        <group ref={bodyLeanGroupRef}>
           <mesh
-            position={[0, 0.4, 0]}
+            position={[0, 0.64, 0]}
             onPointerDown={(e) => handlePointerDownWrapper(e, 'body')}
             onPointerOver={handlePointerOver}
             onPointerOut={handlePointerOut}
             onPointerMove={(e) => e.stopPropagation()}
           >
-            <boxGeometry args={[0.4, 0.6, 0.3]} />
-            <meshBasicMaterial transparent opacity={0} />
+            <boxGeometry args={[0.5, 0.72, 0.4]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
           </mesh>
-          
-          {/* Head hit box - positioned over character's head */}
+
           <mesh
-            position={[0, 0.95, 0]}
+            position={[0, 1.08, 0]}
             onPointerDown={(e) => handlePointerDownWrapper(e, 'head')}
             onPointerOver={handlePointerOver}
             onPointerOut={handlePointerOut}
           >
-            <sphereGeometry args={[0.25, 16, 16]} />
-            <meshBasicMaterial transparent opacity={0} />
+            <sphereGeometry args={[0.34, 16, 16]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
           </mesh>
-          
-          {/* Foot hit boxes */}
+
           <mesh
-            position={[-0.12, 0.08, 0]}
+            position={[-0.12, 0.08, 0.02]}
             onPointerDown={(e) => handlePointerDownWrapper(e, 'foot-left')}
             onPointerOver={handlePointerOver}
             onPointerOut={handlePointerOut}
           >
-            <boxGeometry args={[0.15, 0.1, 0.22]} />
-            <meshBasicMaterial transparent opacity={0} />
+            <boxGeometry args={[0.16, 0.14, 0.26]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
           </mesh>
-          
+
           <mesh
-            position={[0.12, 0.08, 0]}
+            position={[0.12, 0.08, 0.02]}
             onPointerDown={(e) => handlePointerDownWrapper(e, 'foot-right')}
             onPointerOver={handlePointerOver}
             onPointerOut={handlePointerOut}
           >
-            <boxGeometry args={[0.15, 0.1, 0.22]} />
-            <meshBasicMaterial transparent opacity={0} />
+            <boxGeometry args={[0.16, 0.14, 0.26]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
           </mesh>
-          
-          {/* Operator3D - actual visible character */}
-          {/* Note: Head tilt state exists but doesn't affect rendering yet.
-               Operator3D is a procedural chibi with no exposed bone hierarchy.
-               Full head rotation would require modifying Operator3D internals or
-               adding a separate head mesh overlay. For now, head drag provides
-               tactile feedback via the hit box, but visual tilt is a TODO. */}
-          <group ref={operatorGroupRef}>
-            <Operator3D
-              hotspots={[]}
-              target={null}
-              ticket={0}
-              onArrive={() => {}}
-              onTap={() => {}}
-              palette={{ accent: '#5a7fa5', accentAlt: '#3d5571' } as any}
-              introRef={introRef}
-              home={[0, 0, 0]}
-              collectorMode={true}
-            />
-          </group>
-          
-          {/* Coffee cup in right hand with arm follow */}
-          <group position={[0.25, 0.5 + rightArmRaise * 0.15, 0.15]}>
+
+          <Operator3D
+            hotspots={[]}
+            target={null}
+            ticket={0}
+            onArrive={() => {}}
+            onTap={() => {}}
+            palette={{ accent: '#5a7fa5', accentAlt: '#3d5571' } as any}
+            introRef={introRef}
+            home={[0, 0, 0]}
+            collectorMode={true}
+            collectorPoseRef={poseRef}
+            collectorHandlesRef={handlesRef}
+          />
+
+          <group ref={cupAnchorRef} position={[0.26, 0.44, 0.08]}>
             <CoffeeCup ref={cupRef} />
             <mesh
               onPointerDown={(e) => handlePointerDownWrapper(e, 'cup')}
               onPointerOver={handlePointerOver}
               onPointerOut={handlePointerOut}
             >
-              <sphereGeometry args={[0.08, 8, 8]} />
-              <meshBasicMaterial transparent opacity={0} />
+              <sphereGeometry args={[0.1, 8, 8]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
             </mesh>
           </group>
-          
-          {/* Laptop in left hand with arm follow */}
-          <group position={[-0.25, 0.4 + leftArmRaise * 0.15, 0.1]}>
-            <Laptop
-              ref={laptopRef}
-              rotation={[-0.3 + leftArmRaise * 0.2, 0.2, 0]}
-            />
+
+          <group ref={laptopAnchorRef} position={[-0.26, 0.44, 0.08]}>
+            <Laptop ref={laptopRef} />
             <mesh
               onPointerDown={(e) => handlePointerDownWrapper(e, 'laptop')}
               onPointerOver={handlePointerOver}
               onPointerOut={handlePointerOut}
             >
-              <boxGeometry args={[0.15, 0.1, 0.12]} />
-              <meshBasicMaterial transparent opacity={0} />
+              <boxGeometry args={[0.16, 0.12, 0.14]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
             </mesh>
           </group>
         </group>
-        
-        {/* Coffee spill effect */}
-        {spillActive && cupRef.current && (
-          <CoffeeSpill
-            cupPosition={lastCupPos.current}
-            spillVelocity={spillVelocity}
-            onSpillComplete={() => {
-              setSpillActive(false)
-              setSpillVelocity(null)
-            }}
-          />
-        )}
       </group>
     )
   },

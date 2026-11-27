@@ -159,14 +159,22 @@ export function PackageBox({
           <planeGeometry args={[BOX_SIZE, BOX_SIZE]} />
           <meshStandardMaterial map={textures.top} roughness={0.65} side={THREE.DoubleSide} />
         </mesh>
-        {/* Hang tab */}
-        <mesh position={[0, 0, hs + WALL / 2 + 0.12]} castShadow>
-          <boxGeometry args={[0.3, 0.3, WALL]} />
+        {/*
+          Hang tab at the back edge of the lid, standing up in world +Y.
+          This top group is rotated +π/2 around X (local +Z → world −Y),
+          so negative local Z is above the lid. A previous flip of the top
+          plane (71351dd) left these meshes at +Z, which put the cardboard
+          box+cylinder inside the cavity at head height — the leftover
+          “white cube and cylinder” seen when the figure was dragged away.
+        */}
+        <mesh position={[0, -hs + 0.02, -0.16]} castShadow>
+          <boxGeometry args={[0.36, WALL, 0.32]} />
           <meshStandardMaterial color="#e8d8c8" roughness={0.65} />
         </mesh>
-        <mesh position={[0, 0, hs + WALL / 2 + 0.26]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.05, 0.05, WALL, 16]} />
-          <meshStandardMaterial color="#e8d8c8" roughness={0.65} />
+        {/* Peg hole through the tab (axis = tab thickness = local Y / world Z) */}
+        <mesh position={[0, -hs + 0.02, -0.22]}>
+          <cylinderGeometry args={[0.05, 0.05, WALL + 0.02, 16]} />
+          <meshStandardMaterial color="#c8b8a8" roughness={0.65} />
         </mesh>
       </group>
 

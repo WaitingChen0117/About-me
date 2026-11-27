@@ -1,11 +1,12 @@
 import { PerspectiveCamera } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { getPalette } from '../../themes/palettes'
 import type { SceneProps } from '../types'
 import { FigureInBox, type FigureInBoxHandle, type DragPart } from './FigureInBox'
 import { PackageBox } from './PackageBox'
+import { CoffeeSpill, type SpillBurst } from './CoffeeSpill'
 
 type BoxWorldProps = SceneProps & {
   lowPower: boolean
@@ -47,6 +48,11 @@ export function BoxWorld({
   const rotationStart = useRef(new THREE.Euler(0, 0, 0))
   const dragTarget = useRef<DragPart | 'box' | null>(null)
   const cupVelocityBuffer = useRef<Array<{ vx: number; vy: number; time: number }>>([])
+  const [spillBurst, setSpillBurst] = useState<SpillBurst | null>(null)
+  const _flickRight = useRef(new THREE.Vector3())
+  const _flickUp = useRef(new THREE.Vector3())
+  const _flickWorld = useRef(new THREE.Vector3())
+  const _boxQuat = useRef(new THREE.Quaternion())
   
   const preset = getPalette(theme)
 
@@ -170,21 +176,52 @@ export function BoxWorld({
   }, [onShowFrontButton])
 
   const handlePointerUp = useCallback(() => {
-    // Check for coffee spill on cup release
+    // Check for coffee spill on cup release (flick / shake)
     if (dragTarget.current === 'cup' && figureHandleRef.current && cupVelocityBuffer.current.length >= 1) {
-      // Calculate average velocity over last frames
-      const avgVx = cupVelocityBuffer.current.reduce((sum, v) => sum + v.vx, 0) / cupVelocityBuffer.current.length
-      const avgVy = cupVelocityBuffer.current.reduce((sum, v) => sum + v.vy, 0) / cupVelocityBuffer.current.length
-      const speed = Math.sqrt(avgVx * avgVx + avgVy * avgVy)
-      
-      // Trigger spill if flicked fast enough (lowered threshold for low-FPS environments)
-      if (speed > 3) {
-        const spillDir = new THREE.Vector3(avgVx * 0.02, -avgVy * 0.02, 0)
-        figureHandleRef.current.triggerSpill(spillDir)
+      const buf = cupVelocityBuffer.current
+      const avgVx = buf.reduce((sum, v) => sum + v.vx, 0) / buf.length
+      const avgVy = buf.reduce((sum, v) => sum + v.vy, 0) / buf.length
+      const peakPixel = buf.reduce((m, v) => Math.max(m, Math.hypot(v.vx, v.vy)), 0)
+      const pixelSpeed = Math.max(Math.hypot(avgVx, avgVy), peakPixel * 0.8)
+      const cupVel = figureHandleRef.current.getCupWorldVelocity()
+      const worldSpeed = cupVel.length()
+
+      if (pixelSpeed > 2.5 || worldSpeed > 0.25) {
+        const origin = figureHandleRef.current.getCupWorldPosition()
+        const cam = cameraRef.current
+        if (cam) {
+          _flickRight.current.set(1, 0, 0).applyQuaternion(cam.quaternion).setY(0).normalize()
+          _flickUp.current.set(0, 1, 0)
+          _flickWorld.current
+            .copy(_flickRight.current)
+            .multiplyScalar(avgVx)
+            .addScaledVector(_flickUp.current, -avgVy)
+        } else {
+          _flickWorld.current.set(avgVx, -avgVy, 0)
+        }
+
+        // Pixel flick → box-local impulse, plus the measured 3D cup velocity.
+        if (_flickWorld.current.lengthSq() > 1e-6) {
+          _flickWorld.current.normalize().multiplyScalar(Math.max(3.2, pixelSpeed * 0.16))
+        }
+        _flickWorld.current.addScaledVector(cupVel, 1.8)
+        _flickWorld.current.y += 2.2
+
+        if (boxGroup.current) {
+          boxGroup.current.worldToLocal(origin)
+          boxGroup.current.getWorldQuaternion(_boxQuat.current)
+          _flickWorld.current.applyQuaternion(_boxQuat.current.invert())
+        }
+
+        setSpillBurst({
+          id: Date.now(),
+          origin,
+          velocity: _flickWorld.current.clone(),
+        })
       }
     }
-    
-    // Reset part motion on release
+
+    // Reset part motion on release (springs back in FigureInBox)
     if (dragTarget.current && dragTarget.current !== 'box' && dragTarget.current !== 'body' && figureHandleRef.current) {
       figureHandleRef.current.resetPartMotion(dragTarget.current)
     }
@@ -327,6 +364,9 @@ export function BoxWorld({
             theme={theme}
           />
         </group>
+
+        {/* Spills live in box space so stains stay on the cavity, not the figure */}
+        <CoffeeSpill burst={spillBurst} />
       </group>
 
       <mesh position={[0, 0, -8]} receiveShadow={false}>

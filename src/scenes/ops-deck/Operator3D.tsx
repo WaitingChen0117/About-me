@@ -51,6 +51,21 @@ export type StandCommand = {
   exitYaw?: number
 }
 
+export type CollectorPose = {
+  headTiltX: number
+  headTiltY: number
+  leftArmRaise: number
+  rightArmRaise: number
+  leftFootLift: number
+  rightFootLift: number
+}
+
+export type CollectorHandles = {
+  head: THREE.Group | null
+  handL: THREE.Group | null
+  handR: THREE.Group | null
+}
+
 type Props = {
   hotspots: HotspotDef[]
   target: SectionId | null
@@ -100,6 +115,10 @@ type Props = {
    * While seated, prefer this yaw over lookAtId (forced monitor turn).
    */
   seatTurnYawRef?: MutableRefObject<number | null>
+  /** Collector-box part pose — applied each frame after idle limb damping. */
+  collectorPoseRef?: MutableRefObject<CollectorPose>
+  /** Live head / hand groups so the box can attach cup and laptop to the hands. */
+  collectorHandlesRef?: MutableRefObject<CollectorHandles>
 }
 
 /** Shortest signed angle from `from` to `to` in (−π, π]. */
@@ -180,6 +199,8 @@ export function Operator3D({
   seatYawRef,
   chairOrientedRef,
   seatTurnYawRef,
+  collectorPoseRef,
+  collectorHandlesRef,
 }: Props) {
   const group = useRef<THREE.Group>(null)
   const pos = useRef(new THREE.Vector3(...home))
@@ -224,6 +245,9 @@ export function Operator3D({
   const calfR = useRef<THREE.Group>(null)
   const armL = useRef<THREE.Group>(null)
   const armR = useRef<THREE.Group>(null)
+  const head = useRef<THREE.Group>(null)
+  const handL = useRef<THREE.Group>(null)
+  const handR = useRef<THREE.Group>(null)
   const torso = useRef<THREE.Mesh>(null)
   const marker = useRef<THREE.Mesh>(null)
   /** 0 = standing legs, 1 = explicit L-sit leg meshes */
@@ -332,6 +356,17 @@ export function Operator3D({
   // Walk / idle plane follows home Y so scenes can raise or lower the floor
   // without rewriting bob math (ops-deck home Y is 0; craft-lab stays on floor).
   const floorY = home[1] + STAND_Y_LIFT
+
+  useEffect(() => {
+    const g = group.current
+    if (!g || !collectorMode) return
+    // Invisible part hit boxes in FigureInBox own pointer events in the box.
+    g.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        obj.raycast = () => {}
+      }
+    })
+  }, [collectorMode])
 
   const publishPos = () => {
     if (positionRef) {
@@ -528,6 +563,24 @@ export function Operator3D({
     })
   }, [standCommand, floorY])
 
+  const applyCollectorPose = () => {
+    if (collectorHandlesRef) {
+      collectorHandlesRef.current.head = head.current
+      collectorHandlesRef.current.handL = handL.current
+      collectorHandlesRef.current.handR = handR.current
+    }
+    const pose = collectorPoseRef?.current
+    if (!collectorMode || !pose) return
+    if (head.current) {
+      head.current.rotation.x = pose.headTiltX
+      head.current.rotation.y = pose.headTiltY
+    }
+    if (armL.current) armL.current.rotation.x = -pose.leftArmRaise
+    if (armR.current) armR.current.rotation.x = -pose.rightArmRaise
+    if (legL.current) legL.current.rotation.x = -pose.leftFootLift
+    if (legR.current) legR.current.rotation.x = -pose.rightFootLift
+  }
+
   useFrame((_, dt) => {
     const g = group.current
     if (!g) return
@@ -650,6 +703,7 @@ export function Operator3D({
         const mat = torso.current.material as THREE.MeshStandardMaterial
         mat.emissiveIntensity = 0.03
       }
+      applyCollectorPose()
       return
     }
 
@@ -814,6 +868,8 @@ export function Operator3D({
       const mat = torso.current.material as THREE.MeshStandardMaterial
       mat.emissiveIntensity = hovered || walking ? 0.08 : 0.02
     }
+
+    applyCollectorPose()
   })
 
   return (
@@ -842,8 +898,11 @@ export function Operator3D({
       <ChibiFigure
         materials={materials}
         torsoRef={torso}
+        headRef={head}
         armL={armL}
         armR={armR}
+        handL={handL}
+        handR={handR}
         legL={legL}
         legR={legR}
         calfL={calfL}
@@ -919,8 +978,11 @@ type FigMats = {
 function ChibiFigure({
   materials: m,
   torsoRef,
+  headRef,
   armL,
   armR,
+  handL,
+  handR,
   legL,
   legR,
   calfL,
@@ -929,8 +991,11 @@ function ChibiFigure({
 }: {
   materials: FigMats
   torsoRef: RefObject<THREE.Mesh | null>
+  headRef: RefObject<THREE.Group | null>
   armL: RefObject<THREE.Group | null>
   armR: RefObject<THREE.Group | null>
+  handL: RefObject<THREE.Group | null>
+  handR: RefObject<THREE.Group | null>
   legL: RefObject<THREE.Group | null>
   legR: RefObject<THREE.Group | null>
   calfL: RefObject<THREE.Group | null>
@@ -955,7 +1020,7 @@ function ChibiFigure({
   return (
     <group>
       {/* —— Head (oversized vinyl ball) —— */}
-      <group position={[0, 0.94, 0]}>
+      <group ref={headRef} position={[0, 0.94, 0]}>
         <mesh castShadow material={m.skin}>
           <sphereGeometry args={[0.24, 28, 22]} />
         </mesh>
@@ -1044,6 +1109,7 @@ function ChibiFigure({
         <mesh position={[0, -0.28, 0.01]} castShadow material={m.skin}>
           <sphereGeometry args={[0.045, 12, 10]} />
         </mesh>
+        <group ref={handL} position={[0, -0.28, 0.06]} />
       </group>
       <group ref={armR} position={[0.26, 0.58, 0]}>
         <mesh position={[0, -0.12, 0]} castShadow material={m.hoodie}>
@@ -1055,6 +1121,7 @@ function ChibiFigure({
         <mesh position={[0, -0.28, 0.01]} castShadow material={m.skin}>
           <sphereGeometry args={[0.045, 12, 10]} />
         </mesh>
+        <group ref={handR} position={[0, -0.28, 0.06]} />
       </group>
 
       {/* —— Standing / walk legs (hidden when fully seated) —— */}
