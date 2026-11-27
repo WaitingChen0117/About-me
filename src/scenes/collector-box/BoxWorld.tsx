@@ -93,10 +93,12 @@ export function BoxWorld({
     const deltaY = e.clientY - dragStart.current.y
 
     if (dragTarget.current === 'box') {
-      // Orbit camera around box - box follows drag direction
+      // Orbit camera around box - box surface follows drag direction
+      // Right drag → box turns right (Y += deltaX)
+      // Up drag → see more top (X -= deltaY because up is negative deltaY, -= negative = +)
       targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
       targetRotation.current.x = THREE.MathUtils.clamp(
-        rotationStart.current.x + deltaY * 0.005,
+        rotationStart.current.x - deltaY * 0.005,
         -0.5,
         0.5,
       )
