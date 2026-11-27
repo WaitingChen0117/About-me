@@ -10,7 +10,7 @@ type FigureInBoxProps = {
 export function FigureInBox({ onPointerDown }: FigureInBoxProps) {
   const introRef = useRef(1)
   
-  // Create a wrapper that intercepts all pointer events before they reach Operator3D
+  // Intercept pointer events to prevent studio tooltips while allowing drag
   const handlePointerOver = (e: any) => {
     e.stopPropagation()
     document.body.style.cursor = 'grab'
@@ -23,12 +23,13 @@ export function FigureInBox({ onPointerDown }: FigureInBoxProps) {
   
   const handlePointerDownWrapper = (e: any) => {
     e.stopPropagation()
+    document.body.style.cursor = 'grabbing'
     onPointerDown(e)
   }
   
   return (
     <group position={[0, -1.05, 0]} scale={0.85}>
-      {/* Invisible hit box to intercept all pointer events */}
+      {/* Hit box to intercept events and enable figure dragging */}
       <mesh
         onPointerDown={handlePointerDownWrapper}
         onPointerOver={handlePointerOver}
@@ -39,7 +40,7 @@ export function FigureInBox({ onPointerDown }: FigureInBoxProps) {
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
       
-      {/* Operator3D sits behind the hit box, its own events are blocked */}
+      {/* Operator3D - its own hover/click events are blocked by hit box above */}
       <Operator3D
         hotspots={[]}
         target={null}

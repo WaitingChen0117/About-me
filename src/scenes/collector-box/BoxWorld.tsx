@@ -48,12 +48,12 @@ export function BoxWorld({
     gl.toneMappingExposure = lowPower ? preset.lights.exposureLite : preset.lights.exposure
   }, [gl, theme, lowPower, preset.lights])
 
-  // Hero three-quarter angle (front + thin right edge)
-  const HERO_ROTATION = { y: -0.3, x: 0.1 }
+  // Front-facing angle: figure straight-on to camera
+  const FRONT_ROTATION = { y: 0, x: 0 }
 
   const rotateTo = useCallback((face: TargetFace) => {
     if (!face) {
-      targetRotation.current.set(HERO_ROTATION.x, HERO_ROTATION.y, 0)
+      targetRotation.current.set(FRONT_ROTATION.x, FRONT_ROTATION.y, 0)
       if (onShowFrontButton) onShowFrontButton(false)
       return
     }
@@ -62,7 +62,7 @@ export function BoxWorld({
 
     switch (face) {
       case 'front':
-        targetRotation.current.set(HERO_ROTATION.x, HERO_ROTATION.y, 0)
+        targetRotation.current.set(FRONT_ROTATION.x, FRONT_ROTATION.y, 0)
         if (onShowFrontButton) onShowFrontButton(false)
         break
       case 'back':
@@ -93,46 +93,75 @@ export function BoxWorld({
     const deltaY = e.clientY - dragStart.current.y
 
     if (dragTarget.current === 'box') {
-      // Orbit camera around box - box surface follows drag direction
+      // Orbit camera around box - box surface follows drag direction like a physical toy
       // Right drag → box turns right (Y += deltaX)
-      // Up drag → see more top (X -= deltaY because up is negative deltaY, -= negative = +)
+      // Up drag → push front face up, top comes toward viewer (X += deltaY)
       targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
       targetRotation.current.x = THREE.MathUtils.clamp(
-        rotationStart.current.x - deltaY * 0.005,
+        rotationStart.current.x + deltaY * 0.005,
         -0.5,
         0.5,
       )
       
       // Update front button visibility
       if (onShowFrontButton) {
-        const isNearHero = 
-          Math.abs(targetRotation.current.y - HERO_ROTATION.y) < 0.2 &&
-          Math.abs(targetRotation.current.x - HERO_ROTATION.x) < 0.2
-        onShowFrontButton(!isNearHero)
+        const isNearFront = 
+          Math.abs(targetRotation.current.y - FRONT_ROTATION.y) < 0.2 &&
+          Math.abs(targetRotation.current.x - FRONT_ROTATION.x) < 0.2
+        onShowFrontButton(!isNearFront)
       }
     } else if (dragTarget.current === 'figure' && figureGroup.current) {
-      // Squash/tilt figure (spring effect)
-      const tiltX = deltaX * 0.001
-      const tiltZ = deltaY * 0.001
+      // Drag figure inside cavity like a vinyl toy
+      // Convert screen delta to 3D movement (constrained to cavity)
+      const moveX = deltaX * 0.002
+      const moveY = -deltaY * 0.002
+      
+      // Constrain to cavity bounds (roughly ±0.8 from center)
+      const constrainedX = THREE.MathUtils.clamp(moveX, -0.8, 0.8)
+      const constrainedY = THREE.MathUtils.clamp(moveY, -0.6, 0.6)
+      
+      // Apply movement
+      figureGroup.current.position.x = constrainedX
+      figureGroup.current.position.y = constrainedY
+      
+      // Add squash/tilt for toy-like feel
+      const tiltX = deltaX * 0.0008
+      const tiltZ = deltaY * 0.0008
       figureGroup.current.rotation.x = tiltZ
       figureGroup.current.rotation.z = -tiltX
-      figureGroup.current.scale.setScalar(0.95 - Math.abs(tiltX) * 0.1 - Math.abs(tiltZ) * 0.1)
+      
+      // Slight squash when moved far
+      const dist = Math.sqrt(constrainedX * constrainedX + constrainedY * constrainedY)
+      const squash = Math.max(0.92, 1 - dist * 0.08)
+      figureGroup.current.scale.setScalar(squash)
     }
   }, [])
 
   const handlePointerUp = useCallback(() => {
     if (dragTarget.current === 'figure' && figureGroup.current) {
-      // Spring back
+      // Spring back to center with vinyl toy bounce
       const springBack = () => {
         if (!figureGroup.current) return
+        
+        // Spring position back to origin
+        figureGroup.current.position.x *= 0.88
+        figureGroup.current.position.y *= 0.88
+        
+        // Spring rotation back
         figureGroup.current.rotation.x *= 0.85
         figureGroup.current.rotation.z *= 0.85
+        
+        // Spring scale back to 1
         figureGroup.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.2)
         
-        if (Math.abs(figureGroup.current.rotation.x) > 0.01 || 
+        // Continue spring if still moving
+        if (Math.abs(figureGroup.current.position.x) > 0.01 ||
+            Math.abs(figureGroup.current.position.y) > 0.01 ||
+            Math.abs(figureGroup.current.rotation.x) > 0.01 || 
             Math.abs(figureGroup.current.rotation.z) > 0.01) {
           requestAnimationFrame(springBack)
         } else {
+          figureGroup.current.position.set(0, 0, 0)
           figureGroup.current.rotation.set(0, 0, 0)
           figureGroup.current.scale.setScalar(1)
         }
