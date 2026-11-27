@@ -49,7 +49,8 @@ export function BoxWorld({
   }, [gl, theme, lowPower, preset.lights])
 
   // Front-facing angle: figure straight-on to camera
-  const FRONT_ROTATION = { y: 0, x: 0 }
+  // Camera at [3, 1.5, 4] → need Y rotation ~0.64 to face it
+  const FRONT_ROTATION = { y: 0.64, x: 0 }
 
   const rotateTo = useCallback((face: TargetFace) => {
     if (!face) {
@@ -95,10 +96,10 @@ export function BoxWorld({
     if (dragTarget.current === 'box') {
       // Orbit camera around box - box surface follows drag direction like a physical toy
       // Right drag → box turns right (Y += deltaX)
-      // Up drag → push front face up, top comes toward viewer (X += deltaY)
+      // Up drag → top comes toward viewer (X -= deltaY)
       targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
       targetRotation.current.x = THREE.MathUtils.clamp(
-        rotationStart.current.x + deltaY * 0.005,
+        rotationStart.current.x - deltaY * 0.005,
         -0.5,
         0.5,
       )

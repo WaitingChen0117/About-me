@@ -115,10 +115,10 @@ export function PackageBox({
       </group>
 
       {/* Back wall (closed) with collection */}
-      <group position={[0, 0, -hs - WALL / 2]}>
+      <group position={[0, 0, -hs - WALL / 2]} rotation={[0, Math.PI, 0]}>
         <mesh castShadow receiveShadow onPointerDown={onPointerDown}>
           <planeGeometry args={[BOX_SIZE, BOX_SIZE]} />
-          <meshStandardMaterial map={textures.back} roughness={0.65} />
+          <meshStandardMaterial map={textures.back} roughness={0.65} side={THREE.DoubleSide} />
         </mesh>
         {/* Work card clickable areas - positioned outside and facing camera */}
         {[0, 1, 2, 3, 4].map((i) => (
@@ -138,10 +138,10 @@ export function PackageBox({
       </group>
 
       {/* Left wall (closed) - About face */}
-      <group position={[-hs - WALL / 2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+      <group position={[-hs - WALL / 2, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
         <mesh castShadow receiveShadow onPointerDown={onPointerDown}>
           <planeGeometry args={[BOX_SIZE, BOX_SIZE]} />
-          <meshStandardMaterial map={textures.left} roughness={0.65} />
+          <meshStandardMaterial map={textures.left} roughness={0.65} side={THREE.DoubleSide} />
         </mesh>
       </group>
 
@@ -154,10 +154,10 @@ export function PackageBox({
       </group>
 
       {/* Top with hang tab */}
-      <group position={[0, hs + WALL / 2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <group position={[0, hs + WALL / 2, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <mesh castShadow receiveShadow onPointerDown={onPointerDown}>
           <planeGeometry args={[BOX_SIZE, BOX_SIZE]} />
-          <meshStandardMaterial map={textures.top} roughness={0.65} />
+          <meshStandardMaterial map={textures.top} roughness={0.65} side={THREE.DoubleSide} />
         </mesh>
         {/* Hang tab */}
         <mesh position={[0, 0, hs + WALL / 2 + 0.12]} castShadow>
@@ -171,10 +171,10 @@ export function PackageBox({
       </group>
 
       {/* Bottom */}
-      <group position={[0, -hs - WALL / 2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <group position={[0, -hs - WALL / 2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <mesh castShadow receiveShadow onPointerDown={onPointerDown}>
           <planeGeometry args={[BOX_SIZE, BOX_SIZE]} />
-          <meshStandardMaterial map={textures.bottom} roughness={0.65} />
+          <meshStandardMaterial map={textures.bottom} roughness={0.65} side={THREE.DoubleSide} />
         </mesh>
       </group>
 
