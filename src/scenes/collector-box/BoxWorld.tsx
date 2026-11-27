@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { getPalette } from '../../themes/palettes'
 import type { SceneProps } from '../types'
-import { FigureInBox } from './FigureInBox'
+import { FigureInBox, type FigureInBoxHandle, type DragPart } from './FigureInBox'
 import { PackageBox } from './PackageBox'
 
 type BoxWorldProps = SceneProps & {
@@ -35,12 +35,18 @@ export function BoxWorld({
   const targetRotation = useRef(new THREE.Euler(0, 0, 0))
   const currentRotation = useRef(new THREE.Euler(0, 0, 0))
   const boxGroup = useRef<THREE.Group>(null)
-  const figureGroup = useRef<THREE.Group>(null)
+  
+  // Figure outer wrapper for body drag (position/scale/tilt)
+  const figureWrapperRef = useRef<THREE.Group>(null)
+  // Figure inner handle for part motion (head/arms/feet)
+  const figureHandleRef = useRef<FigureInBoxHandle>(null)
   
   const isDragging = useRef(false)
   const dragStart = useRef({ x: 0, y: 0 })
+  const dragLast = useRef({ x: 0, y: 0 })
   const rotationStart = useRef(new THREE.Euler(0, 0, 0))
-  const dragTarget = useRef<'box' | 'body' | 'head' | 'cup' | 'laptop' | null>(null)
+  const dragTarget = useRef<DragPart | 'box' | null>(null)
+  const cupVelocityBuffer = useRef<Array<{ vx: number; vy: number; time: number }>>([])
   
   const preset = getPalette(theme)
 
@@ -78,25 +84,27 @@ export function BoxWorld({
     }
   }, [onShowFrontButton])
 
-  const handlePointerDown = useCallback((e: PointerEvent, target: 'box' | 'body' | 'head' | 'cup' | 'laptop') => {
+  const handlePointerDown = useCallback((e: PointerEvent, target: DragPart | 'box') => {
     isDragging.current = true
     dragTarget.current = target
     dragStart.current = { x: e.clientX, y: e.clientY }
+    dragLast.current = { x: e.clientX, y: e.clientY }
     rotationStart.current.copy(currentRotation.current)
+    cupVelocityBuffer.current = []
     document.body.style.cursor = 'grabbing'
     e.stopPropagation()
   }, [])
 
   const handlePointerMove = useCallback((e: PointerEvent) => {
-    if (!isDragging.current) return
+    if (!isDragging.current || !dragTarget.current) return
 
     const deltaX = e.clientX - dragStart.current.x
     const deltaY = e.clientY - dragStart.current.y
+    const frameDeltaX = e.clientX - dragLast.current.x
+    const frameDeltaY = e.clientY - dragLast.current.y
 
     if (dragTarget.current === 'box') {
-      // Orbit camera around box - box surface follows drag direction like a physical toy
-      // Right drag → box turns right (Y += deltaX)
-      // Up drag → top comes toward viewer (X -= deltaY)
+      // Orbit camera around box
       targetRotation.current.y = rotationStart.current.y + deltaX * 0.005
       targetRotation.current.x = THREE.MathUtils.clamp(
         rotationStart.current.x - deltaY * 0.005,
@@ -104,76 +112,103 @@ export function BoxWorld({
         0.5,
       )
       
-      // Update front button visibility
       if (onShowFrontButton) {
         const isNearFront = 
           Math.abs(targetRotation.current.y - FRONT_ROTATION.y) < 0.2 &&
           Math.abs(targetRotation.current.x - FRONT_ROTATION.x) < 0.2
         onShowFrontButton(!isNearFront)
       }
-    } else if ((dragTarget.current === 'body' || dragTarget.current === 'head' || 
-                dragTarget.current === 'cup' || dragTarget.current === 'laptop') && 
-                figureGroup.current) {
-      // Drag figure inside cavity like a vinyl toy
-      // Convert screen delta to 3D movement (constrained to cavity)
+    } else if (dragTarget.current === 'body' && figureWrapperRef.current) {
+      // Body drag: move whole figure inside cavity
       const moveX = deltaX * 0.002
       const moveY = -deltaY * 0.002
       
-      // Constrain to cavity bounds (roughly ±0.8 from center)
       const constrainedX = THREE.MathUtils.clamp(moveX, -0.8, 0.8)
       const constrainedY = THREE.MathUtils.clamp(moveY, -0.6, 0.6)
       
-      // Apply movement (maintain base Y position of -1.05 from FigureInBox)
-      figureGroup.current.position.x = constrainedX
-      figureGroup.current.position.y = -1.05 + constrainedY
+      figureWrapperRef.current.position.x = constrainedX
+      figureWrapperRef.current.position.y = constrainedY
       
-      // Add squash/tilt for toy-like feel
+      // Vinyl toy tilt
       const tiltX = deltaX * 0.0008
       const tiltZ = deltaY * 0.0008
-      figureGroup.current.rotation.x = tiltZ
-      figureGroup.current.rotation.z = -tiltX
+      figureWrapperRef.current.rotation.x = tiltZ
+      figureWrapperRef.current.rotation.z = -tiltX
       
-      // Slight squash when moved far
+      // Squash when moved far
       const dist = Math.sqrt(constrainedX * constrainedX + constrainedY * constrainedY)
       const squash = Math.max(0.92, 1 - dist * 0.08)
-      figureGroup.current.scale.setScalar(squash)
+      figureWrapperRef.current.scale.setScalar(squash)
+      
+    } else if (figureHandleRef.current && (
+      dragTarget.current === 'head' || 
+      dragTarget.current === 'cup' || 
+      dragTarget.current === 'laptop' ||
+      dragTarget.current === 'foot-left' ||
+      dragTarget.current === 'foot-right'
+    )) {
+      // Part-specific motion through the handle interface
+      figureHandleRef.current.applyPartMotion(dragTarget.current, {
+        x: frameDeltaX,
+        y: frameDeltaY,
+      })
+      
+      // Track cup velocity for spill detection
+      if (dragTarget.current === 'cup') {
+        cupVelocityBuffer.current.push({
+          vx: frameDeltaX,
+          vy: frameDeltaY,
+          time: Date.now(),
+        })
+        // Keep only last 200ms
+        const now = Date.now()
+        cupVelocityBuffer.current = cupVelocityBuffer.current.filter(v => now - v.time < 200)
+      }
     }
-  }, [])
+    
+    dragLast.current = { x: e.clientX, y: e.clientY }
+  }, [onShowFrontButton])
 
   const handlePointerUp = useCallback(() => {
-    if ((dragTarget.current === 'body' || dragTarget.current === 'head' || 
-         dragTarget.current === 'cup' || dragTarget.current === 'laptop') && 
-        figureGroup.current) {
-      // Spring back to rest position with vinyl toy bounce
-      const restY = -1.05 // FigureInBox base Y position
+    // Check for coffee spill on cup release
+    if (dragTarget.current === 'cup' && figureHandleRef.current && cupVelocityBuffer.current.length > 3) {
+      // Calculate average velocity over last frames
+      const avgVx = cupVelocityBuffer.current.reduce((sum, v) => sum + v.vx, 0) / cupVelocityBuffer.current.length
+      const avgVy = cupVelocityBuffer.current.reduce((sum, v) => sum + v.vy, 0) / cupVelocityBuffer.current.length
+      const speed = Math.sqrt(avgVx * avgVx + avgVy * avgVy)
       
+      // Trigger spill if flicked fast enough
+      if (speed > 8) {
+        const spillDir = new THREE.Vector3(avgVx * 0.015, -avgVy * 0.015, 0)
+        figureHandleRef.current.triggerSpill(spillDir)
+      }
+    }
+    
+    // Reset part motion on release
+    if (dragTarget.current && dragTarget.current !== 'box' && dragTarget.current !== 'body' && figureHandleRef.current) {
+      figureHandleRef.current.resetPartMotion(dragTarget.current)
+    }
+    
+    // Spring body drag back to rest
+    if (dragTarget.current === 'body' && figureWrapperRef.current) {
       const springBack = () => {
-        if (!figureGroup.current) return
+        if (!figureWrapperRef.current) return
         
-        // Spring X position back to 0
-        figureGroup.current.position.x *= 0.88
+        figureWrapperRef.current.position.x *= 0.88
+        figureWrapperRef.current.position.y *= 0.88
+        figureWrapperRef.current.rotation.x *= 0.85
+        figureWrapperRef.current.rotation.z *= 0.85
+        figureWrapperRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.2)
         
-        // Spring Y position back to rest (-1.05)
-        const deltaY = figureGroup.current.position.y - restY
-        figureGroup.current.position.y = restY + deltaY * 0.88
-        
-        // Spring rotation back
-        figureGroup.current.rotation.x *= 0.85
-        figureGroup.current.rotation.z *= 0.85
-        
-        // Spring scale back to 1
-        figureGroup.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.2)
-        
-        // Continue spring if still moving
-        if (Math.abs(figureGroup.current.position.x) > 0.01 ||
-            Math.abs(figureGroup.current.position.y - restY) > 0.01 ||
-            Math.abs(figureGroup.current.rotation.x) > 0.01 || 
-            Math.abs(figureGroup.current.rotation.z) > 0.01) {
+        if (Math.abs(figureWrapperRef.current.position.x) > 0.01 ||
+            Math.abs(figureWrapperRef.current.position.y) > 0.01 ||
+            Math.abs(figureWrapperRef.current.rotation.x) > 0.01 || 
+            Math.abs(figureWrapperRef.current.rotation.z) > 0.01) {
           requestAnimationFrame(springBack)
         } else {
-          figureGroup.current.position.set(0, restY, 0)
-          figureGroup.current.rotation.set(0, 0, 0)
-          figureGroup.current.scale.setScalar(1)
+          figureWrapperRef.current.position.set(0, 0, 0)
+          figureWrapperRef.current.rotation.set(0, 0, 0)
+          figureWrapperRef.current.scale.setScalar(1)
         }
       }
       springBack()
@@ -182,6 +217,7 @@ export function BoxWorld({
     document.body.style.cursor = 'auto'
     isDragging.current = false
     dragTarget.current = null
+    cupVelocityBuffer.current = []
   }, [])
 
   useEffect(() => {
@@ -206,7 +242,6 @@ export function BoxWorld({
     }
     
     if (boxGroup.current) {
-      // Smooth rotation
       currentRotation.current.x = THREE.MathUtils.damp(
         currentRotation.current.x,
         targetRotation.current.x,
@@ -232,7 +267,6 @@ export function BoxWorld({
     }
   }, [])
 
-  // Handle return to front trigger
   useEffect(() => {
     if (returnToFrontTrigger && returnToFrontTrigger > 0) {
       rotateTo('front')
@@ -264,7 +298,6 @@ export function BoxWorld({
         far={100}
       />
 
-      {/* Lighting - brighter to show interior */}
       <ambientLight intensity={preset.lights.ambient * 1.2} />
       <directionalLight
         position={[5, 8, 5]}
@@ -274,10 +307,8 @@ export function BoxWorld({
         shadow-mapSize-height={lowPower ? 512 : 2048}
       />
       <directionalLight position={[-3, 4, -3]} intensity={preset.lights.fillIntensity * 0.5} />
-      {/* Interior fill light */}
       <pointLight position={[0, 0, 0]} intensity={0.8} distance={3} decay={2} />
 
-      {/* Box with figure */}
       <group ref={boxGroup}>
         <PackageBox
           onPointerDown={(e: any) => handlePointerDown(e, 'box')}
@@ -288,14 +319,16 @@ export function BoxWorld({
           lowPower={lowPower}
         />
         
-        <FigureInBox
-          ref={figureGroup}
-          onPointerDown={(e: any, part: any) => handlePointerDown(e, part || 'body')}
-          theme={theme}
-        />
+        {/* Figure wrapper for body drag (position/scale/tilt) */}
+        <group ref={figureWrapperRef}>
+          <FigureInBox
+            ref={figureHandleRef}
+            onPointerDown={(e: any, part: any) => handlePointerDown(e, part || 'body')}
+            theme={theme}
+          />
+        </group>
       </group>
 
-      {/* Background field - single stable plane */}
       <mesh position={[0, 0, -8]} receiveShadow={false}>
         <planeGeometry args={[50, 50]} />
         <meshBasicMaterial color="#0d1117" depthWrite={false} />
